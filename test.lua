@@ -259,9 +259,9 @@ function DataDumper(value, varname, fastmode, ident)
    end
 
    fcts['function'] = function (value, ident, path)
-	  if true then
-		 return "<function>"
-	  end
+      if true then
+         return "<function>"
+      end
       if test_defined(value, path) then return "nil" end
       if c_functions[value] then
          return c_functions[value]
