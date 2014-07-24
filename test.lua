@@ -1,4 +1,4 @@
-defaultMap = "0"
+defaultMap = '0'
 
 addObject = tfm.exec.addShamanObject
 removeObject = tfm.exec.removeObject
@@ -8,24 +8,185 @@ bindKey = tfm.exec.bindKeyboard
 respawn = tfm.exec.respawnPlayer
 kill = tfm.exec.killPlayer
 
-function getfield(f)
-   local v = _G    -- start with the table of globals
-   for w in string.gmatch(f, "[%w_]+") do
+----------------------------------------------------------------
+
+function getfield(var, err)
+   local v = _G
+   for w in string.gmatch(var, '[%w_]+') do
       if type(v) ~= 'table' then
-         return nil
+         if err then
+            error('Invalid field: ' .. var)
+         else
+            return nil
+         end
       end
       v = v[w]
    end
    return v
 end
 
-function alert(str, name)
-   ui.addPopup(0, 0, str, name, 300, 150, 200)
+dump_func = {
+   ['function'] = function(...)
+      return '<function>'
+   end,
+   ['userdata'] = function(...)
+      return '<userdata>'
+   end,
+   ['thread'] = function(...)
+      return '<thread>'
+   end,
+
+   ['nil'] = function(...)
+      return 'nil'
+   end,
+
+   ['number'] = function(var, ...)
+      return var
+   end,
+
+   ['boolean'] = function(var, ...)
+      return tostring(var)
+   end,
+
+   ['string'] = function(var, ...)
+      for k, v in ipairs({{'&', '&amp;'}, {'<', '&lt;'}, {'>', '&gt;'}}) do
+         var = string.gsub(var, v[1], v[2])
+      end
+      return string.format('%q', var)
+   end,
+
+   ['table'] = function(var, off)
+      if off == nil then
+         off = ''
+      end
+
+      local ret = {}
+      local off1 = off .. ' '
+      local off2 = off1 .. ' '
+
+      table.insert(ret, "{\n")
+
+      for k, v in pairs(var) do
+         table.insert(ret, off1 .. '[')
+         table.insert(ret, dump_func[type(k)](k, off2))
+         table.insert(ret, '] = ')
+         table.insert(ret, dump_func[type(v)](v, off2))
+         table.insert(ret, ",\n")
+      end
+
+      table.insert(ret, string.sub(off, 2) .. '}')
+
+      return table.concat(ret)
+   end
+}
+
+function dump(var)
+   return dump_func[type(var)](var)
 end
 
-function eventNewPlayer(name)
-   --tfm.exec.setShaman(name)
-   respawn(name)
+----------------------------------------------------------------
+
+function unpack1(t, i)
+   if t[i] ~= nil then
+      return t[i], unpack1(t, i + 1)
+   else
+      return nil
+   end
+end
+
+function unpack(t)
+   return unpack1(t, 1)
+end
+
+function do_parse_arg(str)
+   if str == 'true' then
+      return true
+   elseif str == 'false' then
+      return false
+   elseif str == 'nil' then
+      return nil
+   else
+      local tmp = string.sub(str, 1, 1)
+      if tmp == '"' or tmp == "'" then
+         return string.sub(str, 2, -2)
+      else
+         tmp = tonumber(str)
+         if tmp ~= nil then
+            return tmp
+         else
+            return getfield(str, true)
+         end
+      end
+   end
+end
+
+function do_parse_key(str)
+   if str == 'true' then
+      return true
+   elseif str == 'false' then
+      return false
+   elseif str == 'nil' then
+      return nil
+   else
+      local tmp = string.sub(str, 1, 1)
+      if tmp == '"' or tmp == "'" then
+         return string.sub(str, 2, -2)
+      elseif tmp == '[' then
+         return string.sub(str, 3, -3)
+      else
+         tmp = tonumber(str)
+         if tmp ~= nil then
+            return tmp
+         else
+            return str
+         end
+      end
+   end
+end
+
+function parse_arg(iter)
+   local ret
+   local str = iter()
+   local s1, s2
+
+   if str == nil then
+      return nil, true
+   elseif str == '{' then
+      ret = {}
+      str = iter()
+      while str ~= nil and str ~= '}' do
+         s1, s2 = string.gmatch(str, '(.+)=(.+)')()
+         if s1 == nil then
+            table.insert(ret, do_parse_arg(str))
+         else
+            ret[do_parse_key(s1)] = do_parse_arg(s2)
+         end
+         str = iter()
+      end
+      return ret, str == nil
+   else
+      return do_parse_arg(str), false
+   end
+end
+
+function call(func, args_s)
+   local args = {}
+   local iter = string.gmatch(args_s, '[^%s]+')
+
+   local arg, exit = parse_arg(iter)
+
+   while not exit do
+      table.insert(args, arg)
+      arg, exit = parse_arg(iter)
+   end
+
+   func(unpack(args))
+end
+
+----------------------------------------------------------------
+
+function alert(str, name)
+   ui.addPopup(0, 0, str, name, 300, 150, 200)
 end
 
 function clear()
@@ -38,6 +199,13 @@ function clear()
    for k, v in pairs(ids) do
       removeObject(v)
    end
+end
+
+----------------------------------------------------------------
+
+function eventNewPlayer(name)
+   --tfm.exec.setShaman(name)
+   respawn(name)
 end
 
 function eventChatCommand(name, message)
@@ -67,32 +235,39 @@ function eventChatCommand(name, message)
       end
    end
 
-   cmd = string.lower(cmd)
+   local cmdl = string.lower(cmd)
 
-   if cmd == "clear" then
+   if cmdl == 'clear' then
       clear()
-   elseif cmd == "reset" then
+   elseif cmdl == 'reset' then
       arg = string.lower(arg)
       setMap(defaultMap)
-   elseif cmd == "map" then
+   elseif cmdl == 'map' then
       setMap(arg)
-   elseif cmd == "dir" then
-      local str = "<TI>----" .. arg .. "----\n"
+   elseif cmdl == 'dir' then
+      local str = '<TI>--[' .. arg .. "]--\n"
       local var = getfield(arg)
       if var ~= nil then
          for k, v in pairs(var) do
             str = str .. k .. "\n"
          end
-         ui.addTextArea(2, str, name, -150, 0, 150, 600)
+         ui.addTextArea(2, str, name, -200, 0, 200, 600)
       end
-   elseif cmd == "dump" then
-      local str = "<TI>----" .. arg .. "----\n"
+   elseif cmdl == 'dump' then
+      local str = '<TI>--[' .. arg .. "]--\n"
       local var = getfield(arg)
-      var = DataDumper(var)
-      for k, v in ipairs({{'&', '&amp;'}, {'<', '&lt;'}, {'>', '&gt;'}}) do
-         var = string.gsub(var, v[1], v[2])
+      var = dump(var)
+      ui.addTextArea(2, str .. var .. "\n", name, -200, 0, 200, 600)
+   else
+      local func = getfield(cmd)
+      if type(func) == 'function' then
+         local status, err = pcall(call, func, arg)
+         if not status then
+            alert(err, name)
+         end
+      else
+         alert('Invalid command: ' .. cmd, name)
       end
-      ui.addTextArea(2, str .. var .. "\n", name, -150, 0, 150, 600)
    end
 end
 
@@ -108,203 +283,3 @@ function eventPlayerDied(name)
 end
 
 setMap(defaultMap)
-
--------------------------------------
-
---[[ DataDumper.lua
-Copyright (c) 2007 Olivetti-Engineering SA
-
-Permission is hereby granted, free of charge, to any person
-obtaining a copy of this software and associated documentation
-files (the "Software"), to deal in the Software without
-restriction, including without limitation the rights to use,
-copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
-]]
-
-local dumplua_closure = [[
-local closures = {}
-local function closure(t) 
-  closures[#closures+1] = t
-  t[1] = assert(loadstring(t[1]))
-  return t[1]
-end
-
-for _,t in pairs(closures) do
-  for i = 2,#t do 
-    debug.setupvalue(t[1], i-1, t[i]) 
-  end 
-end
-]]
-
-local lua_reserved_keywords = {
-   'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for', 
-   'function', 'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 
-   'return', 'then', 'true', 'until', 'while' }
-
-local function keys(t)
-   local res = {}
-   local oktypes = { stringstring = true, numbernumber = true }
-   local function cmpfct(a,b)
-      if oktypes[type(a)..type(b)] then
-         return a < b
-      else
-         return type(a) < type(b)
-      end
-   end
-   for k in pairs(t) do
-      res[#res+1] = k
-   end
-   table.sort(res, cmpfct)
-   return res
-end
-
-local c_functions = {}
-for _,lib in pairs{'_G', 'string', 'table', 'math', 
-                   'io', 'os', 'coroutine', 'package', 'debug'} do
-   local t = _G[lib] or {}
-   lib = lib .. "."
-   if lib == "_G." then lib = "" end
-   for k,v in pairs(t) do
-      if type(v) == 'function' and not pcall(string.dump, v) then
-         c_functions[v] = lib..k
-      end
-   end
-end
-
-function DataDumper(value, varname, fastmode, ident)
-   local defined, dumplua = {}
-   -- Local variables for speed optimization
-   local string_format, type, string_dump, string_rep = 
-      string.format, type, string.dump, string.rep
-   local tostring, pairs, table_concat = 
-      tostring, pairs, table.concat
-
-   local keycache, strvalcache, out, closure_cnt = {}, {}, {}, 0
-
-   local function index(t, value)
-      local res = string_format('%q', value)
-      t[value] = res
-      return res
-   end
-
-   local fcts = {
-      string = function(value) return index(strvalcache, value) end,
-      number = function(value) return value end,
-      boolean = function(value) return tostring(value) end,
-      ['nil'] = function(value) return 'nil' end,
-      ['function'] = function(value) 
-         return string_format("loadstring(%q)", string_dump(value)) 
-      end,
-      userdata = function() return "<userdata>" end,
-      thread = function() return "<thread>" end,
-   }
-   local function test_defined(value, path)
-      if defined[value] then
-         if path:match("^getmetatable.*%)$") then
-            out[#out+1] = string_format("s%s, %s)\n", path:sub(2,-2), defined[value])
-         else
-            out[#out+1] = path .. " = " .. defined[value] .. "\n"
-         end
-         return true
-      end
-      defined[value] = path
-   end
-   local function make_key(t, key)
-      local s
-      if type(key) == 'string' and key:match('^[_%a][_%w]*$') then
-         s = key .. "="
-      else
-         s = "[" .. dumplua(key, 0) .. "]="
-      end
-      t[key] = s
-      return s
-   end
-   for _,k in ipairs(lua_reserved_keywords) do
-      keycache[k] = '["'..k..'"] = '
-   end
-
-   fcts.table = function (value)
-      -- Table value
-      local numidx = 1
-      out[#out+1] = "{"
-      for key,val in pairs(value) do
-         if key == numidx then
-            numidx = numidx + 1
-         else
-            out[#out+1] = make_key(keycache, key)
-         end
-         local str = dumplua(val)
-         out[#out+1] = str..","
-      end
-      if string.sub(out[#out], -1) == "," then
-         out[#out] = string.sub(out[#out], 1, -2);
-      end
-      out[#out+1] = "}"
-      return "" 
-   end
-
-   fcts['function'] = function (value, ident, path)
-      if true then
-         return "<function>"
-      end
-      if test_defined(value, path) then return "nil" end
-      if c_functions[value] then
-         return c_functions[value]
-      elseif debug == nil or debug.getupvalue(value, 1) == nil then
-         return string_format("loadstring(%q)", string_dump(value))
-      end
-      closure_cnt = closure_cnt + 1
-      local res = {string.dump(value)}
-      for i = 1,math.huge do
-         local name, v = debug.getupvalue(value,i)
-         if name == nil then break end
-         res[i+1] = v
-      end
-      return "closure " .. dumplua(res, ident, "closures["..closure_cnt.."]")
-   end
-
-   function dumplua(value, ident, path)
-      return fcts[type(value)](value, ident, path)
-   end
-   if varname == nil then
-      varname = "return "
-   elseif varname:match("^[%a_][%w_]*$") then
-      varname = varname .. " = "
-   end
-   if fastmode then
-      out[1] = varname
-      table.insert(out,dumplua(value, 0))
-      return table.concat(out)
-   else
-      local items = {}
-      for i=1,10 do items[i] = '' end
-      items[3] = dumplua(value, ident or 0, "t")
-      if closure_cnt > 0 then
-         items[1], items[6] = dumplua_closure:match("(.*\n)\n(.*)")
-         out[#out+1] = ""
-      end
-      if #out > 0 then
-         items[2], items[4] = "local t = ", "\n"
-         items[5] = table.concat(out)
-         items[7] = varname .. "t"
-      else
-         items[2] = varname
-      end
-      return table.concat(items)
-   end
-end
