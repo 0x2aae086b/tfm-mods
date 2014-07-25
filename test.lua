@@ -35,13 +35,13 @@ end
 
 dump_func = {
    ['function'] = function(...)
-      return '<function>'
+      return '&lt;function&gt;'
    end,
    ['userdata'] = function(...)
-      return '<userdata>'
+      return '&lt;userdata&gt;'
    end,
    ['thread'] = function(...)
-      return '<thread>'
+      return '&lt;thread&gt;'
    end,
 
    ['nil'] = function(...)
@@ -68,11 +68,9 @@ dump_func = {
          off = ''
       end
 
-      local ret = {}
+      local ret = { "{\n" }
       local off1 = off .. ' '
       local off2 = off1 .. ' '
-
-      table.insert(ret, "{\n")
 
       for k, v in pairs(var) do
          table.insert(ret, off1 .. '[')
@@ -80,6 +78,11 @@ dump_func = {
          table.insert(ret, '] = ')
          table.insert(ret, dump_func[type(v)](v, off2))
          table.insert(ret, ",\n")
+      end
+
+      local i = #ret
+      if i > 1 then
+         ret[i] = "\n"
       end
 
       table.insert(ret, string.sub(off, 2) .. '}')
@@ -106,13 +109,15 @@ function unpack(t)
    return unpack1(t, 1)
 end
 
-function do_parse_arg(str)
+function do_parse_arg(str, iter)
    if str == 'true' then
       return true
    elseif str == 'false' then
       return false
    elseif str == 'nil' then
       return nil
+   elseif str == '{' then
+      return parse_arg(iter, str)
    else
       local tmp = string.sub(str, 1, 1)
       if tmp == '"' or tmp == "'" then
@@ -129,33 +134,40 @@ function do_parse_arg(str)
 end
 
 function do_parse_key(str)
-   if str == 'true' then
-      return true
-   elseif str == 'false' then
-      return false
-   elseif str == 'nil' then
-      return nil
-   else
-      local tmp = string.sub(str, 1, 1)
-      if tmp == '"' or tmp == "'" then
-         return string.sub(str, 2, -2)
-      elseif tmp == '[' then
-         return string.sub(str, 3, -3)
+   local tmp
+
+   while true do
+      if str == 'true' then
+         return true
+      elseif str == 'false' then
+         return false
+      elseif str == 'nil' then
+         return nil
       else
-         tmp = tonumber(str)
-         if tmp ~= nil then
-            return tmp
+         local tmp = string.sub(str, 1, 1)
+         if tmp == '"' or tmp == "'" then
+            return string.sub(str, 2, -2)
+         elseif tmp == '[' then
+            str = string.sub(str, 2, -2)
          else
-            return str
+            tmp = tonumber(str)
+            if tmp ~= nil then
+               return tmp
+            else
+               return str
+            end
          end
       end
    end
 end
 
-function parse_arg(iter)
+function parse_arg(iter, str)
    local ret
-   local str = iter()
    local s1, s2
+
+   if str == nil then
+      str = iter()
+   end
 
    if str == nil then
       return nil, true
@@ -165,9 +177,9 @@ function parse_arg(iter)
       while str ~= nil and str ~= '}' do
          s1, s2 = string.gmatch(str, '(.+)=(.+)')()
          if s1 == nil then
-            table.insert(ret, do_parse_arg(str))
+            ret[#ret + 1] = do_parse_arg(str, iter)
          else
-            ret[do_parse_key(s1)] = do_parse_arg(s2)
+            ret[do_parse_key(s1)] = do_parse_arg(s2, iter)
          end
          str = iter()
       end
@@ -188,7 +200,7 @@ function call(func, args_s)
       arg, exit = parse_arg(iter)
    end
 
-   func(unpack(args))
+   return func(unpack(args))
 end
 
 ----------------------------------------------------------------
@@ -262,10 +274,12 @@ function eventChatCommand(name, message)
          ui.addTextArea(2, str, name, -200, 0, 200, 600)
       end
    elseif cmdl == 'dump' then
-      local str = '<TI>--[' .. arg .. "]--\n"
-      local var = getfield(arg)
-      var = dump(var)
-      ui.addTextArea(2, str .. var .. "\n", name, -200, 0, 200, 600)
+      local status, ret = pcall(call, dump, arg)
+      if not status then
+         alert(ret, name)
+      else
+         ui.addTextArea(2, '<TI>' .. ret, name, -200, 0, 200, 600)
+      end
    else
       local func = getfield(cmd)
       if type(func) == 'function' then
