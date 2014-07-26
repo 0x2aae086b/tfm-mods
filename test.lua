@@ -97,16 +97,33 @@ end
 
 ----------------------------------------------------------------
 
-function unpack1(t, i)
+function do_unpack(t, i)
    if t[i] ~= nil then
-      return t[i], unpack1(t, i + 1)
+      return t[i], do_unpack(t, i + 1)
    else
       return nil
    end
 end
 
 function unpack(t)
-   return unpack1(t, 1)
+   return do_unpack(t, 1)
+end
+
+unescape_map = {
+   a = '\a', b = '\b', f='\f', n = '\n', r = '\r', t = '\t'
+}
+
+function do_unescape(c, n)
+   local num = tonumber(c .. n)
+   if num == nil then
+      return (unescape_map[c] or c) .. n
+   else
+      return string.char(num)
+   end
+end
+
+function unescape(str)
+   return string.gsub(str, '\\(.)(%d?%d?)', do_unescape)
 end
 
 function do_parse_arg(str, iter)
@@ -121,7 +138,7 @@ function do_parse_arg(str, iter)
    else
       local tmp = string.sub(str, 1, 1)
       if tmp == '"' or tmp == "'" then
-         return string.sub(str, 2, -2)
+         return unescape(string.sub(str, 2, -2))
       else
          tmp = tonumber(str)
          if tmp ~= nil then
@@ -146,7 +163,7 @@ function do_parse_key(str)
       else
          local tmp = string.sub(str, 1, 1)
          if tmp == '"' or tmp == "'" then
-            return string.sub(str, 2, -2)
+            return unescape(string.sub(str, 2, -2))
          elseif tmp == '[' then
             str = string.sub(str, 2, -2)
          else
@@ -154,7 +171,7 @@ function do_parse_key(str)
             if tmp ~= nil then
                return tmp
             else
-               return str
+               return unescape(str)
             end
          end
       end
