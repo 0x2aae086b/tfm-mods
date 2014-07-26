@@ -206,7 +206,7 @@ function parse_arg(iter, str)
    end
 end
 
-function call(func, args_s)
+function call(func, args_s, get)
    local args = {}
    local iter = string.gmatch(args_s, '[^%s]+')
 
@@ -217,7 +217,11 @@ function call(func, args_s)
       arg, exit = parse_arg(iter)
    end
 
-   return func(unpack(args))
+   if get then
+      return { func, args }
+   else
+      return func(unpack(args))
+   end
 end
 
 ----------------------------------------------------------------
@@ -240,9 +244,20 @@ end
 
 ----------------------------------------------------------------
 
+playerData = {}
+
 function eventNewPlayer(name)
+   playerData[name] = {
+      lastFunction = {},
+      newFunction = {},
+      append = false
+   }
    --tfm.exec.setShaman(name)
    respawn(name)
+end
+
+function eventPlayerLeft(name)
+   playerData[name] = nil
 end
 
 function eventChatCommand(name, message)
@@ -250,6 +265,8 @@ function eventChatCommand(name, message)
    local j
    local cmd
    local arg
+   local status, err
+   local data = playerData[name]
 
    while true do
       i, j = string.find(message, "%s+")
@@ -297,12 +314,35 @@ function eventChatCommand(name, message)
       else
          ui.addTextArea(2, '<TI>' .. ret, name, -200, 0, 200, 600)
       end
+   elseif cmdl == 'do' then
+      data.append = true
+      data.newFunction = {}
+   elseif cmdl == 'end' or cmdl == 'redo' then
+      if cmdl == 'end' then
+         data.append = false
+         data.lastFunction = data.newFunction
+      end
+      for _, f in pairs(data.lastFunction) do
+         status, err = pcall(call, f[1], f[2])
+         if not status then
+            alert(err, name)
+            break
+         end
+      end
+   elseif cmdl == 'undo' then
+      data.append = false
+      data.newFunction = {}
    else
       local func = getfield(cmd)
       if type(func) == 'function' then
-         local status, err = pcall(call, func, arg)
-         if not status then
-            alert(err, name)
+         if data.append then
+            table.insert(data.newFunction, {func, arg})
+         else
+            data.lastFunction = {{func, arg}}
+            status, err = pcall(call, func, arg)
+            if not status then
+               alert(err, name)
+            end
          end
       else
          alert('Invalid command: ' .. cmd, name)
@@ -319,6 +359,12 @@ end
 
 function eventPlayerDied(name)
    respawn(name)
+end
+
+----------------------------------------------------------------
+
+for k, v in pairs(tfm.get.room.playerList) do
+   eventNewPlayer(k)
 end
 
 setMap(defaultMap)
