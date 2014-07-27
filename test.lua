@@ -18,6 +18,48 @@ kill = tfm.exec.killPlayer
 
 ----------------------------------------------------------------
 
+MODULE_HELP_CONTENTS = [[<TI><a href="event:Commands">Commands</a>
+]]
+
+MODULE_HELP = {
+      ['Commands'] = [[<TI>!help
+
+!clear
+
+!reset
+    tfm.exec.newGame(defaultMap)
+
+!map
+    tfm.exec.newGame()
+
+!dir &lt;variable&gt;
+
+!dump &lt;value&gt;
+
+!&lt;function&gt; [&lt;values&gt;]
+
+!do
+
+!end
+
+!redo
+
+!undo
+
+]]
+}
+
+CLOSE='<TI><a href="event:close">X</a>'
+
+function help(name)
+   ui.addTextArea(100, '', name, 308, 128, 300, 230)
+   ui.addTextArea(101, '<TI>Help', name, 308, 100, 277, 20)
+   ui.addTextArea(102, MODULE_HELP_CONTENTS, name, 200, 100, 100, 258)
+   ui.addTextArea(103, CLOSE, name, 593, 100, 15, 20)
+end
+
+----------------------------------------------------------------
+
 function getfield(var, err)
    local v = _G
    for w in string.gmatch(var, '[%w_]+') do
@@ -158,8 +200,6 @@ function do_parse_key(str)
          return true
       elseif str == 'false' then
          return false
-      elseif str == 'nil' then
-         return nil
       else
          local tmp = string.sub(str, 1, 1)
          if tmp == '"' or tmp == "'" then
@@ -252,6 +292,7 @@ function eventNewPlayer(name)
       newFunction = {},
       append = false
    }
+   ui.addTextArea(104, '<TI><a href="event:help">?</a>', name, 5, 25, 10, 20)
    --tfm.exec.setShaman(name)
    respawn(name)
 end
@@ -291,10 +332,11 @@ function eventChatCommand(name, message)
 
    local cmdl = string.lower(cmd)
 
-   if cmdl == 'clear' then
+   if cmdl == 'help' then
+      help(name)
+   elseif cmdl == 'clear' then
       clear()
    elseif cmdl == 'reset' then
-      arg = string.lower(arg)
       setMap(defaultMap)
    elseif cmdl == 'map' then
       setMap(arg)
@@ -359,6 +401,27 @@ end
 
 function eventPlayerDied(name)
    respawn(name)
+end
+
+function eventPlayerWon(name)
+   respawn(name)
+end
+
+function eventTextAreaCallback(id, name, callback)
+   if callback == 'help' then
+      help(name)
+   elseif callback == 'close' and id == 103 then
+      ui.removeTextArea(100, name)
+      ui.removeTextArea(101, name)
+      ui.removeTextArea(102, name)
+      ui.removeTextArea(103, name)
+   else
+      local str = MODULE_HELP[callback]
+      if str ~= nil then
+         ui.updateTextArea(100, str, name)
+         ui.updateTextArea(101, '<TI>' .. callback, name)
+      end
+   end
 end
 
 ----------------------------------------------------------------
