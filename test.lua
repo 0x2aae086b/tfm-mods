@@ -18,11 +18,13 @@ kill = tfm.exec.killPlayer
 
 ----------------------------------------------------------------
 
-MODULE_HELP_CONTENTS = [[<TI><a href="event:Commands">Commands</a>
+MODULE_HELP_START = 'Commands'
+
+MODULE_HELP_CONTENTS = [[<font face="mono" size="15"><a href="event:Commands">Commands</a></font>
 ]]
 
 MODULE_HELP = {
-      ['Commands'] = [[<TI>!help
+      ['Commands'] = [[<font face="mono" size="15">!help
 
 !clear
 
@@ -45,17 +47,44 @@ MODULE_HELP = {
 !redo
 
 !undo
-
+</font>
 ]]
 }
 
-CLOSE='<TI><a href="event:close">X</a>'
+CLOSE='<TI><p align="center"><a href="event:close">X</a></p>'
 
 function help(name)
-   ui.addTextArea(100, '', name, 308, 128, 300, 230)
-   ui.addTextArea(101, '<TI>Help', name, 308, 100, 277, 20)
-   ui.addTextArea(102, MODULE_HELP_CONTENTS, name, 200, 100, 100, 258)
-   ui.addTextArea(103, CLOSE, name, 593, 100, 15, 20)
+   ui.addTextArea(100, MODULE_HELP[MODULE_HELP_START], name, 258, 78, 421, 284)
+   ui.addTextArea(101, string.format('<p align="center"><font face="mono" size="15">%s</font></p>', MODULE_HELP_START), name, 258, 50, 398, 20)
+   ui.addTextArea(102, MODULE_HELP_CONTENTS, name, 100, 50, 150, 312)
+   ui.addTextArea(103, CLOSE, name, 664, 50, 15, 20)
+end
+
+----------------------------------------------------------------
+
+function showLongString(title, str, name, alpha)
+   local p = math.ceil(#str / 2000)
+
+   if alpha == nil then
+      alpha = 1
+   end
+
+   playerData[name].longString = {
+      id = 110,
+      str = str,
+      page = 0,
+      maxPage = p - 1
+   }
+
+   ui.addTextArea(110, string.sub(str, 1, 2000), name, 100, 80, 579, 284, nil, nil, alpha)
+   ui.addTextArea(111, string.format('<p align="center"><font face="mono" size="15">%s</font></p>', title), name, 100, 50, 400, 22, nil, nil, alpha)
+   ui.addTextArea(112, string.format('<p align="center"><font face="mono" size="15"><a href="event:prev">&lt;</a> 1/%d <a href="event:next">&gt;</a></font></p>', p), name, 508, 50, 148, 22, nil, nil, alpha)
+   ui.addTextArea(113, CLOSE, name, 664, 50, 15, 22, nil, nil, alpha)
+end
+
+function updateLongString(name, ls)
+   ui.updateTextArea(ls.id, string.sub(ls.str, ls.page * 2000 + 1, (ls.page + 1) * 2000), name)
+   ui.updateTextArea(ls.id + 2, string.format('<p align="center"><font face="mono" size="15"><a href="event:prev">&lt;</a> %d/%d <a href="event:next">&gt;</a></font></p>', ls.page + 1, ls.maxPage + 1), name)
 end
 
 ----------------------------------------------------------------
@@ -112,13 +141,12 @@ dump_func = {
 
       local ret = { "{\n" }
       local off1 = off .. ' '
-      local off2 = off1 .. ' '
 
       for k, v in pairs(var) do
          table.insert(ret, off1 .. '[')
-         table.insert(ret, dump_func[type(k)](k, off2))
+         table.insert(ret, dump_func[type(k)](k, off1))
          table.insert(ret, '] = ')
-         table.insert(ret, dump_func[type(v)](v, off2))
+         table.insert(ret, dump_func[type(v)](v, off1))
          table.insert(ret, ",\n")
       end
 
@@ -127,7 +155,7 @@ dump_func = {
          ret[i] = "\n"
       end
 
-      table.insert(ret, string.sub(off, 2) .. '}')
+      table.insert(ret, off .. '}')
 
       return table.concat(ret)
    end
@@ -267,7 +295,7 @@ end
 ----------------------------------------------------------------
 
 function alert(str, name)
-   ui.addPopup(0, 0, str, name, 300, 150, 200)
+   ui.addPopup(0, 0, string.format('<font face="mono" size="15">%s</font>', str), name, 200, 150, 400)
 end
 
 function clear()
@@ -277,7 +305,7 @@ function clear()
       table.insert(ids, i)
    end
 
-   for k, v in pairs(ids) do
+   for k, v in ipairs(ids) do
       removeObject(v)
    end
 end
@@ -341,20 +369,20 @@ function eventChatCommand(name, message)
    elseif cmdl == 'map' then
       setMap(arg)
    elseif cmdl == 'dir' then
-      local str = '<TI>--[' .. arg .. "]--\n"
+      local str = string.format('<font face="mono" size="15">', arg)
       local var = getfield(arg)
       if var ~= nil then
          for k, v in pairs(var) do
             str = str .. k .. "\n"
          end
-         ui.addTextArea(2, str, name, -200, 0, 200, 600)
+         showLongString(arg, str .. '</font>', name, 0.6)
       end
    elseif cmdl == 'dump' then
       local status, ret = pcall(call, dump, arg)
       if not status then
          alert(ret, name)
       else
-         ui.addTextArea(2, '<TI>' .. ret, name, -200, 0, 200, 600)
+         showLongString(arg, string.format('<font face="mono" size="15">%s</font>', ret), name, 0.6)
       end
    elseif cmdl == 'do' then
       data.append = true
@@ -410,16 +438,33 @@ end
 function eventTextAreaCallback(id, name, callback)
    if callback == 'help' then
       help(name)
-   elseif callback == 'close' and id == 103 then
-      ui.removeTextArea(100, name)
-      ui.removeTextArea(101, name)
-      ui.removeTextArea(102, name)
-      ui.removeTextArea(103, name)
+   elseif callback == 'next' then
+      local ls = playerData[name].longString
+      local p = ls.page
+      if p < ls.maxPage then
+         ls.page = p + 1
+      end
+      updateLongString(name, ls)
+   elseif callback == 'prev' then
+      local ls = playerData[name].longString
+      local p = ls.page
+      if p > 0 then
+         ls.page = p - 1
+      end
+      updateLongString(name, ls)
+   elseif callback == 'close' then
+      ui.removeTextArea(id - 3, name)
+      ui.removeTextArea(id - 2, name)
+      ui.removeTextArea(id - 1, name)
+      ui.removeTextArea(id, name)
+      if id ~= 103 then
+         playerData[name].longString = nil
+      end
    else
       local str = MODULE_HELP[callback]
       if str ~= nil then
          ui.updateTextArea(100, str, name)
-         ui.updateTextArea(101, '<TI>' .. callback, name)
+         ui.updateTextArea(101, string.format('<TI><p align="center">%s</p>', callback), name)
       end
    end
 end
