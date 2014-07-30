@@ -33,10 +33,14 @@ Right - D, →</font>
 !reset [map]
     tfm.exec.newGame(defaultMap)
 
-!reset me|all|&lt;name&gt;
+!reset [!]me|all|&lt;name&gt;...
+    resetPlayer()
+
+!init [!]me|all|&lt;name&gt;...
+    deletePlayer()
     initPlayer()
 
-!respawn [me|all|&lt;name&gt;]
+!respawn [!]me|all|&lt;name&gt;...
     tfm.exec.respawnPlayer()
 
 !map [&lt;map&gt;]
@@ -49,30 +53,32 @@ Right - D, →</font>
 !bind &lt;pattern&gt; key|obj|objend &lt;name|id&gt;
 
 !unbind [all]
-!unbind key|obj|objend [&lt;name|id&gt;]
+!unbind key|obj|objend [&lt;name|code&gt;]
 </font>
 ]],
       ['Shot types'] = [[<font face="mono" size="15">1 - default shot
     Cooldown: 0.5s
 
 2 - homing anvils
-    Cooldown: 1s</font>
+    Cooldown: 1s
+</font>
 ]],
       ['Bomb types'] = [[<font face="mono" size="15">1 - default bomb
     Cost: 1
     Duration: 10s
-    Cooldown: 0s</font>
+    Cooldown: 0s
+</font>
 ]],
       ['Pattern types'] = [[<font face="mono" size="15">1
     Cooldown: 0.5s
     Max. binds: 3
-    Points: 1</font>
+    Points: 1
+</font>
 ]],
-      ['Shaman objects'] = [[<font face="mono" size="15"></font>
-]]
+      ['Shaman objects'] = ''
 }
 
-CLOSE='<p align="center"><TI><a href="event:close">X</a></p>'
+CLOSE='<TI><a href="event:close"><p align="center">X</p></a>'
 
 function help(name)
    ui.addTextArea(100, MODULE_HELP[MODULE_HELP_START], name, 258, 78, 421, 284)
@@ -210,6 +216,36 @@ function tableLength(tbl)
    return count
 end
 
+function copy(dst, src)
+   if src ~= nil then
+      for k, v in pairs(src) do
+         dst[k] = v
+      end
+   end
+end
+
+function split(str)
+   local ret = {}
+   for s in string.gmatch(str, '[^%s]+') do
+      table.insert(ret, s)
+   end
+   return ret
+end
+
+function invert(t, value)
+   local ret = {}
+   if value == nil then
+      for k, v in pairs(t) do
+         ret[v] = k
+      end
+   else
+      for k, v in pairs(t) do
+         ret[v] = value
+      end
+   end
+   return ret
+end
+
 function randomKey1(tbl, excl_key, do_exclude)
    local keys, i = {}, 1
 
@@ -237,28 +273,6 @@ function randomValue1(tbl, excl_key, do_exclude)
    else
       return nil
    end
-end
-
-function split(str)
-   local ret = {}
-   for s in string.gmatch(str, '[^%s]+') do
-      table.insert(ret, s)
-   end
-   return ret
-end
-
-function invert(t, value)
-   local ret = {}
-   if value == nil then
-      for k, v in pairs(t) do
-         ret[v] = k
-      end
-   else
-      for k, v in pairs(t) do
-         ret[v] = value
-      end
-   end
-   return ret
 end
 
 ---------------------------------------------------------------------------
@@ -329,7 +343,6 @@ end
 
 function setColor(name, color)
    tfm.exec.setNameColor(name, color)
-   playerColor[name] = color
    playerData[name].color = color
 end
 
@@ -776,8 +789,10 @@ eventCode = {
    objend = objcode
 }
 
-playerColor = {
-   Cafecafe = '0xB06FFD'
+playerConfig = {
+   Cafecafe = {
+      color='0xB06FFD'
+   }
 }
 
 playerShot = {}
@@ -929,14 +944,14 @@ end
 
 function initPlayer(name)
    local data = {
-      color = playerColor[name] or randomColor(),
+      color = randomColor(),
 
       shooting = false,
       bombing = false,
 
-      shot = playerShot[name] or shotTypes[1],
+      shot = shotTypes[1],
 
-      bomb = playerBomb[name] or bombTypes[1],
+      bomb = bombTypes[1],
       bombTime = nil,
 
       patterns = {
@@ -955,6 +970,13 @@ function initPlayer(name)
 
       bomb_id = nil
    }
+
+   if playerConfig[name] == nil then
+      playerConfig[name] = {}
+   end
+
+   copy(data, playerConfig[name])
+
    playerData[name] = data
 
    for k, v in pairs(playerKeys) do
@@ -970,6 +992,32 @@ function initPlayer(name)
    tfm.exec.respawnPlayer(name)
    tfm.exec.setShaman(name)
    tfm.exec.setNameColor(name, playerData[name].color)
+end
+
+function resetPlayer(name)
+   local reset = {
+      shooting = false,
+      bombing = false,
+      bombTime = nil,
+
+      lives = 5,
+      bombs = 3,
+
+      shot_cd = 0,
+      bomb_cd = 0,
+
+      bomb_id = nil
+   }
+
+   local data = playerData[name]
+
+   copy(data, reset)
+
+   updateTextAreas(name, data)
+
+   tfm.exec.respawnPlayer(name)
+   tfm.exec.setShaman(name)
+   tfm.exec.setNameColor(name, data.color)
 end
 
 function deletePlayer(name)
@@ -1081,6 +1129,40 @@ end
 eventNewPlayer = initPlayer
 eventPlayerLeft = deletePlayer
 
+function parsePlayerNames(name, arg, func)
+   local players = {}
+   local b
+
+   for k, v in pairs(split(string.lower(arg))) do
+      if string.sub(v, 1, 1) == '!' then
+         v = string.sub(v, 2)
+         b = nil
+      else
+         b = true
+      end
+
+      if v == 'me' then
+         players[name] = b
+      elseif v == 'all' then
+         for k, v in pairs(tfm.get.room.playerList) do
+            players[k] = b
+         end
+      else
+         v = string.gsub(v, '^%l', string.upper)
+         if tfm.get.room.playerList[v] == nil then
+            alert('Invalid player: ' .. v, name)
+            return
+         else
+            players[v] = b
+         end
+      end
+   end
+
+   for k, v in pairs(players) do
+      func(k)
+   end
+end
+
 function eventChatCommand(name, message)
    local i, j
    local cmd, arg
@@ -1116,74 +1198,64 @@ function eventChatCommand(name, message)
       arg = string.upper(arg)
       if arg == '' or arg == 'RANDOM' or arg == 'RND' then
          setColor(name, randomColor())
-         playerColor[name] = nil
+         playerConfig[name].color = nil
       else
          local argv = tonumber(arg)
          if argv ~= nil then
             if argv > 0xFFFFFF then
                argv = 0xFFFFFF
             end
-            setColor(name, string.format('0x%X', argv))
+            arg = string.format('0x%X', argv)
+            setColor(name, arg)
+            playerConfig[name].color = arg
          else
-            alert('Invalid color: "' .. arg .. '"', name)
+            alert('Invalid color: ' .. arg, name)
          end
       end
    elseif cmd == 'reset' then
       arg = string.lower(arg)
       if arg == '' or arg == 'map' then
          setMap(defaultMap)
-      elseif arg == 'me' then
+      else
+         parsePlayerNames(name, arg, resetPlayer)
+      end
+   elseif cmd == 'init' then
+      local f = function(name)
          deletePlayer(name)
          initPlayer(name)
-      elseif arg == 'all' then
-         for k, v in pairs(tfm.get.room.playerList) do
-            deletePlayer(k)
-            initPlayer(k)
-         end
-      else
-         arg = string.gsub(arg, '^%l', string.upper)
-         if not (tfm.get.room.playerList[arg] == nil) then
-            deletePlayer(arg)
-            initPlayer(arg)
-         end
       end
+      parsePlayerNames(name, arg, f)
    elseif cmd == 'respawn' or cmd == 'spawn' then
-      arg = string.lower(arg)
-      if arg == '' or arg == 'me' then
-         respawn(name)
-      elseif arg == 'all' then
-         for k, v in pairs(tfm.get.room.playerList) do
-            respawn(k)
-         end
-      else
-         arg = string.gsub(arg, '^%l', string.upper)
-         respawn(arg)
-      end
+      parsePlayerNames(name, arg, respawn)
    elseif cmd == 'shot' then
-      arg = tonumber(arg)
+      local n = tonumber(arg)
 
-      if arg == nil then
-         arg = 1
+      if n == nil then
+         alert('Invalid shot type: ' .. arg, name)
+         return
       end
 
-      arg = shotTypes[arg]
+      n = shotTypes[n]
 
-      if arg ~= nil then
-         playerShot[name] = arg
-         playerData[name].shot = arg
+      if n ~= nil then
+         playerData[name].shot = n
+      else
+         alert('Invalid shot type: ' .. arg, name)
       end
    elseif cmd == 'bomb' then
-      arg = tonumber(arg)
+      local n = tonumber(arg)
 
-      if arg == nil then
-         arg = 1
+      if n == nil then
+         alert('Invalid bomb type: ' .. arg, name)
+         return
       end
 
-      arg = bombTypes[arg]
+      n = bombTypes[n]
 
-      if arg ~= nil then
-         playerBomb[name] = arg
-         playerData[name].bomb = arg
+      if n ~= nil then
+         playerData[name].bomb = n
+      else
+         alert('Invalid bomb type: ' .. arg, name)
       end
    elseif cmd == 'bind' then
       arg = split(arg)
@@ -1289,7 +1361,6 @@ function eventNewGame()
    tfm.exec.disableAutoShaman(true)
    tfm.exec.setGameTime(0)
 
-   playerData = {}
    objectData = {}
    groundData = {}
    jointData = {}
@@ -1315,8 +1386,8 @@ function eventNewGame()
       free = {}
    }
 
-   for name,player in pairs(tfm.get.room.playerList) do
-      initPlayer(name)
+   for name, player in pairs(tfm.get.room.playerList) do
+      resetPlayer(name)
    end
 
    tfm.exec.setUIMapName('<TI>')
@@ -1481,5 +1552,9 @@ function eventTextAreaCallback(id, name, callback)
 end
 
 system.disableChatCommandDisplay('help', true)
+
+for k, v in pairs(tfm.get.room.playerList) do
+   initPlayer(k)
+end
 
 setMap(defaultMap)
