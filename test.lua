@@ -51,7 +51,7 @@ MODULE_HELP = {
 ]]
 }
 
-CLOSE='<TI><p align="center"><a href="event:close">X</a></p>'
+CLOSE='<TI><a href="event:close"><p align="center">X</p></a>'
 
 function help(name)
    ui.addTextArea(100, MODULE_HELP[MODULE_HELP_START], name, 258, 78, 421, 284)
@@ -62,29 +62,84 @@ end
 
 ----------------------------------------------------------------
 
-function showLongString(title, str, name, alpha)
-   local p = math.ceil(#str / 2000)
+function split1(str, pattern, maxlen, fmt)
+   if fmt == nil then
+      fmt = '%s'
+   end
 
+   maxlen = maxlen - #fmt + 2
+
+   local len = #str
+
+   if len <= maxlen then
+      return { string.format(fmt, str) }
+   end
+
+   local ret = {}
+
+   local start = 1
+   local prev_i, prev_j
+   local i, j = string.find(str, pattern)
+
+   while i ~= nil do
+      if i - start > maxlen then
+         if prev_i ~= nil and prev_i > start then
+            table.insert(ret, string.format(fmt, string.sub(str, start, prev_i - 1)))
+            start = prev_j + 1
+         end
+         while i - start > maxlen do
+            table.insert(ret, string.format(fmt, string.sub(str, start, start + maxlen - 1)))
+            start = start + maxlen
+         end
+      end
+
+      prev_i, prev_j = i, j
+
+      i, j = string.find(str, pattern, j + 1)
+
+      if i == nil and prev_j < len then
+         i, j = len, len
+      end
+   end
+
+   if start < len then
+      table.insert(ret, string.format(fmt, string.sub(str, start, len)))
+   end
+
+   return ret
+end
+
+function do_showLongString(ls, name)
+   ui.addTextArea(ls.id, ls.pages[ls.page], name, 100, 80, 579, 284, nil, nil, ls.alpha)
+   ui.addTextArea(ls.id + 1, string.format('<a href="event:lsalpha%s"><p align="center"><font face="mono" size="15">%s</font></p></a>', name, ls.title), name, 100, 50, 400, 22, nil, nil, ls.alpha)
+   ui.addTextArea(ls.id + 2, string.format('<p align="center"><font face="mono" size="15"><a href="event:prev">&lt;</a> %d/%d <a href="event:next">&gt;</a></font></p>', ls.page, ls.maxPage), name, 508, 50, 148, 22, nil, nil, ls.alpha)
+   ui.addTextArea(ls.id + 3, CLOSE, name, 664, 50, 15, 22, nil, nil, ls.alpha)
+end
+
+function showLongString(title, str, name, alpha)
    if alpha == nil then
       alpha = 1
    end
 
-   playerData[name].longString = {
-      id = 110,
-      str = str,
-      page = 0,
-      maxPage = p - 1
-   }
+   local pages = split1(str, '\n', 2000, '<font face="mono" size="15">%s</font>')
+   local p = #pages
 
-   ui.addTextArea(110, string.sub(str, 1, 2000), name, 100, 80, 579, 284, nil, nil, alpha)
-   ui.addTextArea(111, string.format('<p align="center"><font face="mono" size="15">%s</font></p>', title), name, 100, 50, 400, 22, nil, nil, alpha)
-   ui.addTextArea(112, string.format('<p align="center"><font face="mono" size="15"><a href="event:prev">&lt;</a> 1/%d <a href="event:next">&gt;</a></font></p>', p), name, 508, 50, 148, 22, nil, nil, alpha)
-   ui.addTextArea(113, CLOSE, name, 664, 50, 15, 22, nil, nil, alpha)
+   ls = {
+      id = 110,
+      title = title,
+      pages = pages,
+      page = 1,
+      alpha = alpha,
+      maxPage = p
+   }
+   playerData[name].longString = ls
+
+   do_showLongString(ls, name)
 end
 
 function updateLongString(name, ls)
-   ui.updateTextArea(ls.id, string.sub(ls.str, ls.page * 2000 + 1, (ls.page + 1) * 2000), name)
-   ui.updateTextArea(ls.id + 2, string.format('<p align="center"><font face="mono" size="15"><a href="event:prev">&lt;</a> %d/%d <a href="event:next">&gt;</a></font></p>', ls.page + 1, ls.maxPage + 1), name)
+   ui.updateTextArea(ls.id, ls.pages[ls.page], name)
+   ui.updateTextArea(ls.id + 2, string.format('<p align="center"><font face="mono" size="15"><a href="event:prev">&lt;</a> %d/%d <a href="event:next">&gt;</a></font></p>', ls.page, ls.maxPage), name)
 end
 
 ----------------------------------------------------------------
@@ -320,7 +375,7 @@ function eventNewPlayer(name)
       newFunction = {},
       append = false
    }
-   ui.addTextArea(104, '<TI><a href="event:help">?</a>', name, 5, 25, 10, 20)
+   ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 35, 20)
    --tfm.exec.setShaman(name)
    respawn(name)
 end
@@ -369,20 +424,20 @@ function eventChatCommand(name, message)
    elseif cmdl == 'map' then
       setMap(arg)
    elseif cmdl == 'dir' then
-      local str = string.format('<font face="mono" size="15">', arg)
+      local str = ''
       local var = getfield(arg)
       if var ~= nil then
          for k, v in pairs(var) do
-            str = str .. k .. "\n"
+            str = str .. k .. '\n'
          end
-         showLongString(arg, str .. '</font>', name, 0.6)
+         showLongString(arg, str, name, 0.8)
       end
    elseif cmdl == 'dump' then
       local status, ret = pcall(call, dump, arg)
       if not status then
          alert(ret, name)
       else
-         showLongString(arg, string.format('<font face="mono" size="15">%s</font>', ret), name, 0.6)
+         showLongString(arg, ret, name, 0.8)
       end
    elseif cmdl == 'do' then
       data.append = true
@@ -448,7 +503,7 @@ function eventTextAreaCallback(id, name, callback)
    elseif callback == 'prev' then
       local ls = playerData[name].longString
       local p = ls.page
-      if p > 0 then
+      if p > 1 then
          ls.page = p - 1
       end
       updateLongString(name, ls)
@@ -460,6 +515,11 @@ function eventTextAreaCallback(id, name, callback)
       if id ~= 103 then
          playerData[name].longString = nil
       end
+   elseif string.sub(callback, 1, 7) == 'lsalpha' then
+      local name = string.sub(callback, 8)
+      local ls = playerData[name].longString
+      ls.alpha =  1.0 - ls.alpha
+      do_showLongString(ls, name)
    else
       local str = MODULE_HELP[callback]
       if str ~= nil then
