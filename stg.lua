@@ -50,7 +50,7 @@ Right - D, →</font>
 
 !bomb [type]
 
-!bind &lt;pattern&gt; key|obj|objend &lt;name|id&gt;
+!bind &lt;pattern&gt; key|obj|objend &lt;name|code&gt;
 
 !unbind [all]
 !unbind key|obj|objend [&lt;name|code&gt;]
@@ -67,6 +67,16 @@ Right - D, →</font>
     Cost: 1
     Duration: 10s
     Cooldown: 0s
+
+2 - 
+    Cost: 1
+    Duration: 10s
+    Cooldown: 2.5s
+
+3 - 
+    Cost: 1
+    Duration: 3s
+    Cooldown: 2.5s
 </font>
 ]],
       ['Pattern types'] = [[<font face="mono" size="15">1
@@ -85,6 +95,89 @@ function help(name)
    ui.addTextArea(101, string.format('<p align="center"><font face="mono" size="15">%s</font></p>', MODULE_HELP_START), name, 258, 50, 398, 20)
    ui.addTextArea(102, MODULE_HELP_CONTENTS, name, 100, 50, 150, 312)
    ui.addTextArea(103, CLOSE, name, 664, 50, 15, 20)
+end
+
+---------------------------------------------------------------------------
+
+function length(tbl)
+   local count = 0
+   for _ in pairs(tbl) do
+      count = count + 1
+   end
+   return count
+end
+
+function copy(dst, src)
+   if src ~= nil then
+      for k, v in pairs(src) do
+         dst[k] = v
+      end
+   end
+end
+
+function split(str)
+   local ret = {}
+   for s in string.gmatch(str, '[^%s]+') do
+      table.insert(ret, s)
+   end
+   return ret
+end
+
+function invert(t, value)
+   local ret = {}
+   if value == nil then
+      for k, v in pairs(t) do
+         ret[v] = k
+      end
+   else
+      for k, v in pairs(t) do
+         ret[v] = value
+      end
+   end
+   return ret
+end
+
+function keys(t)
+   local ret = {}
+   for k, _ in pairs(t) do
+      table.insert(ret, k)
+   end
+   return ret
+end
+
+function keys1(t)
+   local ret = keys(t)
+   table.sort(ret)
+   return ret
+end
+
+function randomKey1(tbl, excl_key, do_exclude)
+   local keys, i = {}, 1
+
+   for k, _ in pairs(tbl) do
+      if not (k == excl_key) then
+         keys[i] = k
+         i = i + 1
+      end
+   end
+
+   if i > 1 then
+      return keys[math.random(1,#keys)]
+   elseif do_exclude then
+      return nil
+   else
+      return excl_key
+   end
+end
+
+function randomValue1(tbl, excl_key, do_exclude)
+   local k = randomKey1(tbl, excl_key, do_exclude)
+
+   if k ~= nil then
+      return tbl[k]
+   else
+      return nil
+   end
 end
 
 ---------------------------------------------------------------------------
@@ -181,21 +274,68 @@ objcode = {
    windmill_anchor = 88
 }
 
-for k, v in pairs(tfm.enum.shamanObject) do
-   objcode[k] = v
-end
+particles = {
+   white = 0,
+   purple = 1,
+   orange = 2,
+   soft_white = 4,
+   teal = 9,
+   yellow = 11,
+   red = 13,
+
+   spawn = 3,
+
+   heart = 5,
+   red_heart = 30,
+   pink_heart = 31,
+
+   bubble = 6,
+   bubble1 = 7,
+   bubble2 = 8,
+   water = 14,
+
+   spirit = 10,
+   red_spirit = 12,
+
+   plus1 = 15,
+   plus10 = 16,
+   plus12 = 17,
+   plus14 = 18,
+   plus16 = 19,
+
+   meep = 20,
+
+   red_confetti = 21,
+   green_confetti = 22,
+   blue_confetti = 23,
+   yellow_confetti = 24,
+
+   rain = 25,
+   wind = 26,
+   wind1 = 27,
+   lightning = 28,
+
+   star = 29,
+   flower = 32
+}
 
 do
    local t = {'<font face="mono" size="15">'}
    local i
 
-   for k, v in pairs(objcode) do
+   for k, v in pairs(tfm.enum.shamanObject) do
+      objcode[k] = v
+   end
+
+   for v, k in ipairs(keys1(objcode)) do
       i = 15 - #k
       if i > 0 then
-         k = k .. string.rep(' ', i)
+         v = k .. string.rep(' ', i)
+      else
+         v = k
       end
 
-      table.insert(t, string.format('%s = %02d\n', k, v))
+      table.insert(t, string.format('%s = %4d\n', v, objcode[k]))
    end
 
    table.insert(t, '</font>')
@@ -206,73 +346,6 @@ end
 
 function randomColor()
    return string.format('0x%X', math.random(0x000000, 0xFFFFFF))
-end
-
-function tableLength(tbl)
-   local count = 0
-   for _ in pairs(tbl) do
-      count = count + 1
-   end
-   return count
-end
-
-function copy(dst, src)
-   if src ~= nil then
-      for k, v in pairs(src) do
-         dst[k] = v
-      end
-   end
-end
-
-function split(str)
-   local ret = {}
-   for s in string.gmatch(str, '[^%s]+') do
-      table.insert(ret, s)
-   end
-   return ret
-end
-
-function invert(t, value)
-   local ret = {}
-   if value == nil then
-      for k, v in pairs(t) do
-         ret[v] = k
-      end
-   else
-      for k, v in pairs(t) do
-         ret[v] = value
-      end
-   end
-   return ret
-end
-
-function randomKey1(tbl, excl_key, do_exclude)
-   local keys, i = {}, 1
-
-   for k,_ in pairs(tbl) do
-      if not (k == excl_key) then
-         keys[i] = k
-         i = i + 1
-      end
-   end
-
-   if i > 1 then
-      return keys[math.random(1,#keys)]
-   elseif do_exclude then
-      return nil
-   else
-      return excl_key
-   end
-end
-
-function randomValue1(tbl, excl_key, do_exclude)
-   local k = randomKey1(tbl, excl_key, do_exclude)
-
-   if k ~= nil then
-      return tbl[k]
-   else
-      return nil
-   end
 end
 
 ---------------------------------------------------------------------------
@@ -527,7 +600,7 @@ function homingShot(name, data)
       v = 128
    }
 
-   addObject(tfm.enum.shamanObject.anvil, x + vx, y + vy, 0, vx, vy, g, 10, moveHoming, args)
+   addObject(objcode.anvil, x + vx, y + vy, 0, vx, vy, g, 10, moveHoming, nil, args)
 
    local args = {
       target = target,
@@ -536,7 +609,7 @@ function homingShot(name, data)
       v = 128
    }
 
-   addObject(tfm.enum.shamanObject.anvil, x + vx, y - vy, 0, vx, -vy, g, 10, moveHoming, args)
+   addObject(objcode.anvil, x + vx, y - vy, 0, vx, -vy, g, 10, moveHoming, nil, args)
 end
 
 ---------------------------------------------------------------------------
@@ -544,11 +617,7 @@ end
 function nop(...)
 end
 
-function defaultBomb(name, data)
-   addBombTimer(name, tfm.get.room.playerList[name], data, true, 5)
-end
-
-function testBombCallback(name, data)
+function defaultBombCallback(name, data)
    local player = tfm.get.room.playerList[name]
 
    local yc = player.y + player.vy
@@ -571,13 +640,13 @@ function testBombCallback(name, data)
    for off = 20, 120, 20 do
       y = off * k
       x = xb + y * 1.5
-      addObject(tfm.enum.shamanObject.anvil, x, yc - y, 0, vx, -vy * k, false, ttl, accelerate, a)
-      addObject(tfm.enum.shamanObject.anvil, x, yc + y, 0, vx, vy * k, false, ttl, accelerate, a)
+      addObject(objcode..anvil, x, yc - y, 0, vx, -vy * k, false, ttl, accelerate, nil, a)
+      addObject(objcode..anvil, x, yc + y, 0, vx, vy * k, false, ttl, accelerate, nil, a)
       vy = vy + 1
    end
 end
 
-function testBomb(name, data)
+function defaultBomb(name, data)
    local player = tfm.get.room.playerList[name]
 
    if not player.isFacingRight then
@@ -587,6 +656,168 @@ function testBomb(name, data)
    end
 
    addBombTimer(name, player, data, true, 5)
+end
+
+function bomb2(name, data)
+   local player = tfm.get.room.playerList[name]
+
+   local x0, y0 = player.x, player.y
+   local center = string.format('%d,%d', x0, y0)
+
+   local ground = {
+      type = 12,
+      color='0xFFFFFF',
+      width = 512,
+      height = 8,
+      dynamic = true,
+      mass = 8,
+      restitution = 255,
+      linearDamping = 0,
+      angularDamping = 0,
+      groundCollision = false,
+      miceCollision = true
+   }
+   local ground1 = {
+      type = 13,
+      color = '0xFFFFFF',
+      width = 32,
+      height = 32,
+      dynamic = false,
+      groundCollision = false,
+      miceCollision = false,
+      foreground = false
+   }
+
+   local joint = {
+      type = 3,
+      point1 = center,
+      point2 = nil,
+      forceMotor = 255,
+      speedMotor = 2
+   }
+   local joint1 = {
+      type = 3,
+      point1 = center,
+      point2 = center,
+      ratio = 1,
+      limit1 = 0,
+      limit2 = 8
+   }
+   local joint2 = {
+      type = 0,
+      frequency = 10
+   }
+
+   local angle
+   local a
+   local x1, y1
+   local x, y
+   local off = 32.0 + ground.width / 2.0
+   local ttl = 20
+   local first = nil
+   local prev = nil
+   local id, id1
+
+   addBombTimer(name, player, data, true, 5)
+
+   id1 = addGround(x0, y0, ground1, ttl)
+
+   for angle = 0, 359, 120 do
+      a = angle * math.pi / 180.0
+
+      x1, y1 = math.cos(a), math.sin(a)
+      x, y = x0 + off * x1, y0 + off * y1
+
+      ground.angle = angle
+
+      id = addGround(x, y, ground, ttl)
+
+      addJoint(id, id1, joint, ttl)
+
+      if prev ~= nil then
+         addJoint(id, prev, joint1, ttl)
+         addJoint(id, prev, joint2, ttl)
+      else
+         first = id
+      end
+
+      prev = id
+   end
+
+   addJoint(first, id, joint1, ttl)
+   addJoint(first, id, joint2, ttl)
+end
+
+function bomb3(name, data)
+   local player = tfm.get.room.playerList[name]
+
+   local x0, y0 = player.x, player.y
+   local center = string.format('%d,%d', x0, y0)
+
+   local ground = {
+      type = 13,
+      color='0xFFFFFF',
+      width = 64,
+      height = 64,
+      dynamic = true,
+      mass = 1,
+      linearDamping = 0,
+      angularDamping = 0,
+      groundCollision = false,
+      miceCollision = false,
+      foreground = true
+   }
+
+   local joint = {
+      type = 1,
+      axis = '-1,0',
+      forceMotor = 255,
+      speedMotor = 2,
+      limit1 = 0,
+      limit2 = 5
+   }
+
+   local angle
+   local a
+   local x, y
+   local x1, y1
+   local off = 64.0 + ground.width
+   local ttl = 5
+   local id
+   local args
+
+   addBombTimer(name, player, data, true, 10)
+
+   local offset = {
+      [0] = 0.15,
+      [60] = 0.13,
+      [120] = 0.11,
+      [180] = 0.075,
+      [240] = 0.05,
+      [300] = 0
+   }
+
+   for angle = 0, 359, 60 do
+      a = angle * math.pi / 180.0
+
+      x1, y1 = math.cos(a), math.sin(a)
+      x, y = x0 + off * x1, y0 + off * y1
+
+      args = {
+         x = x0 + math.cos(a + offset[angle]) * 280,
+         y = y0 + math.sin(a + offset[angle]) * 280,
+         power = 127,
+         distance = 3 * ground.width,
+         miceOnly = false,
+         p1 = particles.red_spirit,
+         p2 = nil
+      }
+
+      id = addGround(x, y, ground, ttl, nil, explode, args)
+
+      joint.angle = 2.0 * math.pi - a
+      addJoint(id, 0, joint, ttl)
+   end
 end
 
 ---------------------------------------------------------------------------
@@ -615,6 +846,27 @@ function testPattern(name, data, id, points)
 end
 
 ---------------------------------------------------------------------------
+
+function explode(id, data)
+   local a = data.callback_args
+   addExplosion(a.x, a.y, a.power, a.distance, a.miceOnly, a.p1, a.p2)
+end
+
+function explode1(id, data)
+   local a = data.callback_args
+   if a.t <= 0 then
+      local k = randomKey1(tfm.get.room.playerList, data.user, true)
+      local x, y = 0, 0
+      if k ~= nil then
+         local target = tfm.get.room.playerList[k]
+         x, y = target.x, target.y
+      end
+      addExplosion(x, y, a.power, a.distance, a.miceOnly, a.p1, a.p2)
+      a.t = a.cd
+   else
+      a.t = a.t - 1
+   end
+end
 
 function accelerate(id, data)
    local a = data.callback_args
@@ -664,6 +916,7 @@ function addBombTimer(name, player, data, protect, scale)
       },
       data.bombTime,
       moveBombTimer,
+      nil,
       {
          player = name,
          pdata = data,
@@ -690,6 +943,7 @@ function addBombTimer(name, player, data, protect, scale)
       },
       data.bombTime,
       moveBombTimer,
+      nil,
       {
          player = name,
          pdata = data,
@@ -751,8 +1005,8 @@ shotTypes = {
 bombTypes = {
    {
       name = 'default bomb',
-      func = testBomb,
-      callback = testBombCallback,
+      func = defaultBomb,
+      callback = defaultBombCallback,
       shot = {
          func = nop,
          cd = 1
@@ -760,13 +1014,36 @@ bombTypes = {
       cost = 1,
       time = 20,
       cd = 0
+   },
+   {
+      name = '',
+      func = bomb2,
+      callback = nil,
+      shot = {
+         func = nop,
+         cd = 1
+      },
+      cost = 1,
+      time = 20,
+      cd = 5
+   },
+   {
+      name = '',
+      func = bomb3,
+      callback = nil,
+      shot = {
+         func = nop,
+         cd = 1
+      },
+      cost = 1,
+      time = 6,
+      cd = 5
    }
 }
 
 patternTypes = {
    {
       func = testPattern,
-
       time = 0,
       callback = nil,
 
@@ -791,17 +1068,28 @@ eventCode = {
 
 playerConfig = {
    Cafecafe = {
-      color='0xB06FFD'
+      bomb = bombTypes[3],
+      color = '0xB06FFD'
    }
 }
-
-playerShot = {}
-playerBomb = {}
 
 defaultMap='<C><P G="0,0" /><Z><S /><D><DS Y="216" X="89" /></D><O /></Z></C>'
 maxLives = 8
 maxBombs = 6
 
+do_addObject = tfm.exec.addShamanObject
+do_removeObject = tfm.exec.removeObject
+do_addGround = tfm.exec.addPhysicObject
+do_removeGround = tfm.exec.removePhysicObject
+do_addJoint = tfm.exec.addJoint
+do_removeJoint = tfm.exec.removeJoint
+do_respawn = tfm.exec.respawnPlayer
+do_addExplosion = tfm.exec.explosion
+addParticle = tfm.exec.displayParticle
+setShaman = tfm.exec.setShaman
+setShamanName = tfm.exec.setUIShamanName
+setMapName = tfm.exec.setUIMapName
+setNameColor = tfm.exec.setNameColor
 movePlayer = tfm.exec.movePlayer
 moveObject = tfm.exec.moveObject
 setMap = tfm.exec.newGame
@@ -810,8 +1098,8 @@ kill = tfm.exec.killPlayer
 
 ---------------------------------------------------------------------------
 
-function addObject(type, x, y, angle, vx, vy, ghost, ttl, func, args)
-   local id = tfm.exec.addShamanObject(type, x, y, angle, vx, vy, ghost)
+function addObject(type, x, y, angle, vx, vy, ghost, ttl, func, func1, args)
+   local id = do_addObject(type, x, y, angle, vx, vy, ghost)
 
    if ttl == nil then
       ttl = 3
@@ -820,6 +1108,7 @@ function addObject(type, x, y, angle, vx, vy, ghost, ttl, func, args)
    objectData[id] = {
       time = ttl,
       callback = func,
+      on_remove = func1,
       callback_args = args
    }
 
@@ -827,50 +1116,14 @@ function addObject(type, x, y, angle, vx, vy, ghost, ttl, func, args)
 end
 
 function removeObject(id)
-   tfm.exec.removeObject(id)
+   do_removeObject(id)
    objectData[id] = nil
 end
 
-function addJoint(ground0, ground1, other, ttl)
-   local id = newId(jointId)
-
-   --[[local d = groundData[ground0]
-   if d ~= nil then
-      table.insert(d.joints, id)
-   else
-      d = groundData[ground1]
-      if d ~= nil then
-         table.insert(d.joints, id)
-      end
-   end]]--
-
-   tfm.exec.addJoint(id, ground0, ground1, other)
-
-   if ttl == nil then
-      ttl = -1
-   end
-
-   if other == nil then
-      other = {}
-   end
-
-   jointData[id] = {
-      time = ttl
-   }
-
-   return id
-end
-
-function removeJoint(id)
-   tfm.exec.removeJoint(id)
-   jointData[id] = nil
-   freeId(jointId, id)
-end
-
-function addGround(x, y, other, ttl, func, args)
+function addGround(x, y, other, ttl, func, func1, args)
    local id = newId(groundId)
 
-   tfm.exec.addPhysicObject(id, x, y, other)
+   do_addGround(id, x, y, other)
 
    if ttl == nil then
       ttl = 3
@@ -883,6 +1136,7 @@ function addGround(x, y, other, ttl, func, args)
    groundData[id] = {
       time = ttl,
       callback = func,
+      on_remove = func1,
       callback_args = args,
       move_args = other,
       joints={}
@@ -904,7 +1158,7 @@ function moveGround(id, x, y, other, ttl)
          end
       end
 
-      tfm.exec.addPhysicObject(id, x, y, data.move_args)
+      do_addGround(id, x, y, data.move_args)
    end
 end
 
@@ -912,9 +1166,45 @@ function removeGround(id)
    for k, v in pairs(groundData[id].joints) do
       removeJoint(v)
    end
-   tfm.exec.removePhysicObject(id)
+   do_removeGround(id)
    groundData[id] = nil
    freeId(groundId, id)
+end
+
+function addJoint(ground0, ground1, other, ttl)
+   local id = newId(jointId)
+
+   --[[local d = groundData[ground0]
+   if d ~= nil then
+      table.insert(d.joints, id)
+   else
+      d = groundData[ground1]
+      if d ~= nil then
+         table.insert(d.joints, id)
+      end
+   end]]--
+
+   do_addJoint(id, ground0, ground1, other)
+
+   if ttl == nil then
+      ttl = -1
+   end
+
+   if other == nil then
+      other = {}
+   end
+
+   jointData[id] = {
+      time = ttl
+   }
+
+   return id
+end
+
+function removeJoint(id)
+   do_removeJoint(id)
+   jointData[id] = nil
+   freeId(jointId, id)
 end
 
 function addPattern(name, data, ptype, points)
@@ -938,6 +1228,17 @@ end
 function removePattern(id)
    patternData[id] = nil
    freeId(patternId, id)
+end
+
+function addExplosion(x, y, power, distance, miceOnly, particle1, particle2)
+   if particle1 ~= nil then
+      addParticle(particle1, x, y, 0, 0, 0, 0)
+   end
+
+   if particle2 ~= nil then
+   end
+
+   do_addExplosion(x, y, power, distance, miceOnly)
 end
 
 ---------------------------------------------------------------------------
@@ -989,9 +1290,9 @@ function initPlayer(name)
    ui.addTextArea(1, getText(data), name, 5, 25, 150, 38)
    ui.addTextArea(104, '<TI><a href="event:help">?</a>', name, 145, 25, 10, 20)
 
-   tfm.exec.respawnPlayer(name)
-   tfm.exec.setShaman(name)
-   tfm.exec.setNameColor(name, playerData[name].color)
+   do_respawn(name)
+   setShaman(name)
+   setNameColor(name, playerData[name].color)
 end
 
 function resetPlayer(name)
@@ -1015,9 +1316,9 @@ function resetPlayer(name)
 
    updateTextAreas(name, data)
 
-   tfm.exec.respawnPlayer(name)
-   tfm.exec.setShaman(name)
-   tfm.exec.setNameColor(name, data.color)
+   do_respawn(name)
+   setShaman(name)
+   setNameColor(name, data.color)
 end
 
 function deletePlayer(name)
@@ -1030,8 +1331,8 @@ function deletePlayer(name)
 end
 
 function respawn(name)
-   tfm.exec.respawnPlayer(name)
-   tfm.exec.setNameColor(name, playerData[name].color)
+   do_respawn(name)
+   setNameColor(name, playerData[name].color)
 end
 
 ---------------------------------------------------------------------------
@@ -1144,12 +1445,12 @@ function parsePlayerNames(name, arg, func)
       if v == 'me' then
          players[name] = b
       elseif v == 'all' then
-         for k, v in pairs(tfm.get.room.playerList) do
+         for k, v in pairs(playerData) do
             players[k] = b
          end
       else
          v = string.gsub(v, '^%l', string.upper)
-         if tfm.get.room.playerList[v] == nil then
+         if playerData[v] == nil then
             alert('Invalid player: ' .. v, name)
             return
          else
@@ -1276,7 +1577,7 @@ function eventChatCommand(name, message)
 
       j = arg[2]
       if j ~= 'key' and j ~= 'obj' and j ~= 'objend' then
-         alert('Invalid type: ' .. j, name)
+         alert('Invalid event: ' .. j, name)
          return
       end
 
@@ -1328,7 +1629,7 @@ function eventChatCommand(name, message)
       if i == 'all' or i == nil then
          unbind(name)
       elseif i ~= 'key' and i ~= 'obj' and i ~= 'objend' then
-         alert('Invalid type: ' .. i, name)
+         alert('Invalid event: ' .. i, name)
          return
       else
          if arg[2] == nil then
@@ -1390,10 +1691,10 @@ function eventNewGame()
       resetPlayer(name)
    end
 
-   tfm.exec.setUIMapName('<TI>')
-   tfm.exec.setUIShamanName('')
+   setMapName('<TI>')
+   setShamanName('')
 
-   tfm.exec.addPhysicObject(0, 0, 0, {type=13, width=10, height=10, color='0xFFFFFF', dynamic=false, miceCollision=false, groundCollision=false})
+   do_addGround(0, 0, 0, {type=13, width=10, height=10, color='0xFFFFFF', dynamic=false, miceCollision=false, groundCollision=false})
 end
 
 function eventKeyboard(name, key, down, x, y)
@@ -1499,11 +1800,7 @@ function eventPlayerDied(name)
 end
 
 function eventLoop(ctime, rtime)
-   local player
-   local x, y
-
-   local vx = 50
-   local vy = 10
+   clearT()
 
    for name, data in pairs(playerData) do
       if data.shot_cd > 0 then
@@ -1530,8 +1827,6 @@ function eventLoop(ctime, rtime)
          end
       end
    end
-
-   clearT()
 end
 
 function eventTextAreaCallback(id, name, callback)
@@ -1551,7 +1846,7 @@ function eventTextAreaCallback(id, name, callback)
    end
 end
 
-system.disableChatCommandDisplay('help', true)
+--system.disableChatCommandDisplay('help', true)
 
 for k, v in pairs(tfm.get.room.playerList) do
    initPlayer(k)
