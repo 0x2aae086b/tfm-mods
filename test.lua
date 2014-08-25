@@ -38,7 +38,7 @@ MODULE_HELP = {
 
 !dump &lt;value&gt;
 
-!&lt;function&gt; [&lt;values&gt;]
+!&lt;function&gt; [&lt;value&gt;...]
 
 !do
 
@@ -54,10 +54,10 @@ MODULE_HELP = {
 CLOSE='<TI><a href="event:close"><p align="center">X</p></a>'
 
 function help(name)
-   ui.addTextArea(100, MODULE_HELP[MODULE_HELP_START], name, 258, 78, 421, 284)
-   ui.addTextArea(101, string.format('<p align="center"><font face="mono" size="15">%s</font></p>', MODULE_HELP_START), name, 258, 50, 398, 20)
-   ui.addTextArea(102, MODULE_HELP_CONTENTS, name, 100, 50, 150, 312)
-   ui.addTextArea(103, CLOSE, name, 664, 50, 15, 20)
+   ui.addTextArea(100, MODULE_HELP[MODULE_HELP_START], name, 258, 78, 421, 284, nil, nil, nil, true)
+   ui.addTextArea(101, string.format('<p align="center"><font face="mono" size="15">%s</font></p>', MODULE_HELP_START), name, 258, 50, 398, 20, nil, nil, nil, true)
+   ui.addTextArea(102, MODULE_HELP_CONTENTS, name, 100, 50, 150, 312, nil, nil, nil, true)
+   ui.addTextArea(103, CLOSE, name, 664, 50, 15, 20, nil, nil, nil, true)
 end
 
 ----------------------------------------------------------------
@@ -110,10 +110,10 @@ function split1(str, pattern, maxlen, fmt)
 end
 
 function do_showLongString(ls, name)
-   ui.addTextArea(ls.id, ls.pages[ls.page], name, 100, 80, 579, 284, nil, nil, ls.alpha)
-   ui.addTextArea(ls.id + 1, string.format('<a href="event:lsalpha%s"><p align="center"><font face="mono" size="15">%s</font></p></a>', name, ls.title), name, 100, 50, 400, 22, nil, nil, ls.alpha)
-   ui.addTextArea(ls.id + 2, string.format('<p align="center"><font face="mono" size="15"><a href="event:prev">&lt;</a> %d/%d <a href="event:next">&gt;</a></font></p>', ls.page, ls.maxPage), name, 508, 50, 148, 22, nil, nil, ls.alpha)
-   ui.addTextArea(ls.id + 3, CLOSE, name, 664, 50, 15, 22, nil, nil, ls.alpha)
+   ui.addTextArea(ls.id, ls.pages[ls.page], name, 100, 80, 579, 284, nil, nil, ls.alpha, true)
+   ui.addTextArea(ls.id + 1, string.format('<a href="event:lsalpha%s"><p align="center"><font face="mono" size="15">%s</font></p></a>', name, ls.title), name, 100, 50, 400, 22, nil, nil, ls.alpha, true)
+   ui.addTextArea(ls.id + 2, string.format('<p align="center"><font face="mono" size="15"><a href="event:prev">&lt;</a> %d/%d <a href="event:next">&gt;</a></font></p>', ls.page, ls.maxPage), name, 508, 50, 148, 22, nil, nil, ls.alpha, true)
+   ui.addTextArea(ls.id + 3, CLOSE, name, 664, 50, 15, 22, nil, nil, ls.alpha, true)
 end
 
 function showLongString(title, str, name, alpha)
@@ -145,18 +145,32 @@ end
 ----------------------------------------------------------------
 
 function getfield(var, err)
-   local v = _G
-   for w in string.gmatch(var, '[%w_]+') do
-      if type(v) ~= 'table' then
+   local t = _G
+
+   for p, k in string.gmatch(var, '([[.]?)([^][.]+)') do
+      if type(t) ~= 'table' then
          if err then
             error('Invalid field: ' .. var)
          else
             return nil
          end
       end
-      v = v[w]
+
+      if p == '[' then
+         k = do_parse_arg(k, nil)
+         if k == nil then
+            if err then
+               error('Invalid field: ' .. var)
+            else
+               return nil
+            end
+         end
+      end
+
+      t = t[k]
    end
-   return v
+
+   return t
 end
 
 dump_func = {
@@ -175,7 +189,7 @@ dump_func = {
    end,
 
    ['number'] = function(var, ...)
-      return var
+      return tostring(var)
    end,
 
    ['boolean'] = function(var, ...)
@@ -259,7 +273,11 @@ function do_parse_arg(str, iter)
    elseif str == 'nil' then
       return nil
    elseif str == '{' then
-      return parse_arg(iter, str)
+      if iter ~= nil then
+         return parse_arg(iter, str)
+      else
+         return nil
+      end
    else
       local tmp = string.sub(str, 1, 1)
       if tmp == '"' or tmp == "'" then
@@ -375,7 +393,7 @@ function eventNewPlayer(name)
       newFunction = {},
       append = false
    }
-   ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 35, 20)
+   ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 35, 20, nil, nil, nil, true)
    --tfm.exec.setShaman(name)
    respawn(name)
 end
@@ -391,6 +409,10 @@ function eventChatCommand(name, message)
    local arg
    local status, err
    local data = playerData[name]
+
+   for k, v in ipairs({{'&lt;', '<'}, {'&amp;', '&'}}) do
+      message = string.gsub(message, v[1], v[2])
+   end
 
    while true do
       i, j = string.find(message, "%s+")
