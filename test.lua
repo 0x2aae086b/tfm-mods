@@ -31,7 +31,7 @@ MODULE_HELP = {
 !reset
     tfm.exec.newGame(defaultMap)
 
-!map
+!map [&lt;map&gt;]
     tfm.exec.newGame()
 
 !dir &lt;variable&gt;
@@ -546,7 +546,7 @@ function eventTextAreaCallback(id, name, callback)
       local str = MODULE_HELP[callback]
       if str ~= nil then
          ui.updateTextArea(100, str, name)
-         ui.updateTextArea(101, string.format('<TI><p align="center">%s</p>', callback), name)
+         ui.updateTextArea(101, string.format('<font face="mono" size="15"><p align="center">%s</p></font>', callback), name)
       end
    end
 end
