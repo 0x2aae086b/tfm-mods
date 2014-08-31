@@ -3,7 +3,7 @@
    the extent permitted by applicable law. You can redistribute it
    and/or modify it under the terms of the Do What The Fuck You Want
    To Public License, Version 2, as published by Sam Hocevar. See
-   the COPYING file for more details.
+   http://www.wtfpl.net/ for more details.
 ]]--
 
 defaultMap = '0'
@@ -84,11 +84,11 @@ function split1(str, pattern, maxlen, fmt)
    while i ~= nil do
       if i - start > maxlen then
          if prev_i ~= nil and prev_i > start then
-            table.insert(ret, string.format(fmt, string.sub(str, start, prev_i - 1)))
+            ret[#ret + 1] = string.format(fmt, string.sub(str, start, prev_i - 1))
             start = prev_j + 1
          end
          while i - start > maxlen do
-            table.insert(ret, string.format(fmt, string.sub(str, start, start + maxlen - 1)))
+            ret[#ret + 1] = string.format(fmt, string.sub(str, start, start + maxlen - 1))
             start = start + maxlen
          end
       end
@@ -103,7 +103,7 @@ function split1(str, pattern, maxlen, fmt)
    end
 
    if start < len then
-      table.insert(ret, string.format(fmt, string.sub(str, start, len)))
+      ret[#ret + 1] = string.format(fmt, string.sub(str, start, len))
    end
 
    return ret
@@ -212,19 +212,19 @@ dump_func = {
       local off1 = off .. ' '
 
       for k, v in pairs(var) do
-         table.insert(ret, off1 .. '[')
-         table.insert(ret, dump_func[type(k)](k, off1))
-         table.insert(ret, '] = ')
-         table.insert(ret, dump_func[type(v)](v, off1))
-         table.insert(ret, ",\n")
+         ret[#ret + 1] = off1 .. '['
+         ret[#ret + 1] = dump_func[type(k)](k, off1)
+         ret[#ret + 1] = '] = '
+         ret[#ret + 1] = dump_func[type(v)](v, off1)
+         ret[#ret + 1] = ',\n'
       end
 
       local i = #ret
       if i > 1 then
-         ret[i] = "\n"
+         ret[i] = '\n'
       end
 
-      table.insert(ret, off .. '}')
+      ret[#ret + 1] = off .. '}'
 
       return table.concat(ret)
    end
@@ -236,16 +236,19 @@ end
 
 ----------------------------------------------------------------
 
-function do_unpack(t, i)
-   if t[i] ~= nil then
-      return t[i], do_unpack(t, i + 1)
+function do_unpack(t, i, n)
+   if i <= n then
+      return t[i], do_unpack(t, i + 1, n)
    else
       return nil
    end
 end
 
-function unpack(t)
-   return do_unpack(t, 1)
+function unpack(t, n)
+   if n == nil then
+      n = #t
+   end
+   return do_unpack(t, 1, n)
 end
 
 unescape_map = {
@@ -349,19 +352,21 @@ end
 
 function call(func, args_s, get)
    local args = {}
+   local argc = 0
    local iter = string.gmatch(args_s, '[^%s]+')
 
    local arg, exit = parse_arg(iter)
 
    while not exit do
-      table.insert(args, arg)
+      argc = argc + 1
+      args[argc] = arg
       arg, exit = parse_arg(iter)
    end
 
    if get then
-      return { func, args }
+      return { func, args, argc }
    else
-      return func(unpack(args))
+      return func(unpack(args, argc))
    end
 end
 
@@ -375,7 +380,7 @@ function clear()
    local ids={}
 
    for i, object in pairs(tfm.get.room.objectList) do
-      table.insert(ids, i)
+      ids[#ids + 1] = i
    end
 
    for k, v in ipairs(ids) do
@@ -483,7 +488,7 @@ function eventChatCommand(name, message)
       local func = getfield(cmd)
       if type(func) == 'function' then
          if data.append then
-            table.insert(data.newFunction, {func, arg})
+            data.newFunction[#data.newFunction + 1] = {func, arg}
          else
             data.lastFunction = {{func, arg}}
             status, err = pcall(call, func, arg)
