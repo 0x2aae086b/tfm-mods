@@ -126,7 +126,7 @@ function bomb2(name, data)
 
    local ground = {
       type = 12,
-      color='0xFFFFFF',
+      color=0xFFFFFF,
 	  foreground = true,
       width = 512,
       height = 8,
@@ -140,7 +140,7 @@ function bomb2(name, data)
    }
    local ground1 = {
       type = 13,
-      color = '0xFFFFFF',
+      color = 0xFFFFFF,
       width = 32,
       height = 32,
       dynamic = false,
@@ -217,7 +217,7 @@ function bomb3(name, data)
 
    local ground = {
       type = 13,
-      color='0xFFFFFF',
+      color = 0xFFFFFF,
       width = 64,
       height = 64,
       dynamic = true,

@@ -47,7 +47,7 @@ function eventNewGame()
    setMapName('<TI>')
    setShamanName('')
 
-   do_addGround(0, 0, 0, {type=13, width=10, height=10, color='0xFFFFFF', dynamic=false, miceCollision=false, groundCollision=false})
+   do_addGround(0, 0, 0, {type=13, width=10, height=10, color=0xFFFFFF, dynamic=false, miceCollision=false, groundCollision=false})
 end
 
 function eventKeyboard(name, key, down, x, y)

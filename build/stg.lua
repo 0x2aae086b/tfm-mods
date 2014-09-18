@@ -318,7 +318,7 @@ function line(x0, y0, x1, y1, width, other)
       type = 12,
       width = math.sqrt(x * x + y * y),
       height = h,
-      color = '0xFFFFFF',
+      color = 0xFFFFFF,
       groundCollision = false,
       miceCollision = true,
       angle = math.atan2(y, x) * 180.0 / math.pi,
@@ -809,6 +809,318 @@ function addExplosion(x, y, power, distance, miceOnly, particle1, particle2)
 
    do_addExplosion(x, y, power, distance, miceOnly)
 end
+function addGround1(t, x, y, other)
+   local id = newId(groundId)
+   do_addGround(id, x, y, other)
+   t[#t + 1] = id
+end
+
+function addJoint1(t, id1, id2, other)
+   local id = newId(jointId)
+   do_addJoint(id, id1, id2, other)
+   t[#t + 1] = id
+end
+
+function do_addControl(controls, control)
+   controls[#controls + 1] = control
+end
+
+function do_removeControl(controls, control)
+   local i = #controls
+   while i > 0 and controls[i] ~= control do
+      controls[i] = nil
+      i = i - 1
+   end
+   --[[if i > 0 then
+      while controls[i] do
+         controls[i] = nil
+         i = i + 1
+      end
+   end]]--
+end
+
+function addBullet(btype, ttl, callback, on_remove, args, ...)
+   local id = newId(bulletId)
+
+   local control, grounds, joints = btype(...)
+
+   bulletData[id] = {
+      controls = { control },
+      grounds = grounds,
+      joints = joints,
+      time = ttl or 6,
+      callback = callback,
+      on_remove = on_remove,
+      callback_args = args
+   }
+
+   return id
+end
+
+function removeBullet(id)
+   local data = bulletData[id]
+
+   for k, v in ipairs(data.grounds) do
+      do_removeGround(v)
+      freeId(groundId, v)
+   end
+
+   for k, v in ipairs(data.joints) do
+      do_removeJoint(v)
+      freeId(jointId, v)
+   end
+
+   bulletData[id] = nil
+   freeId(bulletId, id)
+end
+bullet = {}
+
+bullet.circle = function(x, y, jdata, hitbox_data)
+   local point2 = string.format('%d,%d', x, y + 1)
+
+   local joint = {
+      type = 0,
+      point2 = point2,
+      color = 0xFFFFFF,
+      line = 32,
+      foreground = true
+   }
+
+   local hitbox = {
+      type = 13,
+      width = 16,
+      height = 16,
+      miceCollision = true,
+      groundCollision = false,
+      dynamic = true,
+      restitution = 255
+   }
+
+   if hitbox_data ~= nil then
+      copy(hitbox, hitbox_data)
+   end
+
+   local id0 = newId(groundId)
+   do_addGround(id0, x, y, hitbox)
+
+   local joints = {}
+
+   for _, v in ipairs(jdata) do
+      copy(joint, v)
+      addJoint1(joints, id0, id0, joint)
+   end
+
+   return id0, {id0}, joints
+end
+
+bullet.jstar = function(x, y, angle, R, points, step, line_jdata, center_jdata, hitbox_data)
+   local star = make_star(points, step)
+
+   local line = {
+      type = 0,
+      color = 0xFFFFFF,
+      line = 5,
+      foreground = true
+   }
+
+   local tmp = R * star.r
+
+   local center = {
+      type = 0,
+      point1 = string.format('%d,%d', x, y),
+      point2 = string.format('%d,%d', x, y + 1),
+      color = 0xFFFFFF,
+      line = tmp * 2,
+      foreground = true
+   }
+
+   local hitbox = {
+      type = 13,
+      width = tmp,
+      height = tmp,
+      dynamic = true,
+      miceCollision = true,
+      groundCollision = false,
+      restitution = 255
+   }
+
+   if line_jdata ~= nil then
+      copy(line, line_jdata)
+   end
+
+   if center_jdata ~= nil then
+      copy(center, center_jdata)
+   end
+
+   if hitbox_data ~= nil then
+      copy(hitbox, hitbox_data)
+   end
+
+   local joints = {}
+   local pts = {}
+
+   local x1, y1
+   local c, s = math.cos(angle), math.sin(angle)
+
+   for k, v in ipairs(star.points) do
+      x1, y1 = v[1] * c - v[2] * s, v[1] * s + v[2] * c
+      pts[#pts + 1] = string.format('%d,%d', x + R * x1, y + R * y1)
+   end
+
+   local id0 = newId(groundId)
+   do_addGround(id0, x, y, hitbox)
+
+   for i = 1, points do
+      line.point1 = pts[i]
+      line.point2 = pts[1 + (i + step - 1) % points]
+      addJoint1(joints, id0, id0, line)
+   end
+
+   addJoint1(joints, id0, id0, center)
+
+   return id0, {id0}, joints
+end
+
+bullet.star = function(x, y, angle, R, points, step, do_cap, line_data, center_data, cap_data)
+   local star = make_star(points, step)
+
+   local line = {
+      type = 12,
+      height = 1,
+      color = 0xFFFFFF,
+      groundCollision = false,
+      miceCollision = false,
+      dynamic = true,
+      foreground = true,
+      restitution = 255
+   }
+
+   local tmp = R * star.r
+
+   local center = {
+      type = 13,
+      width = tmp,
+      height = tmp,
+      color = 0xFFFFFF,
+      groundCollision = false,
+      miceCollision = true,
+      dynamic = true,
+      foreground = true,
+      restitution = 255
+   }
+
+   local cap = {
+      type = 13,
+      color = 0xFFFFFF,
+      groundCollision = false,
+      miceCollision = false,
+      dynamic = true,
+      foreground = true,
+      restitution = 255
+   }
+
+   tmp = string.format('%d,%d', x, y)
+
+   local joint1 = {
+      type = 3,
+      point1 = tmp,
+      point2 = tmp,
+      ratio = 1,
+      limit1 = 0,
+      limit2 = 0
+   }
+
+   local joint2 = {
+      type = 0,
+      frequency = 10
+   }
+
+   if line_data ~= nil then
+      copy(line, line_data)
+   end
+
+   if center_data ~= nil then
+      copy(center, center_data)
+   end
+
+   if cap_data ~= nil then
+      copy(cap, cap_data)
+   end
+
+   local lines, caps, joints = {}, {}, {}
+
+   local x1, y1
+   local a = angle * 180.0 / math.pi
+   local c, s = math.cos(angle), math.sin(angle)
+
+   for k, v in ipairs(star.lines) do
+      line.angle = v.angle + a
+      line.width = v.width * R
+      x1, y1 = v.x * c - v.y * s, v.x * s + v.y * c
+      addGround1(lines, x + R * x1, y + R * y1, line)
+   end
+
+   if do_cap then
+      for k, v in ipairs(star.points) do
+         x1, y1 = v[1] * c - v[2] * s, v[1] * s + v[2] * c
+         addGround1(caps, x + R * x1, y + R * y1, cap)
+      end
+   end
+
+   local id0 = newId(groundId)
+   do_addGround(id0, x, y, center)
+
+   if line.dynamic then
+      local prev, first = nil, nil
+
+      for k, v in ipairs(lines) do
+         addJoint1(joints, v, id0, joint1)
+
+         if prev ~= nil then
+            addJoint1(joints, v, prev, joint2)
+         else
+            first = v
+         end
+
+         prev = v
+      end
+
+      addJoint1(joints, first, prev, joint2)
+   elseif center.dynamic then
+      for k, v in ipairs(lines) do
+         addJoint1(joints, v, id0, joint1)
+      end
+   end
+
+   if do_cap then
+      if cap.dynamic then
+         local prev, first = nil, nil
+
+         for i = 1, points do
+            addJoint1(joints, caps[i], lines[i], joint1)
+
+            if prev ~= nil then
+               addJoint1(joints, caps[i], prev, joint2)
+            else
+               first = caps[i]
+            end
+
+            prev = caps[i]
+         end
+
+         addJoint1(joints, first, prev, joint2)
+      elseif line.dynamic then
+         for i = 1, points do
+            addJoint1(joints, caps[i], lines[i], joint1)
+         end
+      end
+   end
+
+   append(lines, caps)
+   lines[#lines + 1] = id0
+
+   return id0, lines, joints
+end
 function bomb(name, data)
    if data.bomb_cd == 0 and not data.bombing then
       if data.bombs >= data.bomb.cost then
@@ -982,7 +1294,7 @@ function bomb2(name, data)
 
    local ground = {
       type = 12,
-      color='0xFFFFFF',
+      color=0xFFFFFF,
 	  foreground = true,
       width = 512,
       height = 8,
@@ -996,7 +1308,7 @@ function bomb2(name, data)
    }
    local ground1 = {
       type = 13,
-      color = '0xFFFFFF',
+      color = 0xFFFFFF,
       width = 32,
       height = 32,
       dynamic = false,
@@ -1073,7 +1385,7 @@ function bomb3(name, data)
 
    local ground = {
       type = 13,
-      color='0xFFFFFF',
+      color = 0xFFFFFF,
       width = 64,
       height = 64,
       dynamic = true,
@@ -1261,10 +1573,18 @@ function defaultShot(name, data)
       k = '1,0'
       x = x - 32
    end
-   local id = addGround(x, y + 32, {type=13, width=8, height=8, restitution=255, mass=10, dynamic=true, miceCollision=true, groundCollision=false, color='0xFFFFFF', foreground=true}, 6)
+   local id = addBullet(bullet.jstar, 6, nil, nil, nil, x, y + 32, 0, 16, 5, 2, {color=randomColor()}, nil, nil)
+   local bdata = bulletData[id]
+
+   local id1 = addBullet(bullet.jstar, 6, nil, nil, nil, x, y - 32, 0, 16, 5, 2, {color=randomColor()}, nil, nil)
+   local bdata1 = bulletData[id1]
+   addJoint(bdata.controls[#bdata.controls], 0, {type=1, axis=k, forceMotor=255, speedMotor=255}, 6)
+   addJoint(bdata1.controls[#bdata1.controls], 0, {type=1, axis=k, forceMotor=255, speedMotor=255}, 6)
+
+   --[[local id = addGround(x, y + 32, {type=13, width=8, height=8, restitution=255, mass=10, dynamic=true, miceCollision=true, groundCollision=false, color=0xFFFFFF, foreground=true}, 6)
    addJoint(id, 0, {color='0x00FFFF', line=2, type=1, axis=k, forceMotor=100, speedMotor=100}, 6)
-   id = addGround(x, y - 32, {type=13, width=8, height=8, restitution=255, mass=10, dynamic=true, miceCollision=true, groundCollision=false, color='0xFFFFFF', foreground=true}, 6)
-   addJoint(id, 0, {color='0x00FFFF', line=2, type=1, axis=k, forceMotor=100, speedMotor=100}, 6)
+   id = addGround(x, y - 32, {type=13, width=8, height=8, restitution=255, mass=10, dynamic=true, miceCollision=true, groundCollision=false, color=0xFFFFFF, foreground=true}, 6)
+	  addJoint(id, 0, {color='0x00FFFF', line=2, type=1, axis=k, forceMotor=100, speedMotor=100}, 6)]]--
 end
 
 function homingShot(name, data)
@@ -1851,7 +2171,7 @@ function eventNewGame()
    setMapName('<TI>')
    setShamanName('')
 
-   do_addGround(0, 0, 0, {type=13, width=10, height=10, color='0xFFFFFF', dynamic=false, miceCollision=false, groundCollision=false})
+   do_addGround(0, 0, 0, {type=13, width=10, height=10, color=0xFFFFFF, dynamic=false, miceCollision=false, groundCollision=false})
 end
 
 function eventKeyboard(name, key, down, x, y)

@@ -40,7 +40,7 @@ function line(x0, y0, x1, y1, width, other)
       type = 12,
       width = math.sqrt(x * x + y * y),
       height = h,
-      color = '0xFFFFFF',
+      color = 0xFFFFFF,
       groundCollision = false,
       miceCollision = true,
       angle = math.atan2(y, x) * 180.0 / math.pi,
