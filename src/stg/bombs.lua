@@ -127,7 +127,7 @@ function bomb2(name, data)
    local ground = {
       type = 12,
       color=0xFFFFFF,
-	  foreground = true,
+      foreground = true,
       width = 512,
       height = 8,
       dynamic = true,

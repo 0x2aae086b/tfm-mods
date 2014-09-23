@@ -5,31 +5,6 @@ jointData = {}
 patternData = {}
 bulletData = {}
 
-groundId = {
-   max = 0,
-   free = {}
-}
-
-jointId = {
-   max = 0,
-   free = {}
-}
-
-patternId = {
-   max = 0,
-   free = {}
-}
-
-bulletId = {
-   max = 0,
-   free = {}
-}
-
-bombs = {
-   top = 0,
-   val = {}
-}
-
 playerKeys = { 32, 83, 40, 100, 101, 102, 104, 81, 68, 69, 82, 87, 37, 39 }
 reservedKeys = invert(playerKeys, true)
 

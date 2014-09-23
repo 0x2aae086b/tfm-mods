@@ -92,7 +92,6 @@ function alert(str, name)
 end
 
 function randomColor()
-   --return string.format('0x%X', math.random(0x000000, 0xFFFFFF))
    return math.random(0x000000, 0xFFFFFF)
 end
 

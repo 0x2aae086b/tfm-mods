@@ -153,9 +153,29 @@ function eventPlayerDied(name)
 end
 
 function eventLoop(ctime, rtime)
+   local player, x, y, vx, vy, ax, ay, i
+
    clearT()
 
    for name, data in pairs(playerData) do
+      player = tfm.get.room.playerList[name]
+      if not player.isDead then
+         x = player.x
+         y = player.y
+         vx = -player.vx
+         vy = -player.vy
+         ax = -player.vx / 10
+         ay = -player.vy / 10
+         for i = 1, math.random(8, 16) do
+            addParticle(particles.purple,
+                        x + math.random(-4, 4), y + math.random(-4, 4),
+                        (vx + math.random() * 2 - 1) / i,
+                        (vy + math.random() * 2 - 1) / i,
+                        ax, ay
+            )
+         end
+      end
+
       if data.shot_cd > 0 then
          data.shot_cd = data.shot_cd - 1
       end

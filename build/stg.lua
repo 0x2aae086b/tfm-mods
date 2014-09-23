@@ -24,7 +24,6 @@ function alert(str, name)
 end
 
 function randomColor()
-   --return string.format('0x%X', math.random(0x000000, 0xFFFFFF))
    return math.random(0x000000, 0xFFFFFF)
 end
 
@@ -896,9 +895,7 @@ bullet.circle = function(x, y, jdata, hitbox_data)
       restitution = 255
    }
 
-   if hitbox_data ~= nil then
-      copy(hitbox, hitbox_data)
-   end
+   copy(hitbox, hitbox_data)
 
    local id0 = newId(groundId)
    do_addGround(id0, x, y, hitbox)
@@ -944,17 +941,9 @@ bullet.jstar = function(x, y, angle, R, points, step, line_jdata, center_jdata, 
       restitution = 255
    }
 
-   if line_jdata ~= nil then
-      copy(line, line_jdata)
-   end
-
-   if center_jdata ~= nil then
-      copy(center, center_jdata)
-   end
-
-   if hitbox_data ~= nil then
-      copy(hitbox, hitbox_data)
-   end
+   copy(line, line_jdata)
+   copy(center, center_jdata)
+   copy(hitbox, hitbox_data)
 
    local joints = {}
    local pts = {}
@@ -1035,17 +1024,9 @@ bullet.star = function(x, y, angle, R, points, step, do_cap, line_data, center_d
       frequency = 10
    }
 
-   if line_data ~= nil then
-      copy(line, line_data)
-   end
-
-   if center_data ~= nil then
-      copy(center, center_data)
-   end
-
-   if cap_data ~= nil then
-      copy(cap, cap_data)
-   end
+   copy(line, line_data)
+   copy(center, center_data)
+   copy(cap, cap_data)
 
    local lines, caps, joints = {}, {}, {}
 
@@ -1165,6 +1146,87 @@ function removeBomb(name, data)
 
       setShamanName(i)
    end
+end
+function motionEnd(id, data)
+   local a = data.callback_args
+   if a._on_remove then
+      a._on_remove(id, data)
+   end
+   do_removeControl(a._controls, id)
+end
+
+function addControl(controls, ...)
+   local id = addGround(...)
+   local data = groundData[id]
+   data.callback_args._on_remove = data.on_remove
+   data.callback_args._controls = controls
+   data.on_remove = motionEnd
+   controls[#controls + 1] = id
+   return id
+end
+
+function addControl1(controls, ...)
+   return addGround(...)
+end
+
+function addMotion(type, id, is_bullet, ...)
+   if is_bullet then
+      local data = bulletData[id]
+      return type(addControl, bulletData[id].controls, ...)
+   else
+      return type(addControl1, {id}, ...)
+   end
+end
+motion = {}
+
+motion.line = function(ac, controls, last, ttl, joint_data, x, y)
+   local id = 0
+   local id1 = controls[#controls]
+   local joint = {
+      type = 1,
+      axis = '-1,0',
+      angle = 0,
+      forceMotor = 255,
+      speedMotor = 1
+   }
+   copy(joint, joint_data)
+   if not last then
+      local control = {
+         type = 13,
+         dynamic = true,
+         mass = 1,
+         groundCollision = false,
+         miceCollision = false,
+      }
+      id = ac(controls, x or 0, y or 0, control, ttl or 3)
+   end
+   addJoint(id1, id, joint, ttl or 3)
+
+end
+
+motion.circle = function(ac, controls, last, ttl, joint_data, x, y)
+   local id = 0
+   local id1 = controls[#controls]
+   local joint = {
+      type = 3,
+      forceMotor = 255,
+      speedMotor = 1
+   }
+   copy(joint, joint_data)
+   if not last then
+      local control = {
+         type = 13,
+         dynamic = true,
+         mass = 1,
+         groundCollision = false,
+         miceCollision = false,
+      }
+      id = ac(controls, x or 0, y or 0, control, ttl or 3)
+   end
+   if x and y then
+      joint.point1 = string.format('%d,%d', x, y)
+   end
+   addJoint(id1, id, joint, ttl or 3)
 end
 function addBombTimer(name, player, data, protect, scale)
    local r = data.bombTime * scale + 2
@@ -1295,7 +1357,7 @@ function bomb2(name, data)
    local ground = {
       type = 12,
       color=0xFFFFFF,
-	  foreground = true,
+      foreground = true,
       width = 512,
       height = 8,
       dynamic = true,
@@ -1567,24 +1629,31 @@ function defaultShot(name, data)
    local x, y = player.x, player.y
    local k
    if player.isFacingRight then
-      k = '-1,0'
-      x = x + 32
+      k = -1
    else
-      k = '1,0'
-      x = x - 32
+      k = 1
    end
-   local id = addBullet(bullet.jstar, 6, nil, nil, nil, x, y + 32, 0, 16, 5, 2, {color=randomColor()}, nil, nil)
-   local bdata = bulletData[id]
 
-   local id1 = addBullet(bullet.jstar, 6, nil, nil, nil, x, y - 32, 0, 16, 5, 2, {color=randomColor()}, nil, nil)
-   local bdata1 = bulletData[id1]
-   addJoint(bdata.controls[#bdata.controls], 0, {type=1, axis=k, forceMotor=255, speedMotor=255}, 6)
-   addJoint(bdata1.controls[#bdata1.controls], 0, {type=1, axis=k, forceMotor=255, speedMotor=255}, 6)
+   local a = math.random() * math.pi
+   local id = addBullet(bullet.jstar,
+                        8, nil, nil, nil,
+                        x + 64 * math.cos(a), y + 64 * math.sin(a),
+                        0, 16, 5, 2,
+                        {color=randomColor()},
+                        nil, nil
+   )
 
-   --[[local id = addGround(x, y + 32, {type=13, width=8, height=8, restitution=255, mass=10, dynamic=true, miceCollision=true, groundCollision=false, color=0xFFFFFF, foreground=true}, 6)
-   addJoint(id, 0, {color='0x00FFFF', line=2, type=1, axis=k, forceMotor=100, speedMotor=100}, 6)
-   id = addGround(x, y - 32, {type=13, width=8, height=8, restitution=255, mass=10, dynamic=true, miceCollision=true, groundCollision=false, color=0xFFFFFF, foreground=true}, 6)
-	  addJoint(id, 0, {color='0x00FFFF', line=2, type=1, axis=k, forceMotor=100, speedMotor=100}, 6)]]--
+   a = math.random() * math.pi + math.pi
+   local id1 = addBullet(bullet.jstar,
+                        8, nil, nil, nil,
+                        x + 64 * math.cos(a), y + 64 * math.sin(a),
+                        0, 16, 5, 2,
+                        {color=randomColor()},
+                        nil, nil
+   )
+
+   addMotion(motion.circle, id, true, true, math.random(1, 4), {speedMotor=4*k}, x, y)
+   addMotion(motion.circle, id1, true, true, math.random(1, 4), {speedMotor=-4*k}, x, y)
 end
 
 function homingShot(name, data)
@@ -1717,31 +1786,6 @@ groundData = {}
 jointData = {}
 patternData = {}
 bulletData = {}
-
-groundId = {
-   max = 0,
-   free = {}
-}
-
-jointId = {
-   max = 0,
-   free = {}
-}
-
-patternId = {
-   max = 0,
-   free = {}
-}
-
-bulletId = {
-   max = 0,
-   free = {}
-}
-
-bombs = {
-   top = 0,
-   val = {}
-}
 
 playerKeys = { 32, 83, 40, 100, 101, 102, 104, 81, 68, 69, 82, 87, 37, 39 }
 reservedKeys = invert(playerKeys, true)
@@ -2277,9 +2321,29 @@ function eventPlayerDied(name)
 end
 
 function eventLoop(ctime, rtime)
+   local player, x, y, vx, vy, ax, ay, i
+
    clearT()
 
    for name, data in pairs(playerData) do
+      player = tfm.get.room.playerList[name]
+      if not player.isDead then
+         x = player.x
+         y = player.y
+         vx = -player.vx
+         vy = -player.vy
+         ax = -player.vx / 10
+         ay = -player.vy / 10
+         for i = 1, math.random(8, 16) do
+            addParticle(particles.purple,
+                        x + math.random(-4, 4), y + math.random(-4, 4),
+                        (vx + math.random() * 2 - 1) / i,
+                        (vy + math.random() * 2 - 1) / i,
+                        ax, ay
+            )
+         end
+      end
+
       if data.shot_cd > 0 then
          data.shot_cd = data.shot_cd - 1
       end

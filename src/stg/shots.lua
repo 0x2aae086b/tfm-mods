@@ -3,24 +3,31 @@ function defaultShot(name, data)
    local x, y = player.x, player.y
    local k
    if player.isFacingRight then
-      k = '-1,0'
-      x = x + 32
+      k = -1
    else
-      k = '1,0'
-      x = x - 32
+      k = 1
    end
-   local id = addBullet(bullet.jstar, 6, nil, nil, nil, x, y + 32, 0, 16, 5, 2, {color=randomColor()}, nil, nil)
-   local bdata = bulletData[id]
 
-   local id1 = addBullet(bullet.jstar, 6, nil, nil, nil, x, y - 32, 0, 16, 5, 2, {color=randomColor()}, nil, nil)
-   local bdata1 = bulletData[id1]
-   addJoint(bdata.controls[#bdata.controls], 0, {type=1, axis=k, forceMotor=255, speedMotor=255}, 6)
-   addJoint(bdata1.controls[#bdata1.controls], 0, {type=1, axis=k, forceMotor=255, speedMotor=255}, 6)
+   local a = math.random() * math.pi
+   local id = addBullet(bullet.jstar,
+                        8, nil, nil, nil,
+                        x + 64 * math.cos(a), y + 64 * math.sin(a),
+                        0, 16, 5, 2,
+                        {color=randomColor()},
+                        nil, nil
+   )
 
-   --[[local id = addGround(x, y + 32, {type=13, width=8, height=8, restitution=255, mass=10, dynamic=true, miceCollision=true, groundCollision=false, color=0xFFFFFF, foreground=true}, 6)
-   addJoint(id, 0, {color='0x00FFFF', line=2, type=1, axis=k, forceMotor=100, speedMotor=100}, 6)
-   id = addGround(x, y - 32, {type=13, width=8, height=8, restitution=255, mass=10, dynamic=true, miceCollision=true, groundCollision=false, color=0xFFFFFF, foreground=true}, 6)
-	  addJoint(id, 0, {color='0x00FFFF', line=2, type=1, axis=k, forceMotor=100, speedMotor=100}, 6)]]--
+   a = math.random() * math.pi + math.pi
+   local id1 = addBullet(bullet.jstar,
+                        8, nil, nil, nil,
+                        x + 64 * math.cos(a), y + 64 * math.sin(a),
+                        0, 16, 5, 2,
+                        {color=randomColor()},
+                        nil, nil
+   )
+
+   addMotion(motion.circle, id, true, true, math.random(1, 4), {speedMotor=4*k}, x, y)
+   addMotion(motion.circle, id1, true, true, math.random(1, 4), {speedMotor=-4*k}, x, y)
 end
 
 function homingShot(name, data)

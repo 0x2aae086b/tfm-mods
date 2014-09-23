@@ -21,9 +21,7 @@ bullet.circle = function(x, y, jdata, hitbox_data)
       restitution = 255
    }
 
-   if hitbox_data ~= nil then
-      copy(hitbox, hitbox_data)
-   end
+   copy(hitbox, hitbox_data)
 
    local id0 = newId(groundId)
    do_addGround(id0, x, y, hitbox)
@@ -69,17 +67,9 @@ bullet.jstar = function(x, y, angle, R, points, step, line_jdata, center_jdata, 
       restitution = 255
    }
 
-   if line_jdata ~= nil then
-      copy(line, line_jdata)
-   end
-
-   if center_jdata ~= nil then
-      copy(center, center_jdata)
-   end
-
-   if hitbox_data ~= nil then
-      copy(hitbox, hitbox_data)
-   end
+   copy(line, line_jdata)
+   copy(center, center_jdata)
+   copy(hitbox, hitbox_data)
 
    local joints = {}
    local pts = {}
@@ -160,17 +150,9 @@ bullet.star = function(x, y, angle, R, points, step, do_cap, line_data, center_d
       frequency = 10
    }
 
-   if line_data ~= nil then
-      copy(line, line_data)
-   end
-
-   if center_data ~= nil then
-      copy(center, center_data)
-   end
-
-   if cap_data ~= nil then
-      copy(cap, cap_data)
-   end
+   copy(line, line_data)
+   copy(center, center_data)
+   copy(cap, cap_data)
 
    local lines, caps, joints = {}, {}, {}
 
