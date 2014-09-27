@@ -1,3 +1,13 @@
+--[[
+do_respawn_1 = do_respawn
+
+function do_respawn(name)
+   do_respawn_1(name)
+   local s = playerData[name].spawn
+   movePlayer(name, s[0], s[1], false, 0, 0, true)
+end
+]]--
+
 function initPlayer(name)
    local data = {
       color = randomColor(),
@@ -16,6 +26,8 @@ function initPlayer(name)
          objend = {}
       },
       pattern_data = {},
+
+      spawn = { 200, 200 },
 
       lives = 5,
       bombs = 3,

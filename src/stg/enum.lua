@@ -112,6 +112,7 @@ objcode = {
    cheese = 25,
    blue_portal = 26,
    orange_portal = 27,
+   balloon1 = 2806,
    balloon = 28,
    red_balloon = 29,
    green_balloon = 30,

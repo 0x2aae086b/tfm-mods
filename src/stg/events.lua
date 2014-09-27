@@ -162,6 +162,21 @@ function eventLoop(ctime, rtime)
       if not player.isDead then
          x = player.x
          y = player.y
+
+         if x < 0 then
+            x = 10
+         elseif x > 4800 then
+            x = 4790
+         end
+         if y < 0 then
+            y = 10
+         elseif y > 1600 then
+            y = 1590
+         end
+
+         data.spawn[0] = x
+         data.spawn[1] = y
+
          vx = -player.vx
          vy = -player.vy
          ax = -player.vx / 10

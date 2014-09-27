@@ -17,12 +17,11 @@ motion.line = function(ac, controls, last, ttl, joint_data, x, y)
          dynamic = true,
          mass = 1,
          groundCollision = false,
-         miceCollision = false,
+         miceCollision = false
       }
       id = ac(controls, x or 0, y or 0, control, ttl or 3)
    end
    addJoint(id1, id, joint, ttl or 3)
-
 end
 
 motion.circle = function(ac, controls, last, ttl, joint_data, x, y)
@@ -48,4 +47,9 @@ motion.circle = function(ac, controls, last, ttl, joint_data, x, y)
       joint.point1 = string.format('%d,%d', x, y)
    end
    addJoint(id1, id, joint, ttl or 3)
+end
+
+motion.spiral = function(ac, controls, last, ttl, tjoint, rjoint, x, y)
+   motion.line(ac, controls, false, ttl, tjoint, x, y)
+   motion.circle(ac, controls, last, ttl, rjoint, x, y)
 end

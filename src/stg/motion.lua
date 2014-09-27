@@ -9,8 +9,12 @@ end
 function addControl(controls, ...)
    local id = addGround(...)
    local data = groundData[id]
-   data.callback_args._on_remove = data.on_remove
-   data.callback_args._controls = controls
+   if data.callback_args == nil then
+      data.callback_args = { _controls = controls }
+   else
+      data.callback_args._on_remove = data.on_remove
+      data.callback_args._controls = controls
+   end
    data.on_remove = motionEnd
    controls[#controls + 1] = id
    return id

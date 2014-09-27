@@ -450,6 +450,7 @@ objcode = {
    cheese = 25,
    blue_portal = 26,
    orange_portal = 27,
+   balloon1 = 2806,
    balloon = 28,
    red_balloon = 29,
    green_balloon = 30,
@@ -1158,8 +1159,12 @@ end
 function addControl(controls, ...)
    local id = addGround(...)
    local data = groundData[id]
-   data.callback_args._on_remove = data.on_remove
-   data.callback_args._controls = controls
+   if data.callback_args == nil then
+      data.callback_args = { _controls = controls }
+   else
+      data.callback_args._on_remove = data.on_remove
+      data.callback_args._controls = controls
+   end
    data.on_remove = motionEnd
    controls[#controls + 1] = id
    return id
@@ -1196,12 +1201,11 @@ motion.line = function(ac, controls, last, ttl, joint_data, x, y)
          dynamic = true,
          mass = 1,
          groundCollision = false,
-         miceCollision = false,
+         miceCollision = false
       }
       id = ac(controls, x or 0, y or 0, control, ttl or 3)
    end
    addJoint(id1, id, joint, ttl or 3)
-
 end
 
 motion.circle = function(ac, controls, last, ttl, joint_data, x, y)
@@ -1227,6 +1231,11 @@ motion.circle = function(ac, controls, last, ttl, joint_data, x, y)
       joint.point1 = string.format('%d,%d', x, y)
    end
    addJoint(id1, id, joint, ttl or 3)
+end
+
+motion.spiral = function(ac, controls, last, ttl, tjoint, rjoint, x, y)
+   motion.line(ac, controls, false, ttl, tjoint, x, y)
+   motion.circle(ac, controls, last, ttl, rjoint, x, y)
 end
 function addBombTimer(name, player, data, protect, scale)
    local r = data.bombTime * scale + 2
@@ -1376,7 +1385,7 @@ function bomb2(name, data)
       dynamic = false,
       groundCollision = false,
       miceCollision = false,
-      foreground = false
+      foreground = true
    }
 
    local joint = {
@@ -1689,6 +1698,16 @@ function homingShot(name, data)
 
    addObject(objcode.anvil, x + vx, y - vy, 0, vx, -vy, g, 10, moveHoming, nil, args)
 end
+--[[
+do_respawn_1 = do_respawn
+
+function do_respawn(name)
+   do_respawn_1(name)
+   local s = playerData[name].spawn
+   movePlayer(name, s[0], s[1], false, 0, 0, true)
+end
+]]--
+
 function initPlayer(name)
    local data = {
       color = randomColor(),
@@ -1707,6 +1726,8 @@ function initPlayer(name)
          objend = {}
       },
       pattern_data = {},
+
+      spawn = { 200, 200 },
 
       lives = 5,
       bombs = 3,
@@ -2330,6 +2351,21 @@ function eventLoop(ctime, rtime)
       if not player.isDead then
          x = player.x
          y = player.y
+
+         if x < 0 then
+            x = 10
+         elseif x > 4800 then
+            x = 4790
+         end
+         if y < 0 then
+            y = 10
+         elseif y > 1600 then
+            y = 1590
+         end
+
+         data.spawn[0] = x
+         data.spawn[1] = y
+
          vx = -player.vx
          vy = -player.vy
          ax = -player.vx / 10

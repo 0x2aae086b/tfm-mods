@@ -146,7 +146,7 @@ function bomb2(name, data)
       dynamic = false,
       groundCollision = false,
       miceCollision = false,
-      foreground = false
+      foreground = true
    }
 
    local joint = {
