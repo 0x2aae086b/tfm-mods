@@ -659,8 +659,8 @@ MODULE_CHAT_COMMAND = {
    end,
 
    ['end'] = function(name, cmdl)
+      local data = playerData[name]
       if cmdl == 'end' then
-         local data = playerData[name]
          data.append = false
          data.lastFunction = data.newFunction
       end

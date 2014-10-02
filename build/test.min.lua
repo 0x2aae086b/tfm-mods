@@ -171,9 +171,9 @@ alert(x,A)end end,['dump']=function(v,y,P)
 local O,X=pcall(call,dump,P)
 if O then showLongString(P,X,v,0.8)else alert(X,v)end end,['do']=function(v)
 local s=playerData[v]s.append=true;s.newFunction={}end,['end']=function(Z,r)
-if r=='end'then
-local l=playerData[Z]l.append=false;l.lastFunction=l.newFunction end;local t,B;for Y,e in pairs(data.lastFunction)do t,B=pcall(call,e[1],e[2])if not t then
-alert(B,Z)break end end end,['undo']=function(g)
+local t=playerData[Z]
+if r=='end'then t.append=false;t.lastFunction=t.newFunction end;local B,l;for Y,e in pairs(t.lastFunction)do B,l=pcall(call,e[1],e[2])if not B then
+alert(l,Z)break end end end,['undo']=function(g)
 local J=playerData[g]J.append=false;J.newFunction={}end}
 MODULE_CHAT_COMMAND['redo']=MODULE_CHAT_COMMAND['end']
 MODULE_CHAT_COMMAND_1=function(_,t,x)local h=getfield(t)local i=playerData[_]
