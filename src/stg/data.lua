@@ -5,7 +5,7 @@ jointData = {}
 patternData = {}
 bulletData = {}
 
-playerKeys = { 32, 83, 40, 100, 101, 102, 104, 81, 68, 69, 82, 87, 37, 39 }
+playerKeys = { 32, 83, 40, 100, 101, 102, 104, 81, 68, 69, 82, --[[87,]] 37, 39 }
 reservedKeys = invert(playerKeys, true)
 
 eventCode = {
@@ -81,6 +81,22 @@ patternTypes = {
 
       restrict = {
          key = {},
+         obj = nil,
+         objend = nil
+      },
+   },
+   {
+      func = testPattern1,
+      time = 0,
+      callback = nil,
+
+      cd = 250,
+      points = 1,
+
+      maxBinds = 3,
+
+      restrict = {
+         key = nil,
          obj = nil,
          objend = nil
       },

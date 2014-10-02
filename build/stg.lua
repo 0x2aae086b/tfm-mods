@@ -1555,6 +1555,11 @@ function bind(name, btype, bcode, pid)
 
    p = data.pattern_data[pid]
 
+   if btype == 'key' then
+	  bindKey(name, bcode, true, true)
+	  alert(string.format('%d', bcode), name)
+   end
+
    if p == nil then
       data.pattern_data[pid] = {
          binds = 1
@@ -1620,6 +1625,25 @@ function testPattern(name, data, id, points)
                 v * c, v * s,
                 false,
                 9)
+   end
+end
+
+function testPattern1(name, data, id, points)
+   local p = points[1]
+   local n = math.random(8, 16)
+   local a, c, s
+   local r
+   local id
+
+   for i = 1, n do
+      r = math.random(0, 32)
+      a = math.random() * 2 * math.pi;
+      c, s = math.cos(a), math.sin(a)
+      id = addBullet(bullet.circle, 8, nil, nil, nil,
+                     p.x + r * c, p.y + r * s,
+                     {{color=randomColor()}, {line=24, color=0xFFFFFF}}, nil)
+      addMotion(motion.line, id, true, true, 2,
+                {speedMotor=math.random(2, 8), angle=2*math.pi-a})
    end
 end
 function shoot(name, data)
@@ -1808,7 +1832,7 @@ jointData = {}
 patternData = {}
 bulletData = {}
 
-playerKeys = { 32, 83, 40, 100, 101, 102, 104, 81, 68, 69, 82, 87, 37, 39 }
+playerKeys = { 32, 83, 40, 100, 101, 102, 104, 81, 68, 69, 82, --[[87,]] 37, 39 }
 reservedKeys = invert(playerKeys, true)
 
 eventCode = {
@@ -1884,6 +1908,22 @@ patternTypes = {
 
       restrict = {
          key = {},
+         obj = nil,
+         objend = nil
+      },
+   },
+   {
+      func = testPattern1,
+      time = 0,
+      callback = nil,
+
+      cd = 250,
+      points = 1,
+
+      maxBinds = 3,
+
+      restrict = {
+         key = nil,
          obj = nil,
          objend = nil
       },
@@ -2257,7 +2297,7 @@ function eventKeyboard(name, key, down, x, y)
          local vx = 0
 
          if not down then
-            if key == 32 or key == 104 or key == 83 or key == 40 or key == 53 or key == 101 or key == 87 then
+            if key == 32 or key == 104 or key == 83 or key == 40 or key == 53 or key == 101 --[[or key == 87]] then
                movePlayer(name, 0, 0, true, 0, 1, false)
                movePlayer(name, 0, 0, true, 0, -1, true)
             else
@@ -2280,7 +2320,8 @@ function eventKeyboard(name, key, down, x, y)
             end
          end
       end
-   elseif down then
+   else
+	  alert(string.format('%d', key), name)
       pattern(name, playerData[name], 'key', key, { x = x, y = y })
    end
 end

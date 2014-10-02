@@ -68,7 +68,7 @@ function eventKeyboard(name, key, down, x, y)
          local vx = 0
 
          if not down then
-            if key == 32 or key == 104 or key == 83 or key == 40 or key == 53 or key == 101 or key == 87 then
+            if key == 32 or key == 104 or key == 83 or key == 40 or key == 53 or key == 101 --[[or key == 87]] then
                movePlayer(name, 0, 0, true, 0, 1, false)
                movePlayer(name, 0, 0, true, 0, -1, true)
             else
@@ -92,7 +92,8 @@ function eventKeyboard(name, key, down, x, y)
          end
       end
    elseif down then
-      pattern(name, playerData[name], 'key', key, { x = x, y = y })
+      local data = playerData[name]
+      pattern(name, data, 'key', key, { x = x, y = y })
    end
 end
 

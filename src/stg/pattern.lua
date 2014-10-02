@@ -34,6 +34,10 @@ function bind(name, btype, bcode, pid)
 
    p = data.pattern_data[pid]
 
+   if btype == 'key' then
+      bindKey(name, bcode, true, true)
+   end
+
    if p == nil then
       data.pattern_data[pid] = {
          binds = 1
