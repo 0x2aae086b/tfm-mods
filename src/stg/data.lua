@@ -5,7 +5,7 @@ jointData = {}
 patternData = {}
 bulletData = {}
 
-playerKeys = { 32, 83, 40, 100, 101, 102, 104, 81, 68, 69, 82, --[[87,]] 37, 39 }
+playerKeys = { 32, 83, 40, 100, 101, 102, 104, 65, 68, 69, 81, --[[87,]] 37, 39 }
 reservedKeys = invert(playerKeys, true)
 
 eventCode = {
@@ -90,7 +90,7 @@ patternTypes = {
       time = 0,
       callback = nil,
 
-      cd = 250,
+      cd = 500,
       points = 1,
 
       maxBinds = 3,

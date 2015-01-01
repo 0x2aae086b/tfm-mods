@@ -28,7 +28,9 @@ make_star = cache2(
          ret[#ret + 1] = make_line(tmp[i], tmp[1 + (i + s - 1) % n])
       end
 
-      return { lines=ret, points=tmp, r=length1(ret[1]) }
+      local r = length1(ret[1])
+
+      return { lines=ret, points=tmp, r=r, l=math.sqrt(1 - r*r) }
    end
 )
 

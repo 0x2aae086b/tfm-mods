@@ -8,9 +8,13 @@ MODULE_HELP = {
 
 !clear
 
-!reset
-    tfm.exec.newGame(defaultMap)
+!init
 
+!r
+!reset
+    tfm.exec.newGame(curMap)
+
+!m [&lt;map&gt;]
 !map [&lt;map&gt;]
     tfm.exec.newGame()
 

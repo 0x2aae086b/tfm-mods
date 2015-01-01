@@ -49,14 +49,14 @@ end
 function removeBullet(id)
    local data = bulletData[id]
 
-   for k, v in ipairs(data.grounds) do
-      do_removeGround(v)
-      freeId(groundId, v)
-   end
-
    for k, v in ipairs(data.joints) do
       do_removeJoint(v)
       freeId(jointId, v)
+   end
+
+   for k, v in ipairs(data.grounds) do
+      do_removeGround(v)
+      freeId(groundId, v)
    end
 
    bulletData[id] = nil

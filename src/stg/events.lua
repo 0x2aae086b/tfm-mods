@@ -52,7 +52,7 @@ end
 
 function eventKeyboard(name, key, down, x, y)
    if reservedKeys[key] then
-      if key == 82 then
+      if key == 65 then
          local data = playerData[name]
          if down then
             bomb(name, data)

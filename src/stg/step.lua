@@ -1,18 +1,18 @@
 function clear()
-   for _, v in ipairs(keys(patternData)) do
-      removePattern(v)
-   end
-   for _, v in ipairs(keys(bulletData)) do
-      removeBullet(v)
-   end
    for _, v in ipairs(keys(jointData)) do
       removeJoint(v)
+   end
+   for _, v in ipairs(keys(tfm.get.room.objectList)) do
+      removeObject(v)
    end
    for _, v in ipairs(keys(groundData)) do
       removeGround(v)
    end
-   for _, v in ipairs(keys(tfm.get.room.objectList)) do
-      removeObject(v)
+   for _, v in ipairs(keys(bulletData)) do
+      removeBullet(v)
+   end
+   for _, v in ipairs(keys(patternData)) do
+      removePattern(v)
    end
    --[[
    bombs = {
@@ -86,20 +86,22 @@ function step(t, remove, list, do_list)
 end
 
 function clearT()
-   local str = { '<TI>--[Patterns]--\n' }
-   step(patternData, removePattern, str)
-
-   str[#str + 1] = '--[Bullets]--\n'
-   step(bulletData, removeBullet, str, list_bullet)
-
-   str[#str + 1] = '--[Grounds]--\n'
-   step(groundData, removeGround, str)
+   local str = { '<TI>' }
 
    str[#str + 1] = '--[Joints]--\n'
    step(jointData, removeJoint, str)
 
    str[#str + 1] = '--[Objects]--\n'
    step(objectData, removeObject, str, list_object)
+
+   str[#str + 1] = '--[Grounds]--\n'
+   step(groundData, removeGround, str)
+
+   str[#str + 1] = '--[Bullets]--\n'
+   step(bulletData, removeBullet, str, list_bullet)
+
+   str[#str + 1] = '--[Patterns]--\n'
+   step(patternData, removePattern, str)
 
    ui.addTextArea(2, table.concat(str), nil, -150, 0, 150, 600, nil, nil, nil, true)
 end

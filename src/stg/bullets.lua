@@ -1,20 +1,20 @@
 bullet = {}
 
-bullet.circle = function(x, y, jdata, hitbox_data)
+bullet.circle = function(x, y, R, jdata, hitbox_data)
    local point2 = string.format('%d,%d', x, y + 1)
 
    local joint = {
       type = 0,
       point2 = point2,
       color = 0xFFFFFF,
-      line = 32,
+      line = 2 * R,
       foreground = true
    }
 
    local hitbox = {
       type = 13,
-      width = 16,
-      height = 16,
+      width = R,
+      height = R,
       miceCollision = true,
       groundCollision = false,
       dynamic = true,
@@ -28,9 +28,75 @@ bullet.circle = function(x, y, jdata, hitbox_data)
 
    local joints = {}
 
-   for _, v in ipairs(jdata) do
-      copy(joint, v)
-      addJoint1(joints, id0, id0, joint)
+   if jdata then
+      for _, v in ipairs(jdata) do
+         copy(joint, v)
+         addJoint1(joints, id0, id0, joint)
+      end
+   end
+
+   return id0, {id0}, joints
+end
+
+bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_data)
+   local star = make_star(5, 2)
+
+   local wing = {
+      type = 0,
+      color = 0xFFFFFF,
+      alpha = 0.25,
+      line = star.l * R * 2,
+      foreground = true
+   }
+
+   local center = {
+      type = 0,
+      point1 = string.format('%d,%d', x, y),
+      point2 = string.format('%d,%d', x, y + 1),
+      color = 0xFFFFFF,
+      line = R * 2,
+      foreground = true
+   }
+
+   local hitbox = {
+      type = 13,
+      width = R,
+      height = R,
+      dynamic = true,
+      miceCollision = true,
+      groundCollision = false,
+      restitution = 255
+   }
+
+   copy(wing, wing_jdata)
+   copy(hitbox, hitbox_data)
+
+   local joints = {}
+   local pts = {}
+
+   local x1, y1
+   local c, s = math.cos(angle), math.sin(angle)
+
+   local v
+
+   local id0 = newId(groundId)
+   do_addGround(id0, x, y, hitbox)
+
+   for i = 2, 5 do
+      v = star.points[i]
+      x1, y1 = v[1] * c - v[2] * s, v[1] * s + v[2] * c
+      x1, y1 = x + R * x1, y + R * y1
+
+      wing.point1 = string.format('%d,%d', x1, y1)
+      wing.point2 = string.format('%d,%d', x1, y1 + 1)
+      addJoint1(joints, id0, id0, wing)
+   end
+
+   if center_jdata then
+      for _, v in ipairs(center_jdata) do
+         copy(center, v)
+         addJoint1(joints, id0, id0, center)
+      end
    end
 
    return id0, {id0}, joints

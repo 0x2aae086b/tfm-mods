@@ -31,8 +31,8 @@ function eventChatCommand(name, message)
    local func = MODULE_CHAT_COMMAND[cmdl]
 
    if func ~= nil then
-	  func(name, cmdl, arg)
+      func(name, cmdl, arg)
    else
-	  MODULE_CHAT_COMMAND_1(name, cmd, arg)
+      MODULE_CHAT_COMMAND_1(name, cmd, arg)
    end
 end

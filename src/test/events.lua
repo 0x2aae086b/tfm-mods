@@ -4,7 +4,7 @@ function eventNewPlayer(name)
       newFunction = {},
       append = false
    }
-   ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 35, 20, nil, nil, nil, true)
+   ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 40, 22, nil, nil, nil, true)
    --tfm.exec.setShaman(name)
    do_respawn(name)
 end

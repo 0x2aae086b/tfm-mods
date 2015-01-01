@@ -54,8 +54,8 @@ function initPlayer(name)
 
    --system.bindMouse(name, true)
 
-   ui.addTextArea(1, getText(data), name, 5, 25, 150, 38, nil, nil, nil, true)
-   ui.addTextArea(104, '<TI><a href="event:help">?</a>', name, 145, 25, 10, 20, nil, nil, nil, true)
+   ui.addTextArea(1, getText(data), name, 5, 25, 151, 40, nil, nil, nil, true)
+   ui.addTextArea(104, '<TI><a href="event:help">?</a>', name, 145, 25, 11, 20, nil, nil, nil, true)
 
    do_respawn(name)
    setShaman(name)

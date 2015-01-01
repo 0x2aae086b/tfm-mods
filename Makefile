@@ -2,7 +2,7 @@ CAT := cat
 RM := rm -f
 MIN := lua ../LuaMinify-master/CommandLineMinify.lua
 
-TEST_SRC := src/common/*.lua src/test/defaults.lua  src/test/interpreter.lua \
+TEST_SRC := src/common/*.lua src/test/data.lua  src/test/interpreter.lua \
             src/test/help.lua src/test/commands.lua src/test/events.lua \
             src/test/main.lua
 

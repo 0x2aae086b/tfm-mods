@@ -270,9 +270,9 @@ function eventChatCommand(name, message)
    local func = MODULE_CHAT_COMMAND[cmdl]
 
    if func ~= nil then
-	  func(name, cmdl, arg)
+      func(name, cmdl, arg)
    else
-	  MODULE_CHAT_COMMAND_1(name, cmd, arg)
+      MODULE_CHAT_COMMAND_1(name, cmd, arg)
    end
 end
 function setColor(name, color)
@@ -305,7 +305,9 @@ make_star = cache2(
          ret[#ret + 1] = make_line(tmp[i], tmp[1 + (i + s - 1) % n])
       end
 
-      return { lines=ret, points=tmp, r=length1(ret[1]) }
+      local r = length1(ret[1])
+
+      return { lines=ret, points=tmp, r=r, l=math.sqrt(1 - r*r) }
    end
 )
 
@@ -349,9 +351,9 @@ keycode = {
    ['0'] = 48, ['1'] = 49, ['2'] = 50, ['3'] = 51, ['4'] = 52,
    ['5'] = 53, ['6'] = 54, ['7'] = 55, ['8'] = 56, ['9'] = 57,
 
-   a = 65, b = 66, c = 67, d = 68, e = 69, f = 70, g = 71, h = 72, i = 73,
-   j = 74, k = 75, l = 76, m = 77, n = 78, o = 79, p = 80, q = 81, r = 82,
-   s = 83, t = 84, u = 85, v = 86, w = 87, x = 88, y = 89, z = 90,
+   a = 81, b = 66, c = 67, d = 68, e = 69, f = 70, g = 71, h = 72, i = 73,
+   j = 74, k = 75, l = 76, m = 77, n = 78, o = 79, p = 80, q = 65, r = 82,
+   s = 83, t = 84, u = 85, v = 86, w = 90, x = 88, y = 89, z = 87,
 
    [';'] = 186, ['='] = 187, [','] = 188, ['-'] = 189, ['.'] = 190,
    ['/'] = 191, ['`'] = 192,
@@ -509,20 +511,20 @@ function updateTextAreas(name, data)
    ui.updateTextArea(104, '<TI><a href="event:help">?</a>', name)
 end
 function clear()
-   for _, v in ipairs(keys(patternData)) do
-      removePattern(v)
-   end
-   for _, v in ipairs(keys(bulletData)) do
-      removeBullet(v)
-   end
    for _, v in ipairs(keys(jointData)) do
       removeJoint(v)
+   end
+   for _, v in ipairs(keys(tfm.get.room.objectList)) do
+      removeObject(v)
    end
    for _, v in ipairs(keys(groundData)) do
       removeGround(v)
    end
-   for _, v in ipairs(keys(tfm.get.room.objectList)) do
-      removeObject(v)
+   for _, v in ipairs(keys(bulletData)) do
+      removeBullet(v)
+   end
+   for _, v in ipairs(keys(patternData)) do
+      removePattern(v)
    end
    --[[
    bombs = {
@@ -596,20 +598,22 @@ function step(t, remove, list, do_list)
 end
 
 function clearT()
-   local str = { '<TI>--[Patterns]--\n' }
-   step(patternData, removePattern, str)
-
-   str[#str + 1] = '--[Bullets]--\n'
-   step(bulletData, removeBullet, str, list_bullet)
-
-   str[#str + 1] = '--[Grounds]--\n'
-   step(groundData, removeGround, str)
+   local str = { '<TI>' }
 
    str[#str + 1] = '--[Joints]--\n'
    step(jointData, removeJoint, str)
 
    str[#str + 1] = '--[Objects]--\n'
    step(objectData, removeObject, str, list_object)
+
+   str[#str + 1] = '--[Grounds]--\n'
+   step(groundData, removeGround, str)
+
+   str[#str + 1] = '--[Bullets]--\n'
+   step(bulletData, removeBullet, str, list_bullet)
+
+   str[#str + 1] = '--[Patterns]--\n'
+   step(patternData, removePattern, str)
 
    ui.addTextArea(2, table.concat(str), nil, -150, 0, 150, 600, nil, nil, nil, true)
 end
@@ -860,14 +864,14 @@ end
 function removeBullet(id)
    local data = bulletData[id]
 
-   for k, v in ipairs(data.grounds) do
-      do_removeGround(v)
-      freeId(groundId, v)
-   end
-
    for k, v in ipairs(data.joints) do
       do_removeJoint(v)
       freeId(jointId, v)
+   end
+
+   for k, v in ipairs(data.grounds) do
+      do_removeGround(v)
+      freeId(groundId, v)
    end
 
    bulletData[id] = nil
@@ -875,21 +879,21 @@ function removeBullet(id)
 end
 bullet = {}
 
-bullet.circle = function(x, y, jdata, hitbox_data)
+bullet.circle = function(x, y, R, jdata, hitbox_data)
    local point2 = string.format('%d,%d', x, y + 1)
 
    local joint = {
       type = 0,
       point2 = point2,
       color = 0xFFFFFF,
-      line = 32,
+      line = 2 * R,
       foreground = true
    }
 
    local hitbox = {
       type = 13,
-      width = 16,
-      height = 16,
+      width = R,
+      height = R,
       miceCollision = true,
       groundCollision = false,
       dynamic = true,
@@ -903,9 +907,75 @@ bullet.circle = function(x, y, jdata, hitbox_data)
 
    local joints = {}
 
-   for _, v in ipairs(jdata) do
-      copy(joint, v)
-      addJoint1(joints, id0, id0, joint)
+   if jdata then
+      for _, v in ipairs(jdata) do
+         copy(joint, v)
+         addJoint1(joints, id0, id0, joint)
+      end
+   end
+
+   return id0, {id0}, joints
+end
+
+bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_data)
+   local star = make_star(5, 2)
+
+   local wing = {
+      type = 0,
+      color = 0xFFFFFF,
+      alpha = 0.25,
+      line = star.l * R * 2,
+      foreground = true
+   }
+
+   local center = {
+      type = 0,
+      point1 = string.format('%d,%d', x, y),
+      point2 = string.format('%d,%d', x, y + 1),
+      color = 0xFFFFFF,
+      line = R * 2,
+      foreground = true
+   }
+
+   local hitbox = {
+      type = 13,
+      width = R,
+      height = R,
+      dynamic = true,
+      miceCollision = true,
+      groundCollision = false,
+      restitution = 255
+   }
+
+   copy(wing, wing_jdata)
+   copy(hitbox, hitbox_data)
+
+   local joints = {}
+   local pts = {}
+
+   local x1, y1
+   local c, s = math.cos(angle), math.sin(angle)
+
+   local v
+
+   local id0 = newId(groundId)
+   do_addGround(id0, x, y, hitbox)
+
+   for i = 2, 5 do
+      v = star.points[i]
+      x1, y1 = v[1] * c - v[2] * s, v[1] * s + v[2] * c
+      x1, y1 = x + R * x1, y + R * y1
+
+      wing.point1 = string.format('%d,%d', x1, y1)
+      wing.point2 = string.format('%d,%d', x1, y1 + 1)
+      addJoint1(joints, id0, id0, wing)
+   end
+
+   if center_jdata then
+      for _, v in ipairs(center_jdata) do
+         copy(center, v)
+         addJoint1(joints, id0, id0, center)
+      end
    end
 
    return id0, {id0}, joints
@@ -1556,8 +1626,7 @@ function bind(name, btype, bcode, pid)
    p = data.pattern_data[pid]
 
    if btype == 'key' then
-	  bindKey(name, bcode, true, true)
-	  alert(string.format('%d', bcode), name)
+      bindKey(name, bcode, true, true)
    end
 
    if p == nil then
@@ -1636,14 +1705,16 @@ function testPattern1(name, data, id, points)
    local id
 
    for i = 1, n do
-      r = math.random(0, 32)
-      a = math.random() * 2 * math.pi;
+      r = math.random(64, 96)
+      a = math.random() * 2.0 * math.pi;
       c, s = math.cos(a), math.sin(a)
-      id = addBullet(bullet.circle, 8, nil, nil, nil,
-                     p.x + r * c, p.y + r * s,
-                     {{color=randomColor()}, {line=24, color=0xFFFFFF}}, nil)
+      id = addBullet(bullet.butterfly, 8, nil, nil, nil,
+                     p.x + r * c, p.y + r * s, 0.25 - math.pi / 2.0, 16,
+                     {{color=randomColor()}, {line=24, color=0xFFFFFF}},
+                     {line=24, alpha=0.5, color=randomColor()},
+                     {width=0, height=0})
       addMotion(motion.line, id, true, true, 2,
-                {speedMotor=math.random(2, 8), angle=2*math.pi-a})
+                {speedMotor=math.random(2, 6), angle=2*math.pi-a})
    end
 end
 function shoot(name, data)
@@ -1778,8 +1849,8 @@ function initPlayer(name)
 
    --system.bindMouse(name, true)
 
-   ui.addTextArea(1, getText(data), name, 5, 25, 150, 38, nil, nil, nil, true)
-   ui.addTextArea(104, '<TI><a href="event:help">?</a>', name, 145, 25, 10, 20, nil, nil, nil, true)
+   ui.addTextArea(1, getText(data), name, 5, 25, 151, 40, nil, nil, nil, true)
+   ui.addTextArea(104, '<TI><a href="event:help">?</a>', name, 145, 25, 11, 20, nil, nil, nil, true)
 
    do_respawn(name)
    setShaman(name)
@@ -1832,7 +1903,7 @@ jointData = {}
 patternData = {}
 bulletData = {}
 
-playerKeys = { 32, 83, 40, 100, 101, 102, 104, 81, 68, 69, 82, --[[87,]] 37, 39 }
+playerKeys = { 32, 83, 40, 100, 101, 102, 104, 65, 68, 69, 81, --[[87,]] 37, 39 }
 reservedKeys = invert(playerKeys, true)
 
 eventCode = {
@@ -1917,7 +1988,7 @@ patternTypes = {
       time = 0,
       callback = nil,
 
-      cd = 250,
+      cd = 500,
       points = 1,
 
       maxBinds = 3,
@@ -1949,7 +2020,7 @@ MODULE_HELP_CONTENTS = [[<font face="mono" size="15"><a href="event:Keys">Keys</
 
 MODULE_HELP = {
       ['Keys'] = [[<font face="mono" size="15">Shoot - E
-Bomb  - R
+Bomb  - Q
 Up    - Space
 Down  - S, ↓
 Left  - A, ←
@@ -2010,7 +2081,12 @@ Right - D, →</font>
     Cooldown: 2.5s
 </font>
 ]],
-      ['Pattern types'] = [[<font face="mono" size="15">1
+      ['Pattern types'] = [[<font face="mono" size="15">1 - 
+    Cooldown: 0.25s
+    Max. binds: 3
+    Points: 1
+
+2 - 
     Cooldown: 0.5s
     Max. binds: 3
     Points: 1
@@ -2281,7 +2357,7 @@ end
 
 function eventKeyboard(name, key, down, x, y)
    if reservedKeys[key] then
-      if key == 82 then
+      if key == 65 then
          local data = playerData[name]
          if down then
             bomb(name, data)
@@ -2320,9 +2396,9 @@ function eventKeyboard(name, key, down, x, y)
             end
          end
       end
-   else
-	  alert(string.format('%d', key), name)
-      pattern(name, playerData[name], 'key', key, { x = x, y = y })
+   elseif down then
+      local data = playerData[name]
+      pattern(name, data, 'key', key, { x = x, y = y })
    end
 end
 

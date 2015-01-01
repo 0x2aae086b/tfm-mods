@@ -11,7 +11,7 @@ MODULE_HELP_CONTENTS = [[<font face="mono" size="15"><a href="event:Keys">Keys</
 
 MODULE_HELP = {
       ['Keys'] = [[<font face="mono" size="15">Shoot - E
-Bomb  - R
+Bomb  - Q
 Up    - Space
 Down  - S, ↓
 Left  - A, ←
@@ -72,7 +72,12 @@ Right - D, →</font>
     Cooldown: 2.5s
 </font>
 ]],
-      ['Pattern types'] = [[<font face="mono" size="15">1
+      ['Pattern types'] = [[<font face="mono" size="15">1 - 
+    Cooldown: 0.25s
+    Max. binds: 3
+    Points: 1
+
+2 - 
     Cooldown: 0.5s
     Max. binds: 3
     Points: 1

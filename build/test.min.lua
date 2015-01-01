@@ -104,10 +104,10 @@ if d>1 then U.page=d-1 end;updateLongString(D,U)elseif t=='lsclose'then
 ui.removeTextArea(H-3,D)ui.removeTextArea(H-2,D)ui.removeTextArea(H-1,D)
 ui.removeTextArea(H,D)playerData[D].longString=nil elseif
 string.sub(t,1,7)=='lsalpha'then local D=string.sub(t,8)local O=playerData[D].longString;O.alpha=1.0-
-O.alpha;do_showLongString(O,D)else return false end;return true end;defaultMap='0'playerData={}
+O.alpha;do_showLongString(O,D)else return false end;return true end;defaultMap='0'curMap=defaultMap;playerData={}
 function getfield(h,R)local n=_G
-for E,w in string.gmatch(h,'([[.]?)([^][.]+)')do if
-type(n)~='table'then
+for E,w in
+string.gmatch(h,'([[.]?)([^][.]+)')do if type(n)~='table'then
 if R then error('Invalid field: '..h)else return nil end end
 if E=='['then
 w=do_parse_arg(w,nil)if w==nil then
@@ -140,9 +140,13 @@ MODULE_HELP={['Commands']=[[<font face="mono" size="15">!help
 
 !clear
 
-!reset
-    tfm.exec.newGame(defaultMap)
+!init
 
+!r
+!reset
+    tfm.exec.newGame(curMap)
+
+!m [&lt;map&gt;]
 !map [&lt;map&gt;]
     tfm.exec.newGame()
 
@@ -162,34 +166,38 @@ MODULE_HELP={['Commands']=[[<font face="mono" size="15">!help
 </font>
 ]]}
 MODULE_HELP_CLOSE='<TI><a href="event:help_close"><p align="center">X</p></a>'
-MODULE_CHAT_COMMAND={['help']=help,['reset']=function()setMap(defaultMap)end,['map']=function(E,O,_)setMap(_)end,['dir']=function(A,c,U)
-local _=''local E,x=pcall(getfield,U)
-if E then if type(x)=='table'then
-for R,Q in pairs(x)do _=_..R..'\n'end;showLongString(U,_,A,0.8)else
-alert(U..' is not a table',A)end else
-alert(x,A)end end,['dump']=function(v,y,P)
-local O,X=pcall(call,dump,P)
-if O then showLongString(P,X,v,0.8)else alert(X,v)end end,['do']=function(v)
-local s=playerData[v]s.append=true;s.newFunction={}end,['end']=function(Z,r)
-local t=playerData[Z]
-if r=='end'then t.append=false;t.lastFunction=t.newFunction end;local B,l;for Y,e in pairs(t.lastFunction)do B,l=pcall(call,e[1],e[2])if not B then
-alert(l,Z)break end end end,['undo']=function(g)
-local J=playerData[g]J.append=false;J.newFunction={}end}
+MODULE_CHAT_COMMAND={['help']=help,['reset']=function()setMap(curMap)end,['map']=function(E,O,_)setMap(_)curMap=_ end,['init']=function()
+defaultMap='0'curMap=defaultMap;playerData={}for A,c in pairs(tfm.get.room.playerList)do
+eventNewPlayer(A)end;setMap(curMap)end,['dir']=function(U,_,E)
+local x=''local R,Q=pcall(getfield,E)
+if R then if type(Q)=='table'then
+for vy,P in pairs(Q)do x=x..vy..'\n'end;showLongString(E,x,U,0.8)else
+alert(E..' is not a table',U)end else
+alert(Q,U)end end,['dump']=function(O,X,v)
+local s,Z=pcall(call,dump,v)
+if s then showLongString(v,Z,O,0.8)else alert(Z,O)end end,['do']=function(r)
+local t=playerData[r]t.append=true;t.newFunction={}end,['end']=function(B,l)
+local Y=playerData[B]
+if l=='end'then Y.append=false;Y.lastFunction=Y.newFunction end;local e,g;for J,_ in pairs(Y.lastFunction)do e,g=pcall(call,_[1],_[2])if not e then
+alert(g,B)break end end end,['undo']=function(t)
+local x=playerData[t]x.append=false;x.newFunction={}end}
 MODULE_CHAT_COMMAND['redo']=MODULE_CHAT_COMMAND['end']
-MODULE_CHAT_COMMAND_1=function(_,t,x)local h=getfield(t)local i=playerData[_]
-if type(h)=='function'then
-if
-i.append then i.newFunction[#i.newFunction+1]={h,x}else
-i.lastFunction={{h,x}}local W,ha=pcall(call,h,x)if not W then alert(ha,_)end end else alert('Invalid command: '..t,_)end end
-function eventNewPlayer(b)
-playerData[b]={lastFunction={},newFunction={},append=false}
-ui.addTextArea(104,'<TI><a href="event:help"><p align="center">Help</p></a>',b,5,25,35,20,nil,nil,nil,true)do_respawn(b)end;function eventPlayerLeft(x)playerData[x]=nil end
+MODULE_CHAT_COMMAND['r']=MODULE_CHAT_COMMAND['reset']MODULE_CHAT_COMMAND['m']=MODULE_CHAT_COMMAND['map']
+MODULE_CHAT_COMMAND_1=function(h,i,W)
+local ha=getfield(i)local b=playerData[h]
+if type(ha)=='function'then if b.append then
+b.newFunction[#b.newFunction+1]={ha,W}else b.lastFunction={{ha,W}}local x,a=pcall(call,ha,W)
+if not x then alert(a,h)end end else alert(
+'Invalid command: '..i,h)end end
+function eventNewPlayer(m)
+playerData[m]={lastFunction={},newFunction={},append=false}
+ui.addTextArea(104,'<TI><a href="event:help"><p align="center">Help</p></a>',m,5,25,40,22,nil,nil,nil,true)do_respawn(m)end;function eventPlayerLeft(h)playerData[h]=nil end
 function eventNewGame()
 tfm.exec.disableAfkDeath(true)tfm.exec.disableAutoNewGame(true)
-tfm.exec.disableAutoScore(true)tfm.exec.setGameTime(0)end;function eventPlayerDied(a)do_respawn(a)end
-function eventPlayerWon(m)do_respawn(m)end
-function eventTextAreaCallback(h,c,_)if not lsTextAreaCallback(h,c,_)then
-helpTextAreaCallback(h,c,_)end end
-function clear()for p,q in ipairs(keys(tfm.get.room.objectList))do
-removeObject(q)end end
-for O,s in pairs(tfm.get.room.playerList)do eventNewPlayer(O)end;setMap(defaultMap)
+tfm.exec.disableAutoScore(true)tfm.exec.setGameTime(0)end;function eventPlayerDied(c)do_respawn(c)end
+function eventPlayerWon(_)do_respawn(_)end
+function eventTextAreaCallback(p,q,O)if not lsTextAreaCallback(p,q,O)then
+helpTextAreaCallback(p,q,O)end end
+function clear()for s,c in ipairs(keys(tfm.get.room.objectList))do
+removeObject(c)end end
+for T,o in pairs(tfm.get.room.playerList)do eventNewPlayer(T)end;setMap(defaultMap)

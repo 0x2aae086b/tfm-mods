@@ -2,10 +2,21 @@ MODULE_CHAT_COMMAND = {
    ['help'] = help,
 
    ['reset'] = function()
-      setMap(defaultMap)
+      setMap(curMap)
    end,
    ['map'] = function(name, cmdl, arg)
       setMap(arg)
+	  curMap = arg
+   end,
+
+   ['init'] = function()
+      defaultMap = '0'
+      curMap = defaultMap
+      playerData = {}
+      for k, v in pairs(tfm.get.room.playerList) do
+         eventNewPlayer(k)
+      end
+      setMap(curMap)
    end,
 
    ['dir'] = function(name, cmdl, arg)
@@ -63,6 +74,8 @@ MODULE_CHAT_COMMAND = {
 }
 
 MODULE_CHAT_COMMAND['redo'] = MODULE_CHAT_COMMAND['end']
+MODULE_CHAT_COMMAND['r'] = MODULE_CHAT_COMMAND['reset']
+MODULE_CHAT_COMMAND['m'] = MODULE_CHAT_COMMAND['map']
 
 MODULE_CHAT_COMMAND_1 = function(name, cmd, arg)
    local func = getfield(cmd)

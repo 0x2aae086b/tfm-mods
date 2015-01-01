@@ -330,9 +330,9 @@ function eventChatCommand(name, message)
    local func = MODULE_CHAT_COMMAND[cmdl]
 
    if func ~= nil then
-	  func(name, cmdl, arg)
+      func(name, cmdl, arg)
    else
-	  MODULE_CHAT_COMMAND_1(name, cmd, arg)
+      MODULE_CHAT_COMMAND_1(name, cmd, arg)
    end
 end
 function split1(str, pattern, maxlen, fmt)
@@ -452,6 +452,7 @@ function lsTextAreaCallback(id, name, callback)
    return true
 end
 defaultMap = '0'
+curMap = defaultMap
 playerData = {}
 function getfield(var, err)
    local t = _G
@@ -593,9 +594,13 @@ MODULE_HELP = {
 
 !clear
 
-!reset
-    tfm.exec.newGame(defaultMap)
+!init
 
+!r
+!reset
+    tfm.exec.newGame(curMap)
+
+!m [&lt;map&gt;]
 !map [&lt;map&gt;]
     tfm.exec.newGame()
 
@@ -621,10 +626,21 @@ MODULE_CHAT_COMMAND = {
    ['help'] = help,
 
    ['reset'] = function()
-      setMap(defaultMap)
+      setMap(curMap)
    end,
    ['map'] = function(name, cmdl, arg)
       setMap(arg)
+	  curMap = arg
+   end,
+
+   ['init'] = function()
+      defaultMap = '0'
+      curMap = defaultMap
+      playerData = {}
+      for k, v in pairs(tfm.get.room.playerList) do
+         eventNewPlayer(k)
+      end
+      setMap(curMap)
    end,
 
    ['dir'] = function(name, cmdl, arg)
@@ -682,6 +698,8 @@ MODULE_CHAT_COMMAND = {
 }
 
 MODULE_CHAT_COMMAND['redo'] = MODULE_CHAT_COMMAND['end']
+MODULE_CHAT_COMMAND['r'] = MODULE_CHAT_COMMAND['reset']
+MODULE_CHAT_COMMAND['m'] = MODULE_CHAT_COMMAND['map']
 
 MODULE_CHAT_COMMAND_1 = function(name, cmd, arg)
    local func = getfield(cmd)
@@ -706,7 +724,7 @@ function eventNewPlayer(name)
       newFunction = {},
       append = false
    }
-   ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 35, 20, nil, nil, nil, true)
+   ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 40, 22, nil, nil, nil, true)
    --tfm.exec.setShaman(name)
    do_respawn(name)
 end
