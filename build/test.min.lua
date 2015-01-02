@@ -166,8 +166,9 @@ MODULE_HELP={['Commands']=[[<font face="mono" size="15">!help
 </font>
 ]]}
 MODULE_HELP_CLOSE='<TI><a href="event:help_close"><p align="center">X</p></a>'
-MODULE_CHAT_COMMAND={['help']=help,['reset']=function()setMap(curMap)end,['map']=function(E,O,_)setMap(_)curMap=_ end,['init']=function()
-defaultMap='0'curMap=defaultMap;playerData={}for A,c in pairs(tfm.get.room.playerList)do
+MODULE_CHAT_COMMAND={['help']=help,['reset']=function()setMap(curMap)end,['map']=function(E,O,_)
+if _==''then _=defaultMap end;setMap(_)curMap=_ end,['init']=function()defaultMap='0'
+curMap=defaultMap;playerData={}for A,c in pairs(tfm.get.room.playerList)do
 eventNewPlayer(A)end;setMap(curMap)end,['dir']=function(U,_,E)
 local x=''local R,Q=pcall(getfield,E)
 if R then if type(Q)=='table'then

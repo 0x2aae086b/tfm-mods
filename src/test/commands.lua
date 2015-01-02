@@ -5,8 +5,11 @@ MODULE_CHAT_COMMAND = {
       setMap(curMap)
    end,
    ['map'] = function(name, cmdl, arg)
+      if arg == '' then
+         arg = defaultMap
+      end
       setMap(arg)
-	  curMap = arg
+      curMap = arg
    end,
 
    ['init'] = function()

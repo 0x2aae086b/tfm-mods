@@ -30,6 +30,6 @@ end
 
 function eventTextAreaCallback(id, name, callback)
    if not lsTextAreaCallback(id, name, callback) then
-	  helpTextAreaCallback(id, name, callback)
+      helpTextAreaCallback(id, name, callback)
    end
 end
