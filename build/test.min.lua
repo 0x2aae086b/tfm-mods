@@ -2,8 +2,8 @@
 dump_func={['function']=function(...)return'&lt;function&gt;'end,['userdata']=function(...)
 return'&lt;userdata&gt;'end,['thread']=function(...)return'&lt;thread&gt;'end,['nil']=function(...)return'nil'end,['number']=function(a,...)return
 tostring(a)end,['boolean']=function(X,...)return tostring(X)end,['string']=function(f,...)
-for d,vA in
-ipairs({{'&','&amp;'},{'<','&lt;'},{'>','&gt;'}})do f=string.gsub(f,vA[1],vA[2])end;return string.format('%q',f)end,['table']=function(K,g)if
+for d,A in
+ipairs({{'&','&amp;'},{'<','&lt;'},{'>','&gt;'}})do f=string.gsub(f,A[1],A[2])end;return string.format('%q',f)end,['table']=function(K,g)if
 g==nil then g=''end;local G={"{\n"}local r=g..' '
 for i,Z in pairs(K)do G[#G+1]=r..'['
 G[#G+1]=dump_func[type(i)](i,r)G[#G+1]='] = 'G[#G+1]=dump_func[type(Z)](Z,r)G[
@@ -31,24 +31,24 @@ function cache2(_)local S={}return
 function(w,a)local u=S[w]local H=nil;if u==nil then u={}S[w]=u else H=u[a]end;if H==nil then
 H=_(w,a)u[a]=H end;return H end end;function split(i)local w={}for q in string.gmatch(i,'[^%s]+')do w[#w+1]=q end
 return w end
-function parsePlayerNames(m,H,g)local w={}local gC
-for c,HL in
+function parsePlayerNames(m,H,g)local w={}local C
+for c,L in
 pairs(split(string.lower(H)))do
-if string.sub(HL,1,1)=='!'then HL=string.sub(HL,2)gC=nil else gC=true end
-if HL=='me'then w[m]=gC elseif HL=='all'then for c,HL in pairs(playerData)do w[c]=gC end else
-HL=string.gsub(HL,'^%l',string.upper)if playerData[HL]==nil then
-alert('Invalid player: '..HL,m)return else w[HL]=gC end end end;for d,vR in pairs(w)do g(d)end end;unescape_map={a='\a',b='\b',f='\f',n='\n',r='\r',t='\t'}function do_unescape(nw,T)local A=tonumber(
-nw..T)
-if A==nil then return
-(unescape_map[nw]or nw)..T else return string.char(A)end end;function unescape(p)return
-string.gsub(p,'\\(.)(%d?%d?)',do_unescape)end
-function do_unpack(c,L,R)if L<=R then return c[L],do_unpack(c,
-L+1,R)else return nil end end
-function unpack(W,N)if N==nil then N=#W end;return do_unpack(W,1,N)end;function length(R)local D=0;for m in pairs(R)do D=D+1 end;return D end
-function copy(c,z)if
-z~=nil then for G,e in pairs(z)do c[G]=e end end end;function append(Z,g)for w,p in ipairs(g)do Z[#Z+1]=p end end;function invert(e,E)
-local B={}
-if E==nil then for b,bj in pairs(e)do B[bj]=b end else for H,h in pairs(e)do B[h]=E end end;return B end
+if string.sub(L,1,1)=='!'then L=string.sub(L,2)C=nil else C=true end
+if L=='me'then w[m]=C elseif L=='all'then for c,L in pairs(playerData)do w[c]=C end else
+L=string.gsub(L,'^%l',string.upper)if playerData[L]==nil then
+alert('Invalid player: '..L,m)return else w[L]=C end end end;for d,R in pairs(w)do g(d)end end;unescape_map={a='\a',b='\b',f='\f',n='\n',r='\r',t='\t'}
+function do_unescape(w,T)local A=tonumber(
+w..T)if A==nil then
+return(unescape_map[w]or w)..T else return string.char(A)end end
+function unescape(p)return string.gsub(p,'\\(.)(%d?%d?)',do_unescape)end;function do_unpack(c,L,R)
+if L<=R then return c[L],do_unpack(c,L+1,R)else return nil end end;function unpack(W,N)if N==nil then N=#W end;return
+do_unpack(W,1,N)end;function length(R)local D=0
+for m in pairs(R)do D=D+1 end;return D end;function copy(c,z)if z~=nil then
+for G,e in pairs(z)do c[G]=e end end end;function append(Z,g)for w,p in ipairs(g)do Z[#Z+
+1]=p end end;function invert(e,E)local B={}
+if E==nil then for b,j in
+pairs(e)do B[j]=b end else for H,h in pairs(e)do B[h]=E end end;return B end
 function keys(i)
 local L={}for l,O in pairs(i)do L[#L+1]=l end;return L end;function keys1(B)local x=keys(B)table.sort(x)return x end
 function randomKey1(s,K,D)
@@ -65,22 +65,22 @@ setShamanName=tfm.exec.setUIShamanName;setMapName=tfm.exec.setUIMapName
 setNameColor=tfm.exec.setNameColor;movePlayer=tfm.exec.movePlayer;moveObject=tfm.exec.moveObject
 setMap=tfm.exec.newGame;bindKey=tfm.exec.bindKeyboard;kill=tfm.exec.killPlayer
 function eventChatCommand(v,C)
-local s,l;local vM,S;for x,i in ipairs({{'&lt;','<'},{'&amp;','&'}})do
+local s,l;local M,S;for x,i in ipairs({{'&lt;','<'},{'&amp;','&'}})do
 C=string.gsub(C,i[1],i[2])end
 while true do
 s,l=string.find(C,'%s+')
-if s==nil then vM=C;S=''break elseif s==1 then C=string.sub(C,l+1)
-if C==''then vM=''S=''break end else vM=string.sub(C,1,s-1)S=string.sub(C,l+1)break end end;local n=string.lower(vM)local vI=MODULE_CHAT_COMMAND[n]if vI~=nil then
-vI(v,n,S)else MODULE_CHAT_COMMAND_1(v,vM,S)end end
+if s==nil then M=C;S=''break elseif s==1 then C=string.sub(C,l+1)if C==''then M=''S=''break end else M=string.sub(C,1,
+s-1)S=string.sub(C,l+1)break end end;local n=string.lower(M)local I=MODULE_CHAT_COMMAND[n]if I~=nil then
+I(v,n,S)else MODULE_CHAT_COMMAND_1(v,M,S)end end
 function split1(V,u,G,f)if f==nil then f='%s'end;G=G-#f+2;local J=#V;if J<=G then return
-{string.format(f,V)}end;local B={}local S=1;local P,Gr
-local VO,v=string.find(V,u)
-while VO~=nil do
-if VO-S>G then if P~=nil and P>S then
-B[#B+1]=string.format(f,string.sub(V,S,P-1))S=Gr+1 end
-while VO-S>G do B[#B+1]=string.format(f,string.sub(V,S,
-S+G-1))S=S+G end end;P,Gr=VO,v;VO,v=string.find(V,u,v+1)
-if VO==nil and Gr<J then VO,v=J,J end end;if S<J then
+{string.format(f,V)}end;local B={}local S=1;local P,r
+local O,v=string.find(V,u)
+while O~=nil do
+if O-S>G then if P~=nil and P>S then
+B[#B+1]=string.format(f,string.sub(V,S,P-1))S=r+1 end
+while O-S>G do B[#B+1]=string.format(f,string.sub(V,S,
+S+G-1))S=S+G end end;P,r=O,v;O,v=string.find(V,u,v+1)
+if O==nil and r<J then O,v=J,J end end;if S<J then
 B[#B+1]=string.format(f,string.sub(V,S,J))end;return B end
 function do_showLongString(Y,U)
 ui.addTextArea(Y.id,Y.pages[Y.page],U,100,80,579,284,nil,nil,Y.alpha,true)
@@ -97,14 +97,14 @@ function updateLongString(h,Z)
 ui.updateTextArea(Z.id,Z.pages[Z.page],h)
 ui.updateTextArea(Z.id+2,string.format('<p align="center"><font face="mono" size="15"><a href="event:prev">&lt;</a> %d/%d <a href="event:next">&gt;</a></font></p>',Z.page,Z.maxPage),h)end
 function lsTextAreaCallback(H,D,t)
-if t=='next'then local DO=playerData[D].longString;local j=DO.page;if j<
-DO.maxPage then DO.page=j+1 end;updateLongString(D,DO)elseif
-t=='prev'then local U=playerData[D].longString;local d=U.page
-if d>1 then U.page=d-1 end;updateLongString(D,U)elseif t=='lsclose'then
-ui.removeTextArea(H-3,D)ui.removeTextArea(H-2,D)ui.removeTextArea(H-1,D)
-ui.removeTextArea(H,D)playerData[D].longString=nil elseif
-string.sub(t,1,7)=='lsalpha'then local D=string.sub(t,8)local O=playerData[D].longString;O.alpha=1.0-
-O.alpha;do_showLongString(O,D)else return false end;return true end;defaultMap='0'curMap=defaultMap;playerData={}
+if t=='next'then local O=playerData[D].longString;local j=O.page;if
+j<O.maxPage then O.page=j+1 end;updateLongString(D,O)elseif t=='prev'then
+local U=playerData[D].longString;local d=U.page;if d>1 then U.page=d-1 end;updateLongString(D,U)elseif
+t=='lsclose'then ui.removeTextArea(H-3,D)ui.removeTextArea(H-2,D)ui.removeTextArea(
+H-1,D)ui.removeTextArea(H,D)playerData[D].longString=
+nil elseif string.sub(t,1,7)=='lsalpha'then
+local D=string.sub(t,8)local O=playerData[D].longString;O.alpha=1.0-O.alpha
+do_showLongString(O,D)else return false end;return true end;defaultMap='0'curMap=defaultMap;playerData={}
 function getfield(h,R)local n=_G
 for E,w in
 string.gmatch(h,'([[.]?)([^][.]+)')do if type(n)~='table'then
@@ -170,7 +170,7 @@ curMap=defaultMap;playerData={}for A,c in pairs(tfm.get.room.playerList)do
 eventNewPlayer(A)end;setMap(curMap)end,['dir']=function(U,_,E)
 local x=''local R,Q=pcall(getfield,E)
 if R then if type(Q)=='table'then
-for vy,P in pairs(Q)do x=x..vy..'\n'end;showLongString(E,x,U,0.8)else
+for y,P in pairs(Q)do x=x..y..'\n'end;showLongString(E,x,U,0.8)else
 alert(E..' is not a table',U)end else
 alert(Q,U)end end,['dump']=function(O,X,v)
 local s,Z=pcall(call,dump,v)
@@ -183,20 +183,20 @@ local x=playerData[t]x.append=false;x.newFunction={}end}
 MODULE_CHAT_COMMAND['redo']=MODULE_CHAT_COMMAND['end']
 MODULE_CHAT_COMMAND['r']=MODULE_CHAT_COMMAND['reset']MODULE_CHAT_COMMAND['m']=MODULE_CHAT_COMMAND['map']
 MODULE_CHAT_COMMAND_1=function(h,i,W)
-local ha=getfield(i)local b=playerData[h]
-if type(ha)=='function'then if b.append then
-b.newFunction[#b.newFunction+1]={ha,W}else b.lastFunction={{ha,W}}local x,a=pcall(call,ha,W)
-if not x then alert(a,h)end end else alert(
+local a=getfield(i)local b=playerData[h]
+if type(a)=='function'then if b.append then
+b.newFunction[#b.newFunction+1]={a,W}else b.lastFunction={{a,W}}local x,m=pcall(call,a,W)
+if not x then alert(m,h)end end else alert(
 'Invalid command: '..i,h)end end
-function eventNewPlayer(m)
-playerData[m]={lastFunction={},newFunction={},append=false}
-ui.addTextArea(104,'<TI><a href="event:help"><p align="center">Help</p></a>',m,5,25,40,22,nil,nil,nil,true)do_respawn(m)end;function eventPlayerLeft(h)playerData[h]=nil end
+function eventNewPlayer(h)
+playerData[h]={lastFunction={},newFunction={},append=false}
+ui.addTextArea(104,'<TI><a href="event:help"><p align="center">Help</p></a>',h,5,25,40,22,nil,nil,nil,true)do_respawn(h)end;function eventPlayerLeft(c)playerData[c]=nil end
 function eventNewGame()
 tfm.exec.disableAfkDeath(true)tfm.exec.disableAutoNewGame(true)
-tfm.exec.disableAutoScore(true)tfm.exec.setGameTime(0)end;function eventPlayerDied(c)do_respawn(c)end
-function eventPlayerWon(_)do_respawn(_)end
-function eventTextAreaCallback(p,q,O)if not lsTextAreaCallback(p,q,O)then
-helpTextAreaCallback(p,q,O)end end
-function clear()for s,c in ipairs(keys(tfm.get.room.objectList))do
-do_removeObject(c)end end
-for T,o in pairs(tfm.get.room.playerList)do eventNewPlayer(T)end;setMap(defaultMap)
+tfm.exec.disableAutoScore(true)tfm.exec.setGameTime(0)end;function eventPlayerDied(_)do_respawn(_)end
+function eventPlayerWon(p)do_respawn(p)end
+function eventTextAreaCallback(q,O,s)if not lsTextAreaCallback(q,O,s)then
+helpTextAreaCallback(q,O,s)end end
+function clear()for c,T in ipairs(keys(tfm.get.room.objectList))do
+do_removeObject(T)end end
+for o,F in pairs(tfm.get.room.playerList)do eventNewPlayer(o)end;setMap(defaultMap)

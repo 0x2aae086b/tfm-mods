@@ -5,6 +5,9 @@ function newId(ids)
       free[k] = nil
       return k
    else
+      if ids.max == MAX_ID then
+         error(string.format("newId: %s.max == MAX_ID", tbl_name(ids)))
+      end
       ids.max = ids.max + 1
       return ids.max
    end
@@ -60,16 +63,12 @@ function addGround(x, y, other, ttl, func, func1, args)
       callback = func,
       on_remove = func1,
       callback_args = args,
-      joints={}
    }
 
    return id
 end
 
 function removeGround(id)
-   for k, v in pairs(groundData[id].joints) do
-      removeJoint(v)
-   end
    do_removeGround(id)
    groundData[id] = nil
    freeId(groundId, id)
@@ -77,16 +76,6 @@ end
 
 function addJoint(ground0, ground1, other, ttl, func, func1, args)
    local id = newId(jointId)
-
-   --[[local d = groundData[ground0]
-   if d ~= nil then
-      table.insert(d.joints, id)
-   else
-      d = groundData[ground1]
-      if d ~= nil then
-         table.insert(d.joints, id)
-      end
-   end]]--
 
    do_addJoint(id, ground0, ground1, other)
 

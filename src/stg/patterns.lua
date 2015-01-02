@@ -34,9 +34,9 @@ function testPattern1(name, data, id, points)
       c, s = math.cos(a), math.sin(a)
       id = addBullet(bullet.butterfly, 8, nil, nil, nil,
                      p.x + r * c, p.y + r * s, 0.25 - math.pi / 2.0, 16,
-                     {{color=randomColor()}, {line=24, color=0xFFFFFF}},
+                     {{color=randomColor()}},
                      {line=24, alpha=0.5, color=randomColor()},
-                     {width=0, height=0})
+                     {width=0, height=0, color=0xFFFFFF})
       addMotion(motion.line, id, true, true, 2,
                 {speedMotor=math.random(2, 6), angle=2*math.pi-a})
    end

@@ -5,6 +5,11 @@ jointData = {}
 patternData = {}
 bulletData = {}
 
+errors = { '<TI><p align="center">Errors</p>' }
+
+MAX_ID = 499
+MAX_ERRORS = 7
+
 playerKeys = { 32, 83, 40, 100, 101, 102, 104, 65, 68, 69, 81, --[[87,]] 37, 39 }
 reservedKeys = invert(playerKeys, true)
 

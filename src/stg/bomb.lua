@@ -4,9 +4,12 @@ function bomb(name, data)
          data.bombs = data.bombs - data.bomb.cost
          data.bombing = true
          data.bombTime = data.bomb.time
-         data.bomb.func(name, data)
+         local st, err = pcall(data.bomb.func, name, data)
          addBomb(name, data)
          updateTextAreas(name, data)
+         if not st then
+            addError(name, string.format("bomb: %s: %s", name, err))
+         end
       else
          alert(string.format('bombs &lt; %d', data.bomb.cost), name)
       end

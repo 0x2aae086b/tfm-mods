@@ -24,11 +24,18 @@ function addControl1(controls, ...)
    return addGround(...)
 end
 
-function addMotion(type, id, is_bullet, ...)
+function addMotion(mtype, id, is_bullet, ...)
+   local data
+   local ac
    if is_bullet then
-      local data = bulletData[id]
-      return type(addControl, bulletData[id].controls, ...)
+      data = bulletData[id].controls
+      ac = addControl
    else
-      return type(addControl1, {id}, ...)
+      data = { id }
+      ac = addControl1
+   end
+   local st, err = pcall(mtype, ac, data, ...)
+   if not st then
+      error(string.format("addMotion: %s", err))
    end
 end

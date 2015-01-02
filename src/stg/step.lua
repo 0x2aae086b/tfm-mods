@@ -49,6 +49,7 @@ end
 function step(t, remove, list, do_list)
    local ids = {}
    local tm
+   local st, err
 
    if do_list == nil then
       do_list = list_default
@@ -61,22 +62,27 @@ function step(t, remove, list, do_list)
 
       if tm == 0 then
          if v.on_remove then
-            v.on_remove(k, v)
+            st, err = pcall(v.on_remove, k, v)
+            if not st then
+               addError(string.format("step(%s): on_remove %s\n",
+                                      tbl_name(t), err))
+            end
          end
          ids[#ids + 1] = k
       elseif tm > 0 then
          v.time = tm - 1
          if v.callback then
-            v.callback(k, v)
-            --if not pcall(v.callback, k, v) then
-            --   ids[#ids + 1] = k
-            --end
+            st, err = pcall(v.callback, k, v)
+            if not st then
+               addError(string.format("step(%s): callback: %s\n",
+                                      tbl_name(t), err))
+            end
          end
       elseif v.callback then
-         v.callback(k, v)
-         --if not pcall(v.callback, k, v) then
-         --   ids[#ids + 1] = k
-         --end
+         st, err = pcall(v.callback, k, v)
+         if not st then
+            addError(string.format("step(%s): %s\n", tbl_name(t), err))
+         end
       end
    end
 
@@ -88,20 +94,20 @@ end
 function clearT()
    local str = { '<TI>' }
 
-   str[#str + 1] = '--[Joints]--\n'
+   str[#str + 1] = '<p align="center">Joints</p>'
    step(jointData, removeJoint, str)
 
-   str[#str + 1] = '--[Objects]--\n'
+   str[#str + 1] = '<p align="center">Objects</p>'
    step(objectData, removeObject, str, list_object)
 
-   str[#str + 1] = '--[Grounds]--\n'
+   str[#str + 1] = '<p align="center">Grounds</p>'
    step(groundData, removeGround, str)
 
-   str[#str + 1] = '--[Bullets]--\n'
+   str[#str + 1] = '<p align="center">Bullets</p>'
    step(bulletData, removeBullet, str, list_bullet)
 
-   str[#str + 1] = '--[Patterns]--\n'
+   str[#str + 1] = '<p align="center">Patterns</p>'
    step(patternData, removePattern, str)
 
-   ui.addTextArea(2, table.concat(str), nil, -150, 0, 150, 600, nil, nil, nil, true)
+   ui.addTextArea(2, table.concat(str), nil, -155, 5, 150, 590, nil, nil, 0.5, true)
 end

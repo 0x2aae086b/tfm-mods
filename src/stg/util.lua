@@ -3,6 +3,29 @@ function setColor(name, color)
    playerData[name].color = color
 end
 
+function tbl_name(t)
+   if t == groundId then
+      return 'groundId'
+   elseif t == jointId then
+      return 'jointId'
+   elseif t == bulletId then
+      return 'bulletId'
+   elseif t == patternId then
+      return 'patternId'
+   elseif t == objectData then
+      return 'objectData'
+   elseif t == groundData then
+      return 'groundData'
+   elseif t == jointData then
+      return 'jointData'
+   elseif t == bulletData then
+      return 'bulletData'
+   elseif t == patternData then
+      return 'patternData'
+   end
+   return '&lt;other&gt;'
+end
+
 function make_line(v0, v1)
    local dx, dy = v1[1] - v0[1], v1[2] - v0[2]
 

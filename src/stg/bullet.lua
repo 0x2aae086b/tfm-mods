@@ -1,11 +1,13 @@
 function addGround1(t, x, y, other)
    local id = newId(groundId)
+   _tmp_grounds[#_tmp_grounds + 1] = id
    do_addGround(id, x, y, other)
    t[#t + 1] = id
 end
 
 function addJoint1(t, id1, id2, other)
    local id = newId(jointId)
+   _tmp_joints[#_tmp_joints + 1] = id
    do_addJoint(id, id1, id2, other)
    t[#t + 1] = id
 end
@@ -31,17 +33,30 @@ end
 function addBullet(btype, ttl, callback, on_remove, args, ...)
    local id = newId(bulletId)
 
-   local control, grounds, joints = btype(...)
+   _tmp_grounds = {}
+   _tmp_joints = {}
+   local st, control, grounds, joints = pcall(btype, ...)
 
-   bulletData[id] = {
-      controls = { control },
-      grounds = grounds,
-      joints = joints,
-      time = ttl or 6,
-      callback = callback,
-      on_remove = on_remove,
-      callback_args = args
-   }
+   if st then
+      bulletData[id] = {
+         controls = { control },
+         grounds = grounds,
+         joints = joints,
+         time = ttl or 6,
+         callback = callback,
+         on_remove = on_remove,
+         callback_args = args
+      }
+   else
+      for _, v in ipairs(_tmp_joints) do
+         removeJoint(v)
+      end
+      for _, v in ipairs(_tmp_grounds) do
+         removeGround(v)
+      end
+      freeId(bulletId, id)
+      error(string.format('addBullet: %s', control))
+   end
 
    return id
 end

@@ -8,8 +8,11 @@ function pattern(name, data, btype, bcode, point)
          if time - pat.lastTime >= pat.type.cd then
             pat.lastTime = time
             pat.points[l] = point
-            addPattern(name, data, pat.type, pat.points)
+            local st, err = pcall(addPattern, name, data, pat.type, pat.points)
             pat.points = {}
+            if not st then
+               addError(name, string.format("pattern: %s: %s", name, err))
+            end
          end
       else
          pat.points[l] = point

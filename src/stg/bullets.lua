@@ -6,9 +6,9 @@ bullet.circle = function(x, y, R, jdata, hitbox_data)
    local joint = {
       type = 0,
       point2 = point2,
-      color = 0xFFFFFF,
+      color = 0x0000FF,
       line = 2 * R,
-      foreground = true
+      foreground = false
    }
 
    local hitbox = {
@@ -18,12 +18,14 @@ bullet.circle = function(x, y, R, jdata, hitbox_data)
       miceCollision = true,
       groundCollision = false,
       dynamic = true,
-      restitution = 255
+      restitution = 255,
+      color = 0xFFFFFF
    }
 
    copy(hitbox, hitbox_data)
 
    local id0 = newId(groundId)
+   _tmp_grounds[#_tmp_grounds + 1] = id0
    do_addGround(id0, x, y, hitbox)
 
    local joints = {}
@@ -43,19 +45,19 @@ bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_dat
 
    local wing = {
       type = 0,
-      color = 0xFFFFFF,
+      color = 0xFF00FF,
       alpha = 0.25,
       line = star.l * R * 2,
-      foreground = true
+      foreground = false
    }
 
    local center = {
       type = 0,
       point1 = string.format('%d,%d', x, y),
       point2 = string.format('%d,%d', x, y + 1),
-      color = 0xFFFFFF,
+      color = 0x0000FF,
       line = R * 2,
-      foreground = true
+      foreground = false
    }
 
    local hitbox = {
@@ -65,7 +67,8 @@ bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_dat
       dynamic = true,
       miceCollision = true,
       groundCollision = false,
-      restitution = 255
+      restitution = 255,
+      color = 0xFFFFFF
    }
 
    copy(wing, wing_jdata)
@@ -80,6 +83,7 @@ bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_dat
    local v
 
    local id0 = newId(groundId)
+   _tmp_grounds[#_tmp_grounds + 1] = id0
    do_addGround(id0, x, y, hitbox)
 
    for i = 2, 5 do
@@ -149,6 +153,7 @@ bullet.jstar = function(x, y, angle, R, points, step, line_jdata, center_jdata, 
    end
 
    local id0 = newId(groundId)
+   _tmp_grounds[#_tmp_grounds + 1] = id0
    do_addGround(id0, x, y, hitbox)
 
    for i = 1, points do
@@ -241,6 +246,7 @@ bullet.star = function(x, y, angle, R, points, step, do_cap, line_data, center_d
    end
 
    local id0 = newId(groundId)
+   _tmp_grounds[#_tmp_grounds + 1] = id0
    do_addGround(id0, x, y, center)
 
    if line.dynamic then
