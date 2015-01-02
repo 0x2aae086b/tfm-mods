@@ -592,8 +592,6 @@ MODULE_HELP_CONTENTS = [[<font face="mono" size="15"><a href="event:Commands">Co
 MODULE_HELP = {
       ['Commands'] = [[<font face="mono" size="15">!help
 
-!clear
-
 !init
 
 !r
@@ -758,7 +756,7 @@ function eventTextAreaCallback(id, name, callback)
 end
 function clear()
    for k, v in ipairs(keys(tfm.get.room.objectList)) do
-      removeObject(v)
+      do_removeObject(v)
    end
 end
 

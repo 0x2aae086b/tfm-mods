@@ -6,8 +6,6 @@ MODULE_HELP_CONTENTS = [[<font face="mono" size="15"><a href="event:Commands">Co
 MODULE_HELP = {
       ['Commands'] = [[<font face="mono" size="15">!help
 
-!clear
-
 !init
 
 !r

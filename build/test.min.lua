@@ -138,8 +138,6 @@ MODULE_HELP_CONTENTS=[[<font face="mono" size="15"><a href="event:Commands">Comm
 ]]
 MODULE_HELP={['Commands']=[[<font face="mono" size="15">!help
 
-!clear
-
 !init
 
 !r
@@ -200,5 +198,5 @@ function eventPlayerWon(_)do_respawn(_)end
 function eventTextAreaCallback(p,q,O)if not lsTextAreaCallback(p,q,O)then
 helpTextAreaCallback(p,q,O)end end
 function clear()for s,c in ipairs(keys(tfm.get.room.objectList))do
-removeObject(c)end end
+do_removeObject(c)end end
 for T,o in pairs(tfm.get.room.playerList)do eventNewPlayer(T)end;setMap(defaultMap)

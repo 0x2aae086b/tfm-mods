@@ -1,6 +1,6 @@
 function clear()
    for k, v in ipairs(keys(tfm.get.room.objectList)) do
-      removeObject(v)
+      do_removeObject(v)
    end
 end
 
