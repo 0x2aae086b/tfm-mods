@@ -105,6 +105,22 @@ patternTypes = {
          obj = nil,
          objend = nil
       },
+   },
+   {
+      func = testPattern2,
+      time = 0,
+      callback = nil,
+
+      cd = 250,
+      points = 1,
+
+      maxBinds = 3,
+
+      restrict = {
+         key = {},
+         obj = nil,
+         objend = nil
+      },
    }
 }
 

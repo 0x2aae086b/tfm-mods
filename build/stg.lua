@@ -948,6 +948,50 @@ function removeBullet(id)
 end
 bullet = {}
 
+bullet.rectangle = function(x, y, angle, width, height, jdata, hitbox_data)
+   local dx, dy = math.cos(angle), math.sin(angle)
+   local w = width / 2.0
+
+   local joint = {
+      type = 0,
+      point1 = string.format("%d,%d", x, y),
+      point2 = string.format("%d,%d", x + dx * width, y + dy * width),
+      color = 0xFF0000,
+      line = 2.0 * height + 4,
+      foreground = false
+   }
+
+   local hitbox = {
+      type = 12,
+      width = width,
+      height = height,
+      angle = angle * 180.0 / math.pi,
+      color = 0xFFFFFF,
+      miceCollision = true,
+      groundCollision = false,
+      foreground = true,
+      dynamic = true,
+      restitution = 255
+   }
+
+   copy(hitbox, hitbox_data)
+
+   local id0 = newId(groundId)
+   _tmp_grounds[#_tmp_grounds + 1] = id0
+   do_addGround(id0, x + dx * w, y + dy * w, hitbox)
+
+   local joints = {}
+
+   if jdata then
+      for _, v in ipairs(jdata) do
+         copy(joint, v)
+         addJoint1(joints, id0, id0, joint)
+      end
+   end
+
+   return id0, {id0}, joints
+end
+
 bullet.circle = function(x, y, R, jdata, hitbox_data)
    local point2 = string.format('%d,%d', x, y + 1)
 
@@ -1044,12 +1088,8 @@ bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_dat
       addJoint1(joints, id0, id0, wing)
    end
 
-   if center_jdata then
-      for _, v in ipairs(center_jdata) do
-         copy(center, v)
-         addJoint1(joints, id0, id0, center)
-      end
-   end
+   copy(center, center_jdata)
+   addJoint1(joints, id0, id0, center)
 
    return id0, {id0}, joints
 end
@@ -1797,12 +1837,19 @@ function testPattern1(name, data, id, points)
       c, s = math.cos(a), math.sin(a)
       id = addBullet(bullet.butterfly, 8, nil, nil, nil,
                      p.x + r * c, p.y + r * s, 0.25 - math.pi / 2.0, 16,
-                     {{color=randomColor()}},
+                     {color=randomColor()},
                      {line=24, alpha=0.5, color=randomColor()},
                      {width=0, height=0, color=0xFFFFFF})
       addMotion(motion.line, id, true, true, 2,
                 {speedMotor=math.random(2, 6), angle=2*math.pi-a})
    end
+end
+
+function testPattern2(name, data, id, points)
+   local p = points[1]
+   addBullet(bullet.rectangle, 8, nil, nil, nil,
+             p.x, p.y, p.angle * math.pi / 180.0, math.random(200, 400),
+             13, {{color=randomColor()}}, {dynamic=false})
 end
 function shoot(name, data)
    if data.shot_cd == 0 then
@@ -2097,6 +2144,22 @@ patternTypes = {
 
       restrict = {
          key = nil,
+         obj = nil,
+         objend = nil
+      },
+   },
+   {
+      func = testPattern2,
+      time = 0,
+      callback = nil,
+
+      cd = 250,
+      points = 1,
+
+      maxBinds = 3,
+
+      restrict = {
+         key = {},
          obj = nil,
          objend = nil
       },

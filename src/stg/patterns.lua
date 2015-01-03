@@ -34,10 +34,17 @@ function testPattern1(name, data, id, points)
       c, s = math.cos(a), math.sin(a)
       id = addBullet(bullet.butterfly, 8, nil, nil, nil,
                      p.x + r * c, p.y + r * s, 0.25 - math.pi / 2.0, 16,
-                     {{color=randomColor()}},
+                     {color=randomColor()},
                      {line=24, alpha=0.5, color=randomColor()},
                      {width=0, height=0, color=0xFFFFFF})
       addMotion(motion.line, id, true, true, 2,
                 {speedMotor=math.random(2, 6), angle=2*math.pi-a})
    end
+end
+
+function testPattern2(name, data, id, points)
+   local p = points[1]
+   addBullet(bullet.rectangle, 8, nil, nil, nil,
+             p.x, p.y, p.angle * math.pi / 180.0, math.random(200, 400),
+             13, {{color=randomColor()}}, {dynamic=false})
 end
