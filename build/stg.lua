@@ -19,6 +19,14 @@ kill = tfm.exec.killPlayer
 function nop()
 end
 
+function to_table(x)
+   if x == nil or type(x) == 'table' then
+      return x
+   else
+      return { x }
+   end
+end
+
 function alert(str, name)
    ui.addPopup(0, 0, string.format('<font face="mono" size="15">%s</font>', str), name, 200, 150, 400, true)
 end
@@ -611,26 +619,40 @@ function step(t, remove, list, do_list)
 
       if tm == 0 then
          if v.on_remove then
-            st, err = pcall(v.on_remove, k, v)
-            if not st then
-               addError(string.format("step(%s): on_remove %s\n",
-                                      tbl_name(t), err))
+            for k1, v1 in ipairs(v.on_remove) do
+               st, err = pcall(v1, k, v)
+               if not st then
+                  addError(nil,
+                           string.format("step(%s): on_remove[%d]: %s\n",
+                                         tbl_name(t), k1, err))
+               end
             end
          end
          ids[#ids + 1] = k
       elseif tm > 0 then
          v.time = tm - 1
          if v.callback then
-            st, err = pcall(v.callback, k, v)
-            if not st then
-               addError(string.format("step(%s): callback: %s\n",
-                                      tbl_name(t), err))
+            for k1, v1 in ipairs(v.callback) do
+               st, err = pcall(v1, k, v)
+               if not st then
+                  addError(nil,
+                           string.format("step(%s): callback[%d]: %s\n",
+                                         tbl_name(t), k1, err))
+                  ids[#ids + 1] = k
+                  break
+               end
             end
          end
       elseif v.callback then
-         st, err = pcall(v.callback, k, v)
-         if not st then
-            addError(string.format("step(%s): %s\n", tbl_name(t), err))
+         for k1, v1 in ipairs(v.callback) do
+            st, err = pcall(v1, k, v)
+            if not st then
+               addError(nil,
+                        string.format("step(%s): callback[%d]: %s\n",
+                        tbl_name(t), k1, err))
+               ids[#ids + 1] = k
+               break
+            end
          end
       end
    end
@@ -745,8 +767,8 @@ function addObject(type, x, y, angle, vx, vy, ghost, ttl, func, func1, args)
 
    objectData[id] = {
       time = ttl,
-      callback = func,
-      on_remove = func1,
+      callback = to_table(func),
+      on_remove = to_table(func1),
       callback_args = args
    }
 
@@ -769,8 +791,8 @@ function addGround(x, y, other, ttl, func, func1, args)
 
    groundData[id] = {
       time = ttl,
-      callback = func,
-      on_remove = func1,
+      callback = to_table(func),
+      on_remove = to_table(func1),
       callback_args = args,
    }
 
@@ -798,8 +820,8 @@ function addJoint(ground0, ground1, other, ttl, func, func1, args)
 
    jointData[id] = {
       time = ttl,
-      callback = func,
-      on_remove = func1,
+      callback = to_table(func),
+      on_remove = to_table(func1),
       callback_args = args
    }
 
@@ -890,8 +912,8 @@ function addBullet(btype, ttl, callback, on_remove, args, ...)
          grounds = grounds,
          joints = joints,
          time = ttl or 6,
-         callback = callback,
-         on_remove = on_remove,
+         callback = to_table(callback),
+         on_remove = to_table(on_remove),
          callback_args = args
       }
    else
@@ -1275,11 +1297,7 @@ function removeBomb(name, data)
    end
 end
 function motionEnd(id, data)
-   local a = data.callback_args
-   if a._on_remove then
-      a._on_remove(id, data)
-   end
-   do_removeControl(a._controls, id)
+   do_removeControl(data.callback_args._controls, id)
 end
 
 function addControl(controls, ...)
@@ -1288,10 +1306,13 @@ function addControl(controls, ...)
    if data.callback_args == nil then
       data.callback_args = { _controls = controls }
    else
-      data.callback_args._on_remove = data.on_remove
       data.callback_args._controls = controls
    end
-   data.on_remove = motionEnd
+   if data.on_remove == nil then
+      data.on_remove = motionEnd
+   else
+      data.on_remove[#data.on_remove + 1] = motionEnd
+   end
    controls[#controls + 1] = id
    return id
 end
@@ -1895,6 +1916,7 @@ function initPlayer(name)
       pattern_data = {},
 
       spawn = { 200, 200 },
+      vx = 0,
 
       lives = 5,
       bombs = 3,
@@ -1941,6 +1963,8 @@ function resetPlayer(name)
 
       shot_cd = 0,
       bomb_cd = 0,
+
+      vx = 0,
 
       bomb_id = nil
    }
@@ -2081,8 +2105,8 @@ patternTypes = {
 
 playerConfig = {
    Cafecafe = {
-      bomb = bombTypes[3],
-      color = '0xB06FFD'
+      bomb = bombTypes[2],
+      color = 0x9852B4 -- 0xB06FFD
    }
 }
 MODULE_HELP_START = 'Keys'
@@ -2457,16 +2481,23 @@ function eventKeyboard(name, key, down, x, y)
             else
                movePlayer(name, 0, 0, true, 1, 0, false)
                movePlayer(name, 0, 0, true, -1, 0, true)
+               playerData[name].vx = 0
             end
          else
             if key == 32 or key == 104 or key == 87 then
                vy = -50
             elseif key == 83 or key == 40 or key == 101 then
                vy = 50
-            elseif key == 100 then
+            elseif key == 100 or key == 37 or key == 81 then
                vx = -50
-            elseif key == 102 then
+            elseif key == 102 or key == 39 or key == 68 then
                vx = 50
+            end
+
+            if vx ~= 0 then
+               playerData[name].vx = vx
+            elseif key == 83 or key == 40 then
+               vx = playerData[name].vx
             end
 
             if vx ~= 0 or vy ~= 0 then
@@ -2594,7 +2625,10 @@ function eventLoop(ctime, rtime)
             removeBomb(name, data)
          else
             if data.bomb.callback then
-               data.bomb.callback(name, data)
+               local st, err = pcall(data.bomb.callback, name, data)
+               if not st then
+                  addError(name, 'bomb.callback: ' .. err)
+               end
             end
          end
       end

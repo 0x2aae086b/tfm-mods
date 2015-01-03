@@ -21,23 +21,24 @@ if j=='help'then help(i)elseif j=='help_close'and v==103 then
 ui.removeTextArea(100,i)ui.removeTextArea(101,i)ui.removeTextArea(102,i)
 ui.removeTextArea(103,i)else local I=MODULE_HELP[j]
 if I~=nil then ui.updateTextArea(100,I,i)
-ui.updateTextArea(101,string.format('<font face="mono" size="15"><p align="center">%s</p></font>',j),i)else return false end end;return true end;function nop()end;function alert(u,Q)
-ui.addPopup(0,0,string.format('<font face="mono" size="15">%s</font>',u),Q,200,150,400,true)end;function randomColor()return
-math.random(0x000000,0xFFFFFF)end;function rotate(D,I,d,O,C,U)D,I=D-d,I-O;D,I=D*C-I*U,
-D*U+I*C;return d+D,O+I end
-function length1(Y)return math.sqrt(
-Y.x*Y.x+Y.y*Y.y)end
-function cache2(_)local S={}return
-function(w,a)local u=S[w]local H=nil;if u==nil then u={}S[w]=u else H=u[a]end;if H==nil then
-H=_(w,a)u[a]=H end;return H end end;function split(i)local w={}for q in string.gmatch(i,'[^%s]+')do w[#w+1]=q end
-return w end
-function parsePlayerNames(m,H,g)local w={}local C
-for c,L in
-pairs(split(string.lower(H)))do
-if string.sub(L,1,1)=='!'then L=string.sub(L,2)C=nil else C=true end
-if L=='me'then w[m]=C elseif L=='all'then for c,L in pairs(playerData)do w[c]=C end else
-L=string.gsub(L,'^%l',string.upper)if playerData[L]==nil then
-alert('Invalid player: '..L,m)return else w[L]=C end end end;for d,R in pairs(w)do g(d)end end;unescape_map={a='\a',b='\b',f='\f',n='\n',r='\r',t='\t'}
+ui.updateTextArea(101,string.format('<font face="mono" size="15"><p align="center">%s</p></font>',j),i)else return false end end;return true end;function nop()end;function to_table(u)
+if u==nil or type(u)=='table'then return u else return{u}end end;function alert(Q,D)
+ui.addPopup(0,0,string.format('<font face="mono" size="15">%s</font>',Q),D,200,150,400,true)end;function randomColor()return
+math.random(0x000000,0xFFFFFF)end;function rotate(I,d,O,C,U,Y)I,d=I-O,d-C;I,d=I*U-d*Y,
+I*Y+d*U;return O+I,C+d end
+function length1(_)return math.sqrt(
+_.x*_.x+_.y*_.y)end
+function cache2(S)local w={}return
+function(a,u)local H=w[a]local i=nil;if H==nil then H={}w[a]=H else i=H[u]end;if i==nil then
+i=S(a,u)H[u]=i end;return i end end;function split(w)local q={}for m in string.gmatch(w,'[^%s]+')do q[#q+1]=m end
+return q end
+function parsePlayerNames(H,g,w)local C={}local c
+for L,d in
+pairs(split(string.lower(g)))do
+if string.sub(d,1,1)=='!'then d=string.sub(d,2)c=nil else c=true end
+if d=='me'then C[H]=c elseif d=='all'then for L,d in pairs(playerData)do C[L]=c end else
+d=string.gsub(d,'^%l',string.upper)if playerData[d]==nil then
+alert('Invalid player: '..d,H)return else C[d]=c end end end;for R,n in pairs(C)do w(R)end end;unescape_map={a='\a',b='\b',f='\f',n='\n',r='\r',t='\t'}
 function do_unescape(w,T)local A=tonumber(
 w..T)if A==nil then
 return(unescape_map[w]or w)..T else return string.char(A)end end

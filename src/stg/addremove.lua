@@ -36,8 +36,8 @@ function addObject(type, x, y, angle, vx, vy, ghost, ttl, func, func1, args)
 
    objectData[id] = {
       time = ttl,
-      callback = func,
-      on_remove = func1,
+      callback = to_table(func),
+      on_remove = to_table(func1),
       callback_args = args
    }
 
@@ -60,8 +60,8 @@ function addGround(x, y, other, ttl, func, func1, args)
 
    groundData[id] = {
       time = ttl,
-      callback = func,
-      on_remove = func1,
+      callback = to_table(func),
+      on_remove = to_table(func1),
       callback_args = args,
    }
 
@@ -89,8 +89,8 @@ function addJoint(ground0, ground1, other, ttl, func, func1, args)
 
    jointData[id] = {
       time = ttl,
-      callback = func,
-      on_remove = func1,
+      callback = to_table(func),
+      on_remove = to_table(func1),
       callback_args = args
    }
 

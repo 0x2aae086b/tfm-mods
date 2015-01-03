@@ -1,9 +1,5 @@
 function motionEnd(id, data)
-   local a = data.callback_args
-   if a._on_remove then
-      a._on_remove(id, data)
-   end
-   do_removeControl(a._controls, id)
+   do_removeControl(data.callback_args._controls, id)
 end
 
 function addControl(controls, ...)
@@ -12,10 +8,13 @@ function addControl(controls, ...)
    if data.callback_args == nil then
       data.callback_args = { _controls = controls }
    else
-      data.callback_args._on_remove = data.on_remove
       data.callback_args._controls = controls
    end
-   data.on_remove = motionEnd
+   if data.on_remove == nil then
+      data.on_remove = motionEnd
+   else
+      data.on_remove[#data.on_remove + 1] = motionEnd
+   end
    controls[#controls + 1] = id
    return id
 end

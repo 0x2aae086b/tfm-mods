@@ -62,26 +62,40 @@ function step(t, remove, list, do_list)
 
       if tm == 0 then
          if v.on_remove then
-            st, err = pcall(v.on_remove, k, v)
-            if not st then
-               addError(string.format("step(%s): on_remove %s\n",
-                                      tbl_name(t), err))
+            for k1, v1 in ipairs(v.on_remove) do
+               st, err = pcall(v1, k, v)
+               if not st then
+                  addError(nil,
+                           string.format("step(%s): on_remove[%d]: %s\n",
+                                         tbl_name(t), k1, err))
+               end
             end
          end
          ids[#ids + 1] = k
       elseif tm > 0 then
          v.time = tm - 1
          if v.callback then
-            st, err = pcall(v.callback, k, v)
-            if not st then
-               addError(string.format("step(%s): callback: %s\n",
-                                      tbl_name(t), err))
+            for k1, v1 in ipairs(v.callback) do
+               st, err = pcall(v1, k, v)
+               if not st then
+                  addError(nil,
+                           string.format("step(%s): callback[%d]: %s\n",
+                                         tbl_name(t), k1, err))
+                  ids[#ids + 1] = k
+                  break
+               end
             end
          end
       elseif v.callback then
-         st, err = pcall(v.callback, k, v)
-         if not st then
-            addError(string.format("step(%s): %s\n", tbl_name(t), err))
+         for k1, v1 in ipairs(v.callback) do
+            st, err = pcall(v1, k, v)
+            if not st then
+               addError(nil,
+                        string.format("step(%s): callback[%d]: %s\n",
+                        tbl_name(t), k1, err))
+               ids[#ids + 1] = k
+               break
+            end
          end
       end
    end

@@ -110,7 +110,7 @@ patternTypes = {
 
 playerConfig = {
    Cafecafe = {
-      bomb = bombTypes[3],
-      color = '0xB06FFD'
+      bomb = bombTypes[2],
+      color = 0x9852B4 -- 0xB06FFD
    }
 }

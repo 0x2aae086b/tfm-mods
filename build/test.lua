@@ -87,6 +87,14 @@ end
 function nop()
 end
 
+function to_table(x)
+   if x == nil or type(x) == 'table' then
+      return x
+   else
+      return { x }
+   end
+end
+
 function alert(str, name)
    ui.addPopup(0, 0, string.format('<font face="mono" size="15">%s</font>', str), name, 200, 150, 400, true)
 end

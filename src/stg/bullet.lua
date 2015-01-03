@@ -43,8 +43,8 @@ function addBullet(btype, ttl, callback, on_remove, args, ...)
          grounds = grounds,
          joints = joints,
          time = ttl or 6,
-         callback = callback,
-         on_remove = on_remove,
+         callback = to_table(callback),
+         on_remove = to_table(on_remove),
          callback_args = args
       }
    else

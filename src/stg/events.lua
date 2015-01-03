@@ -74,16 +74,23 @@ function eventKeyboard(name, key, down, x, y)
             else
                movePlayer(name, 0, 0, true, 1, 0, false)
                movePlayer(name, 0, 0, true, -1, 0, true)
+               playerData[name].vx = 0
             end
          else
             if key == 32 or key == 104 or key == 87 then
                vy = -50
             elseif key == 83 or key == 40 or key == 101 then
                vy = 50
-            elseif key == 100 then
+            elseif key == 100 or key == 37 or key == 81 then
                vx = -50
-            elseif key == 102 then
+            elseif key == 102 or key == 39 or key == 68 then
                vx = 50
+            end
+
+            if vx ~= 0 then
+               playerData[name].vx = vx
+            elseif key == 83 or key == 40 then
+               vx = playerData[name].vx
             end
 
             if vx ~= 0 or vy ~= 0 then
@@ -211,7 +218,10 @@ function eventLoop(ctime, rtime)
             removeBomb(name, data)
          else
             if data.bomb.callback then
-               data.bomb.callback(name, data)
+               local st, err = pcall(data.bomb.callback, name, data)
+               if not st then
+                  addError(name, 'bomb.callback: ' .. err)
+               end
             end
          end
       end

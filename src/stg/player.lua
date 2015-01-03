@@ -28,6 +28,7 @@ function initPlayer(name)
       pattern_data = {},
 
       spawn = { 200, 200 },
+      vx = 0,
 
       lives = 5,
       bombs = 3,
@@ -74,6 +75,8 @@ function resetPlayer(name)
 
       shot_cd = 0,
       bomb_cd = 0,
+
+      vx = 0,
 
       bomb_id = nil
    }
