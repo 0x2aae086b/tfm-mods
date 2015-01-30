@@ -4,13 +4,13 @@ function shoot(name, data)
          data.shot_cd = data.bomb.shot.cd
          local st, err = pcall(data.bomb.shot.func, name, data)
          if not st then
-            addError(name, string.format("shoot(bombing): %s: %s", name, err))
+            addError(string.format("shoot(bombing): %s: %s", name, err))
          end
       else
          data.shot_cd = data.shot.cd
          local st, err = pcall(data.shot.func, name, data)
          if not st then
-            addError(name, string.format("shoot: %s: %s", name, err))
+            addError(string.format("shoot: %s: %s", name, err))
          end
       end
    end

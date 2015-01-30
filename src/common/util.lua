@@ -1,6 +1,10 @@
 function nop()
 end
 
+function randomColor()
+   return math.random(0x000000, 0xFFFFFF)
+end
+
 function to_table(x)
    if x == nil or type(x) == 'table' then
       return x
@@ -9,12 +13,16 @@ function to_table(x)
    end
 end
 
-function alert(str, name)
-   ui.addPopup(0, 0, string.format('<font face="mono" size="15">%s</font>', str), name, 200, 150, 400, true)
-end
+_axis = {
+   '-1,0', '-1,1', '0,1', '1,1',
+   '1,0', '1,-1', '0,-1', '-1,-1'
+}
 
-function randomColor()
-   return math.random(0x000000, 0xFFFFFF)
+_axis_step = math.pi / 4.0
+
+function to_axis(angle)
+   local idx = (math.floor(angle / _axis_step) % #_axis)
+   return _axis[idx + 1], _axis_step * idx
 end
 
 function rotate(x, y, x0, y0, cos, sin)
@@ -61,7 +69,7 @@ function parsePlayerNames(name, arg, func)
    local players = {}
    local b
 
-   for k, v in pairs(split(string.lower(arg))) do
+   for k, v in ipairs(split(string.lower(arg))) do
       if string.sub(v, 1, 1) == '!' then
          v = string.sub(v, 2)
          b = nil
@@ -177,7 +185,7 @@ function randomKey1(tbl, excl_key, do_exclude)
    local keys, i = {}, 1
 
    for k, _ in pairs(tbl) do
-      if not (k == excl_key) then
+      if k ~= excl_key then
          keys[i] = k
          i = i + 1
       end

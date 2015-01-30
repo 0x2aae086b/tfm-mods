@@ -5,10 +5,16 @@ jointData = {}
 patternData = {}
 bulletData = {}
 
-errors = { '<TI><p align="center">Errors</p>' }
-
-MAX_ID = 499
+MAX_ID = 400
 MAX_ERRORS = 7
+
+CONTROL = {
+   type = 13,
+   dynamic = true,
+   mass = 1,
+   groundCollision = false,
+   miceCollision = false
+}
 
 playerKeys = { 32, 83, 40, 100, 101, 102, 104, 65, 68, 69, 81, --[[87,]] 37, 39 }
 reservedKeys = invert(playerKeys, true)
@@ -25,10 +31,12 @@ maxBombs = 6
 
 shotTypes = {
    {
+      name = 'default shot',
       func = defaultShot,
       cd = 1
    },
    {
+      name = 'homing anvils',
       func = homingShot,
       cd = 2
    }
@@ -115,6 +123,22 @@ patternTypes = {
       points = 1,
 
       maxBinds = 3,
+
+      restrict = {
+         key = {},
+         obj = nil,
+         objend = nil
+      },
+   },
+   {
+      func = testPattern3,
+      time = 32,
+      callback = nil,
+
+      cd = 250,
+      points = 1,
+
+      maxBinds = 2,
 
       restrict = {
          key = {},

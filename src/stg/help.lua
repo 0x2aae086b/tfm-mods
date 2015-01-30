@@ -48,44 +48,40 @@ Right - D, →</font>
 !unbind [all]
 !unbind key|obj|objend [&lt;name|code&gt;]
 </font>
-]],
-      ['Shot types'] = [[<font face="mono" size="15">1 - default shot
-    Cooldown: 0.5s
-
-2 - homing anvils
-    Cooldown: 1s
-</font>
-]],
-      ['Bomb types'] = [[<font face="mono" size="15">1 - default bomb
-    Cost: 1
-    Duration: 10s
-    Cooldown: 0s
-
-2 - 
-    Cost: 1
-    Duration: 10s
-    Cooldown: 2.5s
-
-3 - 
-    Cost: 1
-    Duration: 3s
-    Cooldown: 2.5s
-</font>
-]],
-      ['Pattern types'] = [[<font face="mono" size="15">1 - 
-    Cooldown: 0.25s
-    Max. binds: 3
-    Points: 1
-
-2 - 
-    Cooldown: 0.5s
-    Max. binds: 3
-    Points: 1
-</font>
 ]]
 }
 
 MODULE_HELP_CLOSE='<TI><a href="event:help_close"><p align="center">X</p></a>'
+
+do
+   local desc = function(t, n)
+      local ret = {'<font face="mono" size="15">'}
+      for k, v in ipairs(t) do
+         if v.name then
+            ret[#ret + 1] = string.format('%d - %s\n', k, v.name)
+         else
+            ret[#ret + 1] = string.format('%d\n', k)
+         end
+         if v.cost then
+            ret[#ret + 1] = string.format('    Cost: %d\n', v.cost)
+         end
+         if v.time then
+            ret[#ret + 1] = string.format('    Duration: %fs\n', v.time / 2.0)
+         end
+         if v.cd then
+            ret[#ret + 1] = string.format('    Cooldown: %fs\n', v.cd / n)
+         end
+         if v.maxBinds then
+            ret[#ret + 1] = string.format('    Max. binds: %d\n', v.maxBinds)
+         end
+         ret[#ret + 1] = '\n'
+      end
+      return table.concat(ret)
+   end
+   MODULE_HELP['Shot types'] = desc(shotTypes, 2.0)
+   MODULE_HELP['Bomb types'] = desc(bombTypes, 2.0)
+   MODULE_HELP['Pattern types'] = desc(patternTypes, 1000.0)
+end
 
 do
    local join1 = function(t, w)

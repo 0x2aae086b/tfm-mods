@@ -11,7 +11,7 @@ function pattern(name, data, btype, bcode, point)
             local st, err = pcall(addPattern, name, data, pat.type, pat.points)
             pat.points = {}
             if not st then
-               addError(name, string.format("pattern: %s: %s", name, err))
+               addError(string.format("pattern: %s: %s", name, err))
             end
          end
       else

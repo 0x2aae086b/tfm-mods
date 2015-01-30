@@ -12,6 +12,8 @@ function tbl_name(t)
       return 'bulletId'
    elseif t == patternId then
       return 'patternId'
+   elseif t == _timerId then
+      return '_timerId'
    elseif t == objectData then
       return 'objectData'
    elseif t == groundData then
@@ -22,6 +24,8 @@ function tbl_name(t)
       return 'bulletData'
    elseif t == patternData then
       return 'patternData'
+   elseif t == _timerData then
+      return '_timerData'
    end
    return '&lt;other&gt;'
 end
@@ -31,7 +35,7 @@ function make_line(v0, v1)
 
    return {
       width = math.sqrt(dx * dx + dy * dy),
-      angle = math.atan2(dy, dx) * 180.0 / math.pi,
+      angle = math.deg(math.atan2(dy, dx)),
       x = (v0[1] + v1[1]) / 2,
       y = (v0[2] + v1[2]) / 2
    }
@@ -43,7 +47,7 @@ make_star = cache2(
       local ret = {}
 
       for i = 1, n do
-         a = math.pi * 2 * i / n
+         a = math.pi * 2.0 * i / n
          tmp[#tmp + 1] = { math.cos(a), math.sin(a) }
       end
 
@@ -56,31 +60,3 @@ make_star = cache2(
       return { lines=ret, points=tmp, r=r, l=math.sqrt(1 - r*r) }
    end
 )
-
---[[
-function line(x0, y0, x1, y1, width, other)
-   local x, y = x1 - x0, y1 - y0
-
-   local obj = {
-      type = 12,
-      width = math.sqrt(x * x + y * y),
-      height = h,
-      color = 0xFFFFFF,
-      groundCollision = false,
-      miceCollision = true,
-      angle = math.atan2(y, x) * 180.0 / math.pi,
-      restitution = 255,
-      dynamic = true
-   }
-
-   if other ~= nil then
-      copy(obj, other)
-   end
-
-   id = id + 1
-
-   tfm.exec.addPhysicObject(id, (x0 + x1) / 2, (y0 + y1) / 2, obj)
-
-   return id
-end
-]]--

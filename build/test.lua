@@ -1,3 +1,121 @@
+TIME = os.time()
+TIMER_RES = 250
+
+_timerId = {
+   max = 0,
+   free = {}
+}
+
+_timerData = {
+}
+
+function initTimers()
+   TIME = os.time()
+   _timerId = {
+      max = 0,
+      free = {}
+   }
+   _timerData = {}
+end
+
+function timer()
+   local cur = os.time()
+   while TIME + TIMER_RES <= cur do
+      eventTimer()
+      TIME = TIME + TIMER_RES
+   end
+end
+
+function timers()
+   local cur = os.time()
+   local t, st, ret
+   for k, v in ipairs(_timerData) do
+      t = v.time
+      ret = true
+      while t + v.res <= cur do
+         t = t + v.res
+         st, ret = pcall(v.func, k, v)
+         if not st then
+            addError(nil, string.format('timer %d: %s', k, ret))
+            ret = false
+         end
+         if not ret then
+            break
+         end
+      end
+      if ret then
+         v.time = t
+      else
+         removeTimer(k)
+      end
+   end
+end
+
+function addTimer(func, args, res)
+   local id = newId(_timerId)
+   _timerData[id] = {
+      func = func,
+      args = args,
+      res = res,
+      time = os.time()
+   }
+end
+
+function removeTimer(id)
+   freeId(_timerId, id)
+end
+MAX_ID = 499
+
+function tbl_name(t)
+   return '&lt;table&gt;'
+end
+
+function newId(ids)
+   local free = ids.free
+   local k, v = pairs(free)(free)
+   if k then
+      free[k] = nil
+      return k
+   else
+      if ids.max == MAX_ID then
+         error(string.format("newId: %s.max == MAX_ID", tbl_name(ids)))
+      end
+      ids.max = ids.max + 1
+      return ids.max
+   end
+end
+
+function freeId(ids, id)
+   local free = ids.free
+   if id == ids.max then
+      local t = ids.max - 1
+      while free[t] do
+         free[t] = nil
+         t = t - 1
+      end
+      ids.max = t
+   else
+      free[id] = true
+   end
+end
+_errors = { '<TI><p align="center">Errors</p>' }
+
+ERROR_TA = 3
+MAX_ERRORS = 7
+
+function alert(str, name)
+   ui.addPopup(0, 0, string.format('<font face="mono" size="15">%s</font>', str), name, 200, 150, 400, true)
+end
+
+function addError(err)
+   err = string.format("• %s\n", err)
+   for i = 3, #_errors + 1 do
+      _errors[i] = _errors[i - 1]
+   end
+   _errors[2] = err
+   _errors[MAX_ERRORS + 1] = nil
+   ui.updateTextArea(ERROR_TA, table.concat(_errors), nil)
+end
 dump_func = {
    ['function'] = function(...)
       return '&lt;function&gt;'
@@ -87,6 +205,10 @@ end
 function nop()
 end
 
+function randomColor()
+   return math.random(0x000000, 0xFFFFFF)
+end
+
 function to_table(x)
    if x == nil or type(x) == 'table' then
       return x
@@ -95,12 +217,16 @@ function to_table(x)
    end
 end
 
-function alert(str, name)
-   ui.addPopup(0, 0, string.format('<font face="mono" size="15">%s</font>', str), name, 200, 150, 400, true)
-end
+_axis = {
+   '-1,0', '-1,1', '0,1', '1,1',
+   '1,0', '1,-1', '0,-1', '-1,-1'
+}
 
-function randomColor()
-   return math.random(0x000000, 0xFFFFFF)
+_axis_step = math.pi / 4.0
+
+function to_axis(angle)
+   local idx = (math.floor(angle / _axis_step) % #_axis)
+   return _axis[idx + 1], _axis_step * idx
 end
 
 function rotate(x, y, x0, y0, cos, sin)
@@ -147,7 +273,7 @@ function parsePlayerNames(name, arg, func)
    local players = {}
    local b
 
-   for k, v in pairs(split(string.lower(arg))) do
+   for k, v in ipairs(split(string.lower(arg))) do
       if string.sub(v, 1, 1) == '!' then
          v = string.sub(v, 2)
          b = nil
@@ -263,7 +389,7 @@ function randomKey1(tbl, excl_key, do_exclude)
    local keys, i = {}, 1
 
    for k, _ in pairs(tbl) do
-      if not (k == excl_key) then
+      if k ~= excl_key then
          keys[i] = k
          i = i + 1
       end
@@ -734,6 +860,7 @@ function eventNewPlayer(name)
       append = false
    }
    ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 40, 22, nil, nil, nil, true)
+   ui.addTextArea(ERROR_TA, table.concat(_errors), name, 805, 5, 200, 590, nil, nil, 0.5, true)
    --tfm.exec.setShaman(name)
    do_respawn(name)
 end
@@ -747,6 +874,7 @@ function eventNewGame()
    tfm.exec.disableAutoNewGame(true)
    tfm.exec.disableAutoScore(true)
    tfm.exec.setGameTime(0)
+   tfm.exec.addPhysicObject(0, 0, 0, { type=13, color=0xFFFFFF })
 end
 
 function eventPlayerDied(name)

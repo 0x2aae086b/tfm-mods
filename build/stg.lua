@@ -19,6 +19,10 @@ kill = tfm.exec.killPlayer
 function nop()
 end
 
+function randomColor()
+   return math.random(0x000000, 0xFFFFFF)
+end
+
 function to_table(x)
    if x == nil or type(x) == 'table' then
       return x
@@ -27,12 +31,16 @@ function to_table(x)
    end
 end
 
-function alert(str, name)
-   ui.addPopup(0, 0, string.format('<font face="mono" size="15">%s</font>', str), name, 200, 150, 400, true)
-end
+_axis = {
+   '-1,0', '-1,1', '0,1', '1,1',
+   '1,0', '1,-1', '0,-1', '-1,-1'
+}
 
-function randomColor()
-   return math.random(0x000000, 0xFFFFFF)
+_axis_step = math.pi / 4.0
+
+function to_axis(angle)
+   local idx = (math.floor(angle / _axis_step) % #_axis)
+   return _axis[idx + 1], _axis_step * idx
 end
 
 function rotate(x, y, x0, y0, cos, sin)
@@ -79,7 +87,7 @@ function parsePlayerNames(name, arg, func)
    local players = {}
    local b
 
-   for k, v in pairs(split(string.lower(arg))) do
+   for k, v in ipairs(split(string.lower(arg))) do
       if string.sub(v, 1, 1) == '!' then
          v = string.sub(v, 2)
          b = nil
@@ -195,7 +203,7 @@ function randomKey1(tbl, excl_key, do_exclude)
    local keys, i = {}, 1
 
    for k, _ in pairs(tbl) do
-      if not (k == excl_key) then
+      if k ~= excl_key then
          keys[i] = k
          i = i + 1
       end
@@ -283,6 +291,124 @@ function eventChatCommand(name, message)
       MODULE_CHAT_COMMAND_1(name, cmd, arg)
    end
 end
+MAX_ID = 499
+
+function tbl_name(t)
+   return '&lt;table&gt;'
+end
+
+function newId(ids)
+   local free = ids.free
+   local k, v = pairs(free)(free)
+   if k then
+      free[k] = nil
+      return k
+   else
+      if ids.max == MAX_ID then
+         error(string.format("newId: %s.max == MAX_ID", tbl_name(ids)))
+      end
+      ids.max = ids.max + 1
+      return ids.max
+   end
+end
+
+function freeId(ids, id)
+   local free = ids.free
+   if id == ids.max then
+      local t = ids.max - 1
+      while free[t] do
+         free[t] = nil
+         t = t - 1
+      end
+      ids.max = t
+   else
+      free[id] = true
+   end
+end
+_errors = { '<TI><p align="center">Errors</p>' }
+
+ERROR_TA = 3
+MAX_ERRORS = 7
+
+function alert(str, name)
+   ui.addPopup(0, 0, string.format('<font face="mono" size="15">%s</font>', str), name, 200, 150, 400, true)
+end
+
+function addError(err)
+   err = string.format("• %s\n", err)
+   for i = 3, #_errors + 1 do
+      _errors[i] = _errors[i - 1]
+   end
+   _errors[2] = err
+   _errors[MAX_ERRORS + 1] = nil
+   ui.updateTextArea(ERROR_TA, table.concat(_errors), nil)
+end
+TIME = os.time()
+TIMER_RES = 250
+
+_timerId = {
+   max = 0,
+   free = {}
+}
+
+_timerData = {
+}
+
+function initTimers()
+   TIME = os.time()
+   _timerId = {
+      max = 0,
+      free = {}
+   }
+   _timerData = {}
+end
+
+function timer()
+   local cur = os.time()
+   while TIME + TIMER_RES <= cur do
+      eventTimer()
+      TIME = TIME + TIMER_RES
+   end
+end
+
+function timers()
+   local cur = os.time()
+   local t, st, ret
+   for k, v in ipairs(_timerData) do
+      t = v.time
+      ret = true
+      while t + v.res <= cur do
+         t = t + v.res
+         st, ret = pcall(v.func, k, v)
+         if not st then
+            addError(nil, string.format('timer %d: %s', k, ret))
+            ret = false
+         end
+         if not ret then
+            break
+         end
+      end
+      if ret then
+         v.time = t
+      else
+         removeTimer(k)
+      end
+   end
+end
+
+function addTimer(func, args, res)
+   local id = newId(_timerId)
+   _timerData[id] = {
+      func = func,
+      args = args,
+      res = res,
+      time = os.time()
+   }
+end
+
+function removeTimer(id)
+   freeId(_timerId, id)
+end
 function setColor(name, color)
    setNameColor(name, color)
    playerData[name].color = color
@@ -297,6 +423,8 @@ function tbl_name(t)
       return 'bulletId'
    elseif t == patternId then
       return 'patternId'
+   elseif t == _timerId then
+      return '_timerId'
    elseif t == objectData then
       return 'objectData'
    elseif t == groundData then
@@ -307,6 +435,8 @@ function tbl_name(t)
       return 'bulletData'
    elseif t == patternData then
       return 'patternData'
+   elseif t == _timerData then
+      return '_timerData'
    end
    return '&lt;other&gt;'
 end
@@ -316,7 +446,7 @@ function make_line(v0, v1)
 
    return {
       width = math.sqrt(dx * dx + dy * dy),
-      angle = math.atan2(dy, dx) * 180.0 / math.pi,
+      angle = math.deg(math.atan2(dy, dx)),
       x = (v0[1] + v1[1]) / 2,
       y = (v0[2] + v1[2]) / 2
    }
@@ -328,7 +458,7 @@ make_star = cache2(
       local ret = {}
 
       for i = 1, n do
-         a = math.pi * 2 * i / n
+         a = math.pi * 2.0 * i / n
          tmp[#tmp + 1] = { math.cos(a), math.sin(a) }
       end
 
@@ -341,34 +471,6 @@ make_star = cache2(
       return { lines=ret, points=tmp, r=r, l=math.sqrt(1 - r*r) }
    end
 )
-
---[[
-function line(x0, y0, x1, y1, width, other)
-   local x, y = x1 - x0, y1 - y0
-
-   local obj = {
-      type = 12,
-      width = math.sqrt(x * x + y * y),
-      height = h,
-      color = 0xFFFFFF,
-      groundCollision = false,
-      miceCollision = true,
-      angle = math.atan2(y, x) * 180.0 / math.pi,
-      restitution = 255,
-      dynamic = true
-   }
-
-   if other ~= nil then
-      copy(obj, other)
-   end
-
-   id = id + 1
-
-   tfm.exec.addPhysicObject(id, (x0 + x1) / 2, (y0 + y1) / 2, obj)
-
-   return id
-end
-]]--
 keycode = {
    backspace = 8,
    enter = 13,
@@ -508,20 +610,6 @@ objcode = {
 }
 
 copy(objcode, tfm.enum.shamanObject)
-function addError(name, err)
-   err = string.format("• %s\n", err)
-   local l = #errors
-   if l == MAX_ERRORS then
-      for i = 3, l do
-         errors[i] = errors[i - 1]
-      end
-      errors[2] = err
-   else
-      errors[l + 1] = err
-   end
-   ui.addTextArea(3, table.concat(errors), nil, 805, 5, 200, 590, nil, nil, 0.5, true)
-end
-
 function getText(data)
    local lives = data.lives - 1
    local bombs = data.bombs
@@ -603,7 +691,7 @@ function list_bullet(t, k, v)
    t[#t + 1] = string.format("%d %d %d\n", k, v.controls[#v.controls], v.time)
 end
 
-function step(t, remove, list, do_list)
+function step(dt, t, remove, list, do_list)
    local ids = {}
    local tm
    local st, err
@@ -615,43 +703,28 @@ function step(t, remove, list, do_list)
    for k, v in pairs(t) do
       do_list(list, k, v)
 
-      tm = v.time
-
-      if tm == 0 then
+      if v.time <= 0 then
          if v.on_remove then
             for k1, v1 in ipairs(v.on_remove) do
                st, err = pcall(v1, k, v)
                if not st then
-                  addError(nil,
-                           string.format("step(%s): on_remove[%d]: %s\n",
+                  addError(string.format("step(%s): on_remove[%d]: %s\n",
                                          tbl_name(t), k1, err))
                end
             end
          end
          ids[#ids + 1] = k
-      elseif tm > 0 then
-         v.time = tm - 1
+      else
+         v.time = v.time - dt
          if v.callback then
             for k1, v1 in ipairs(v.callback) do
                st, err = pcall(v1, k, v)
                if not st then
-                  addError(nil,
-                           string.format("step(%s): callback[%d]: %s\n",
+                  addError(string.format("step(%s): callback[%d]: %s\n",
                                          tbl_name(t), k1, err))
                   ids[#ids + 1] = k
                   break
                end
-            end
-         end
-      elseif v.callback then
-         for k1, v1 in ipairs(v.callback) do
-            st, err = pcall(v1, k, v)
-            if not st then
-               addError(nil,
-                        string.format("step(%s): callback[%d]: %s\n",
-                        tbl_name(t), k1, err))
-               ids[#ids + 1] = k
-               break
             end
          end
       end
@@ -662,26 +735,42 @@ function step(t, remove, list, do_list)
    end
 end
 
-function clearT()
+function clearT(dt)
    local str = { '<TI>' }
 
    str[#str + 1] = '<p align="center">Joints</p>'
-   step(jointData, removeJoint, str)
+   step(dt, jointData, removeJoint, str)
 
    str[#str + 1] = '<p align="center">Objects</p>'
-   step(objectData, removeObject, str, list_object)
+   step(dt, objectData, removeObject, str, list_object)
 
    str[#str + 1] = '<p align="center">Grounds</p>'
-   step(groundData, removeGround, str)
+   step(dt, groundData, removeGround, str)
 
    str[#str + 1] = '<p align="center">Bullets</p>'
-   step(bulletData, removeBullet, str, list_bullet)
+   step(dt, bulletData, removeBullet, str, list_bullet)
 
    str[#str + 1] = '<p align="center">Patterns</p>'
-   step(patternData, removePattern, str)
+   step(dt, patternData, removePattern, str)
 
    ui.addTextArea(2, table.concat(str), nil, -155, 5, 150, 590, nil, nil, 0.5, true)
 end
+function shoot_bullet(id, data)
+   local a = data.callback_args
+   if a._cd == nil then
+      a._cd = 0
+   end
+   if a._cd > 0 then
+      a._cd = a._cd - 1
+   else
+      a._cd = a.cd
+      local id = addBullet(a.btype, a.bdata, a.bttl, a.callback, a.on_remove, a.cbargs)
+      if a.mtype ~= nil then
+         addMotion(a.mtype, id, true, a.mdata)
+      end
+   end
+end
+
 function explode(id, data)
    local a = data.callback_args
    addExplosion(a.x, a.y, a.power, a.distance, a.miceOnly, a.p1, a.p2)
@@ -729,35 +818,6 @@ function moveHoming(id, data)
       end
    end
 end
-function newId(ids)
-   local free = ids.free
-   local k, v = pairs(free)(free)
-   if k then
-      free[k] = nil
-      return k
-   else
-      if ids.max == MAX_ID then
-         error(string.format("newId: %s.max == MAX_ID", tbl_name(ids)))
-      end
-      ids.max = ids.max + 1
-      return ids.max
-   end
-end
-
-function freeId(ids, id)
-   local free = ids.free
-   if id == ids.max then
-      local t = ids.max - 1
-      while free[t] do
-         free[t] = nil
-         t = t - 1
-      end
-      ids.max = t
-   else
-      free[id] = true
-   end
-end
-
 function addObject(type, x, y, angle, vx, vy, ghost, ttl, func, func1, args)
    local id = do_addObject(type, x, y, angle, vx, vy, ghost)
 
@@ -881,30 +941,12 @@ function addJoint1(t, id1, id2, other)
    t[#t + 1] = id
 end
 
-function do_addControl(controls, control)
-   controls[#controls + 1] = control
-end
-
-function do_removeControl(controls, control)
-   local i = #controls
-   while i > 0 and controls[i] ~= control do
-      controls[i] = nil
-      i = i - 1
-   end
-   --[[if i > 0 then
-      while controls[i] do
-         controls[i] = nil
-         i = i + 1
-      end
-   end]]--
-end
-
-function addBullet(btype, ttl, callback, on_remove, args, ...)
+function addBullet(btype, bullet_args, ttl, callback, on_remove, args)
    local id = newId(bulletId)
 
    _tmp_grounds = {}
    _tmp_joints = {}
-   local st, control, grounds, joints = pcall(btype, ...)
+   local st, control, grounds, joints = pcall(btype, bullet_args)
 
    if st then
       bulletData[id] = {
@@ -948,7 +990,11 @@ function removeBullet(id)
 end
 bullet = {}
 
-bullet.rectangle = function(x, y, angle, width, height, jdata, hitbox_data)
+bullet.rectangle = function(a)
+   local x, y, angle = a.x, a.y, a.angle
+   local width, height = a.width, a.height
+   local jdata, hitbox_data = a.jdata, a.hitbox_data
+
    local dx, dy = math.cos(angle), math.sin(angle)
    local w = width / 2.0
 
@@ -965,8 +1011,7 @@ bullet.rectangle = function(x, y, angle, width, height, jdata, hitbox_data)
       type = 12,
       width = width,
       height = height,
-      angle = angle * 180.0 / math.pi,
-      color = 0xFFFFFF,
+      angle = math.deg(angle),
       miceCollision = true,
       groundCollision = false,
       foreground = true,
@@ -992,7 +1037,10 @@ bullet.rectangle = function(x, y, angle, width, height, jdata, hitbox_data)
    return id0, {id0}, joints
 end
 
-bullet.circle = function(x, y, R, jdata, hitbox_data)
+bullet.circle = function(a)
+   local x, y, R = a.x, a.y, a.R
+   local jdata, hitbox_data = a.jdata, a.hitbox_data
+
    local point2 = string.format('%d,%d', x, y + 1)
 
    local joint = {
@@ -1010,8 +1058,7 @@ bullet.circle = function(x, y, R, jdata, hitbox_data)
       miceCollision = true,
       groundCollision = false,
       dynamic = true,
-      restitution = 255,
-      color = 0xFFFFFF
+      restitution = 255
    }
 
    copy(hitbox, hitbox_data)
@@ -1032,7 +1079,11 @@ bullet.circle = function(x, y, R, jdata, hitbox_data)
    return id0, {id0}, joints
 end
 
-bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_data)
+bullet.butterfly = function(a)
+   local x, y, angle, R = a.x, a.y, a.angle, a.R
+   local center_jdata, wing_jdata = a.center_jdata, a.wing_jdata
+   local hitbox_data = a.hitbox_data
+
    local star = make_star(5, 2)
 
    local wing = {
@@ -1059,8 +1110,7 @@ bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_dat
       dynamic = true,
       miceCollision = true,
       groundCollision = false,
-      restitution = 255,
-      color = 0xFFFFFF
+      restitution = 255
    }
 
    copy(wing, wing_jdata)
@@ -1094,7 +1144,12 @@ bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_dat
    return id0, {id0}, joints
 end
 
-bullet.jstar = function(x, y, angle, R, points, step, line_jdata, center_jdata, hitbox_data)
+bullet.jstar = function(a)
+   local x, y, angle, R = a.x, a.y, a.angle, a.R
+   local points, step = a.points, a.step
+   local line_jdata, center_jdata = a.line_jdata, a.center_jdata
+   local hitbox_data = a.hitbox_data
+
    local star = make_star(points, step)
 
    local line = {
@@ -1126,7 +1181,6 @@ bullet.jstar = function(x, y, angle, R, points, step, line_jdata, center_jdata, 
    }
 
    copy(line, line_jdata)
-   copy(center, center_jdata)
    copy(hitbox, hitbox_data)
 
    local joints = {}
@@ -1150,12 +1204,22 @@ bullet.jstar = function(x, y, angle, R, points, step, line_jdata, center_jdata, 
       addJoint1(joints, id0, id0, line)
    end
 
-   addJoint1(joints, id0, id0, center)
+   if center_jdata then
+      for k, v in ipairs(center_jdata) do
+         copy(center, v)
+         addJoint1(joints, id0, id0, center)
+      end
+   end
 
    return id0, {id0}, joints
 end
 
-bullet.star = function(x, y, angle, R, points, step, do_cap, line_data, center_data, cap_data)
+bullet.star = function(a)
+   local x, y, angle, R = a.x, a.y, a.angle, a.R
+   local points, step, do_cap = a.points, a.step, a.do_cap
+   local line_data, center_data = a.line_data, a.center_data
+   local cap_data = a.cap_data
+
    local star = make_star(points, step)
 
    local line = {
@@ -1216,7 +1280,7 @@ bullet.star = function(x, y, angle, R, points, step, do_cap, line_data, center_d
    local lines, caps, joints = {}, {}, {}
 
    local x1, y1
-   local a = angle * 180.0 / math.pi
+   local a = math.deg(angle)
    local c, s = math.cos(angle), math.sin(angle)
 
    for k, v in ipairs(star.lines) do
@@ -1298,7 +1362,7 @@ function bomb(name, data)
          addBomb(name, data)
          updateTextAreas(name, data)
          if not st then
-            addError(name, string.format("bomb: %s: %s", name, err))
+            addError(string.format("bomb: %s: %s", name, err))
          end
       else
          alert(string.format('bombs &lt; %d', data.bomb.cost), name)
@@ -1336,20 +1400,33 @@ function removeBomb(name, data)
       setShamanName(i)
    end
 end
+function do_addControl(controls, control)
+   controls[#controls + 1] = control
+end
+
+function do_removeControl(controls, idx)
+   while controls[idx] do
+      controls[idx] = nil
+      idx = idx + 1
+   end
+end
+
 function motionEnd(id, data)
-   do_removeControl(data.callback_args._controls, id)
+   do_removeControl(data.callback_args._controls, data.callback_args._idx)
 end
 
 function addControl(controls, ...)
+   local idx = #controls + 1
    local id = addGround(...)
    local data = groundData[id]
    if data.callback_args == nil then
-      data.callback_args = { _controls = controls }
+      data.callback_args = { _controls = controls, _idx = idx }
    else
       data.callback_args._controls = controls
+      data.callback_args._idx = idx
    end
    if data.on_remove == nil then
-      data.on_remove = motionEnd
+      data.on_remove = { motionEnd }
    else
       data.on_remove[#data.on_remove + 1] = motionEnd
    end
@@ -1361,7 +1438,7 @@ function addControl1(controls, ...)
    return addGround(...)
 end
 
-function addMotion(mtype, id, is_bullet, ...)
+function addMotion(mtype, id, is_bullet, args)
    local data
    local ac
    if is_bullet then
@@ -1371,16 +1448,33 @@ function addMotion(mtype, id, is_bullet, ...)
       data = { id }
       ac = addControl1
    end
-   local st, err = pcall(mtype, ac, data, ...)
+   local st, err = pcall(mtype, ac, data, args)
    if not st then
       error(string.format("addMotion: %s", err))
    end
 end
 motion = {}
 
-motion.line = function(ac, controls, last, ttl, joint_data, x, y)
+motion.fix = function(ac, controls, args)
    local id = 0
    local id1 = controls[#controls]
+   local joint = {
+      type = 0,
+      frequency = 10
+   }
+   copy(joint, args.jdata)
+   if not args.last then
+      id = ac(controls, args.x or 0, args.y or 0, CONTROL, args.ttl or 3)
+   end
+   addJoint(id1, id, joint, args.ttl or 3)
+end
+
+motion.line = function(ac, controls, args)
+   local x = args.x or 0
+   local y = args.y or 0
+   local ttl = args.ttl or 3
+   local id = 0
+   local id1
    local joint = {
       type = 1,
       axis = '-1,0',
@@ -1388,21 +1482,23 @@ motion.line = function(ac, controls, last, ttl, joint_data, x, y)
       forceMotor = 255,
       speedMotor = 1
    }
-   copy(joint, joint_data)
-   if not last then
-      local control = {
-         type = 13,
-         dynamic = true,
-         mass = 1,
-         groundCollision = false,
-         miceCollision = false
-      }
-      id = ac(controls, x or 0, y or 0, control, ttl or 3)
+
+   copy(joint, args.jdata)
+
+   if args.free_angle then
+      motion.fix(ac, controls, { ttl = ttl, x = x, y = y })
    end
-   addJoint(id1, id, joint, ttl or 3)
+
+   id1 = controls[#controls]
+
+   if not args.last then
+      id = ac(controls, x, y, CONTROL, ttl)
+   end
+
+   addJoint(id1, id, joint, ttl)
 end
 
-motion.circle = function(ac, controls, last, ttl, joint_data, x, y)
+motion.circle = function(ac, controls, args)
    local id = 0
    local id1 = controls[#controls]
    local joint = {
@@ -1410,26 +1506,26 @@ motion.circle = function(ac, controls, last, ttl, joint_data, x, y)
       forceMotor = 255,
       speedMotor = 1
    }
-   copy(joint, joint_data)
-   if not last then
-      local control = {
-         type = 13,
-         dynamic = true,
-         mass = 1,
-         groundCollision = false,
-         miceCollision = false,
-      }
-      id = ac(controls, x or 0, y or 0, control, ttl or 3)
+   copy(joint, args.jdata)
+   if not args.last then
+      id = ac(controls, args.x or 0, args.y or 0, CONTROL, args.ttl or 3)
    end
-   if x and y then
-      joint.point1 = string.format('%d,%d', x, y)
+   if args.x and args.y then
+      joint.point1 = string.format('%d,%d', args.x, args.y)
    end
-   addJoint(id1, id, joint, ttl or 3)
+   addJoint(id1, id, joint, args.ttl or 3)
 end
 
-motion.spiral = function(ac, controls, last, ttl, tjoint, rjoint, x, y)
-   motion.line(ac, controls, false, ttl, tjoint, x, y)
-   motion.circle(ac, controls, last, ttl, rjoint, x, y)
+motion.spiral = function(ac, controls, args)
+   local last = args.last
+
+   args.last = false
+   args.jdata = args.tjoint
+   motion.line(ac, controls, args)
+
+   args.last = last
+   args.jdata = rjoint
+   motion.circle(ac, controls, args)
 end
 function addBombTimer(name, player, data, protect, scale)
    local r = data.bombTime * scale + 2
@@ -1437,7 +1533,7 @@ function addBombTimer(name, player, data, protect, scale)
    local obj = {
       type = 13,
       angle = 0,
-      color = '0xFF0000',
+      color = 0xFF0000,
       foreground = false,
       friction=0.0,
       restitution=2.0,
@@ -1469,7 +1565,7 @@ function addBombTimer(name, player, data, protect, scale)
    obj = {
       type = 13,
       angle = 0,
-      color = '0x6A7495',
+      color = 0x6A7495,
       foreground = false,
       friction=0.0,
       restitution=2.0,
@@ -1617,7 +1713,7 @@ function bomb2(name, data)
    id1 = addGround(x0, y0, ground1, ttl)
 
    for angle = 0, 359, 120 do
-      a = angle * math.pi / 180.0
+      a = math.rad(angle)
 
       x1, y1 = math.cos(a), math.sin(a)
       x, y = x0 + off * x1, y0 + off * y1
@@ -1692,7 +1788,7 @@ function bomb3(name, data)
    }
 
    for angle = 0, 359, 60 do
-      a = angle * math.pi / 180.0
+      a = math.rad(angle)
 
       x1, y1 = math.cos(a), math.sin(a)
       x, y = x0 + off * x1, y0 + off * y1
@@ -1726,7 +1822,7 @@ function pattern(name, data, btype, bcode, point)
             local st, err = pcall(addPattern, name, data, pat.type, pat.points)
             pat.points = {}
             if not st then
-               addError(name, string.format("pattern: %s: %s", name, err))
+               addError(string.format("pattern: %s: %s", name, err))
             end
          end
       else
@@ -1809,7 +1905,7 @@ function testPattern(name, data, id, points)
    local v = math.random(2, 8)
 
    local a, c, s
-   local a0 = p.angle * math.pi / 180.0
+   local a0 = math.rad(p.angle)
 
    for i = 0, n - 1 do
       a = a0 + 2.0 * math.pi * i / n
@@ -1831,25 +1927,107 @@ function testPattern1(name, data, id, points)
    local r
    local id
 
+   local bdata = {
+      angle = 0.25 - math.pi / 2.0,
+      R = 16,
+      center_jdata = {},
+      wing_jdata = { line = 24, alpha = 0.5 },
+      hitbox_data = { width = 0, height = 0, color = 0xFFFFFF, mass = 1 }
+   }
+
+   local mdata = {
+      ttl = 2,
+      last = true,
+      jdata = {}
+   }
+
    for i = 1, n do
       r = math.random(64, 96)
       a = math.random() * 2.0 * math.pi;
       c, s = math.cos(a), math.sin(a)
-      id = addBullet(bullet.butterfly, 8, nil, nil, nil,
-                     p.x + r * c, p.y + r * s, 0.25 - math.pi / 2.0, 16,
-                     {color=randomColor()},
-                     {line=24, alpha=0.5, color=randomColor()},
-                     {width=0, height=0, color=0xFFFFFF})
-      addMotion(motion.line, id, true, true, 2,
-                {speedMotor=math.random(2, 6), angle=2*math.pi-a})
+
+      bdata.x = p.x + r * c
+      bdata.y = p.y + r * s
+      bdata.center_jdata.color = randomColor()
+      bdata.wing_jdata.color = randomColor()
+
+      mdata.jdata.speedMotor=math.random(2, 6)
+      mdata.jdata.angle = 2 * math.pi - a
+
+      id = addBullet(bullet.butterfly, bdata, 8)
+      addMotion(motion.line, id, true, mdata)
    end
 end
 
 function testPattern2(name, data, id, points)
    local p = points[1]
-   addBullet(bullet.rectangle, 8, nil, nil, nil,
-             p.x, p.y, p.angle * math.pi / 180.0, math.random(200, 400),
-             13, {{color=randomColor()}}, {dynamic=false})
+   local bdata = {
+      x = p.x,
+      y = p.y,
+      angle = math.rad(p.angle),
+      width = math.random(400, 800),
+      height = 13,
+      jdata = { { color = randomColor() }, { color = 0xFFFFFF, line = 16 } },
+      hitbox_data = {
+         dynamic = true,
+         mass = 1,
+         linearDamping = 255,
+         angularDamping = 255
+      }
+   }
+   addBullet(bullet.rectangle, bdata, 8)
+end
+
+function testPattern3(name, data, id, points)
+   local p = points[1]
+   local c = randomColor()
+   local ax, a = to_axis(math.rad(-p.angle))
+   local bdata = {
+      x = p.x,
+      y = p.y,
+      angle = a,
+      R = 36,
+      points = math.random(5, 8),
+      step = 2,
+      line_jdata = { color = c },
+      center_jdata = {
+         { foreground = false, color = c, line = 76 },
+         { color = 0x6A7495, line = 70 }
+      },
+      hitbox_data = { dynamic = true, miceCollision = false }
+   }
+   local cb_args = {
+      cd = 0,
+      btype = bullet.rectangle,
+      bttl = 10,
+      bdata = {
+         x = p.x,
+         y = p.y,
+         angle = -a,
+         width = 128,
+         height = 13,
+         jdata = {
+            { color = randomColor(), foreground = false },
+            { color = 0xFFFFFF, line = 16, foreground = true }
+         },
+         hitbox_data = {
+            dynamic = true,
+            fixedRotation = true,
+            mass = 1
+         }
+      },
+      mtype = motion.line,
+      mdata = {
+         x = p.x,
+         y = p.y,
+         ttl = 1,
+         last = true,
+         free_angle = true,
+         jdata = { speedMotor = 8, axis = ax }
+      }
+   }
+   local id = addBullet(bullet.jstar, bdata, 32, shoot_bullet, nil, cb_args)
+   addMotion(motion.circle, id, true, { last = true, ttl = 2, jdata = { speedMotor = 4 } })
 end
 function shoot(name, data)
    if data.shot_cd == 0 then
@@ -1857,13 +2035,13 @@ function shoot(name, data)
          data.shot_cd = data.bomb.shot.cd
          local st, err = pcall(data.bomb.shot.func, name, data)
          if not st then
-            addError(name, string.format("shoot(bombing): %s: %s", name, err))
+            addError(string.format("shoot(bombing): %s: %s", name, err))
          end
       else
          data.shot_cd = data.shot.cd
          local st, err = pcall(data.shot.func, name, data)
          if not st then
-            addError(name, string.format("shoot: %s: %s", name, err))
+            addError(string.format("shoot: %s: %s", name, err))
          end
       end
    end
@@ -1879,25 +2057,41 @@ function defaultShot(name, data)
    end
 
    local a = math.random() * math.pi
-   local id = addBullet(bullet.jstar,
-                        8, nil, nil, nil,
-                        x + 64 * math.cos(a), y + 64 * math.sin(a),
-                        0, 16, 5, 2,
-                        {color=randomColor()},
-                        nil, nil
-   )
+
+   local bdata = {
+      x = x + 64 * math.cos(a),
+      y = y + 64 * math.sin(a),
+      angle = 0,
+      R = 16,
+      points = 5,
+      step = 2,
+      line_jdata = { color = randomColor() },
+      center_jdata = {{}}
+   }
+
+   local mdata = {
+      last = true,
+      ttl = math.random(1, 4),
+      x = x,
+      y = y,
+      jdata = { speedMotor = 4 * k }
+   }
+
+   local id = addBullet(bullet.jstar, bdata, 8)
 
    a = math.random() * math.pi + math.pi
-   local id1 = addBullet(bullet.jstar,
-                        8, nil, nil, nil,
-                        x + 64 * math.cos(a), y + 64 * math.sin(a),
-                        0, 16, 5, 2,
-                        {color=randomColor()},
-                        nil, nil
-   )
+   bdata.x = x + 64 * math.cos(a)
+   bdata.y = y + 64 * math.sin(a)
+   bdata.line_jdata.color = randomColor()
 
-   addMotion(motion.circle, id, true, true, math.random(1, 4), {speedMotor=4*k}, x, y)
-   addMotion(motion.circle, id1, true, true, math.random(1, 4), {speedMotor=-4*k}, x, y)
+   local id1 = addBullet(bullet.jstar, bdata, 8)
+
+   addMotion(motion.circle, id, true, mdata)
+
+   mdata.ttl = math.random(1, 4)
+   mdata.jdata.speedMotor = - 4 * k
+
+   addMotion(motion.circle, id1, true, mdata)
 end
 
 function homingShot(name, data)
@@ -1992,7 +2186,7 @@ function initPlayer(name)
 
    ui.addTextArea(1, getText(data), name, 5, 25, 151, 40, nil, nil, 0.5, true)
    ui.addTextArea(104, '<TI><a href="event:help">?</a>', name, 145, 25, 11, 20, nil, nil, 0.0, true)
-   ui.addTextArea(3, table.concat(errors), name, 805, 5, 200, 590, nil, nil, 0.5, true)
+   ui.addTextArea(ERROR_TA, table.concat(_errors), name, 805, 5, 200, 590, nil, nil, 0.5, true)
 
    do_respawn(name)
    setShaman(name)
@@ -2028,7 +2222,6 @@ function resetPlayer(name)
 end
 
 function deletePlayer(name)
-   --ui.removeTextArea(1, name)
    local data = playerData[name]
    if data.bombing then
       removeBomb(name, data)
@@ -2047,10 +2240,16 @@ jointData = {}
 patternData = {}
 bulletData = {}
 
-errors = { '<TI><p align="center">Errors</p>' }
-
-MAX_ID = 499
+MAX_ID = 400
 MAX_ERRORS = 7
+
+CONTROL = {
+   type = 13,
+   dynamic = true,
+   mass = 1,
+   groundCollision = false,
+   miceCollision = false
+}
 
 playerKeys = { 32, 83, 40, 100, 101, 102, 104, 65, 68, 69, 81, --[[87,]] 37, 39 }
 reservedKeys = invert(playerKeys, true)
@@ -2163,6 +2362,22 @@ patternTypes = {
          obj = nil,
          objend = nil
       },
+   },
+   {
+      func = testPattern3,
+      time = 32,
+      callback = nil,
+
+      cd = 250,
+      points = 1,
+
+      maxBinds = 2,
+
+      restrict = {
+         key = {},
+         obj = nil,
+         objend = nil
+      },
    }
 }
 
@@ -2222,44 +2437,40 @@ Right - D, →</font>
 !unbind [all]
 !unbind key|obj|objend [&lt;name|code&gt;]
 </font>
-]],
-      ['Shot types'] = [[<font face="mono" size="15">1 - default shot
-    Cooldown: 0.5s
-
-2 - homing anvils
-    Cooldown: 1s
-</font>
-]],
-      ['Bomb types'] = [[<font face="mono" size="15">1 - default bomb
-    Cost: 1
-    Duration: 10s
-    Cooldown: 0s
-
-2 - 
-    Cost: 1
-    Duration: 10s
-    Cooldown: 2.5s
-
-3 - 
-    Cost: 1
-    Duration: 3s
-    Cooldown: 2.5s
-</font>
-]],
-      ['Pattern types'] = [[<font face="mono" size="15">1 - 
-    Cooldown: 0.25s
-    Max. binds: 3
-    Points: 1
-
-2 - 
-    Cooldown: 0.5s
-    Max. binds: 3
-    Points: 1
-</font>
 ]]
 }
 
 MODULE_HELP_CLOSE='<TI><a href="event:help_close"><p align="center">X</p></a>'
+
+do
+   local desc = function(t, n)
+      local ret = {'<font face="mono" size="15">'}
+      for k, v in ipairs(t) do
+         if v.name then
+            ret[#ret + 1] = string.format('%d - %s\n', k, v.name)
+         else
+            ret[#ret + 1] = string.format('%d\n', k)
+         end
+         if v.cost then
+            ret[#ret + 1] = string.format('    Cost: %d\n', v.cost)
+         end
+         if v.time then
+            ret[#ret + 1] = string.format('    Duration: %fs\n', v.time / 2.0)
+         end
+         if v.cd then
+            ret[#ret + 1] = string.format('    Cooldown: %fs\n', v.cd / n)
+         end
+         if v.maxBinds then
+            ret[#ret + 1] = string.format('    Max. binds: %d\n', v.maxBinds)
+         end
+         ret[#ret + 1] = '\n'
+      end
+      return table.concat(ret)
+   end
+   MODULE_HELP['Shot types'] = desc(shotTypes, 2.0)
+   MODULE_HELP['Bomb types'] = desc(bombTypes, 2.0)
+   MODULE_HELP['Pattern types'] = desc(patternTypes, 1000.0)
+end
 
 do
    local join1 = function(t, w)
@@ -2473,6 +2684,8 @@ eventPlayerLeft = deletePlayer
 eventTextAreaCallback = helpTextAreaCallback
 
 function eventNewGame()
+   initTimers()
+
    tfm.exec.disableAfkDeath(true)
    tfm.exec.disableAutoNewGame(true)
    tfm.exec.disableAutoScore(true)
@@ -2633,7 +2846,7 @@ end
 function eventLoop(ctime, rtime)
    local player, x, y, vx, vy, ax, ay, i
 
-   clearT()
+   clearT(1)
 
    for name, data in pairs(playerData) do
       player = tfm.get.room.playerList[name]
@@ -2690,7 +2903,7 @@ function eventLoop(ctime, rtime)
             if data.bomb.callback then
                local st, err = pcall(data.bomb.callback, name, data)
                if not st then
-                  addError(name, 'bomb.callback: ' .. err)
+                  addError('bomb.callback: ' .. err)
                end
             end
          end

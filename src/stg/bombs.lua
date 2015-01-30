@@ -4,7 +4,7 @@ function addBombTimer(name, player, data, protect, scale)
    local obj = {
       type = 13,
       angle = 0,
-      color = '0xFF0000',
+      color = 0xFF0000,
       foreground = false,
       friction=0.0,
       restitution=2.0,
@@ -36,7 +36,7 @@ function addBombTimer(name, player, data, protect, scale)
    obj = {
       type = 13,
       angle = 0,
-      color = '0x6A7495',
+      color = 0x6A7495,
       foreground = false,
       friction=0.0,
       restitution=2.0,
@@ -184,7 +184,7 @@ function bomb2(name, data)
    id1 = addGround(x0, y0, ground1, ttl)
 
    for angle = 0, 359, 120 do
-      a = angle * math.pi / 180.0
+      a = math.rad(angle)
 
       x1, y1 = math.cos(a), math.sin(a)
       x, y = x0 + off * x1, y0 + off * y1
@@ -259,7 +259,7 @@ function bomb3(name, data)
    }
 
    for angle = 0, 359, 60 do
-      a = angle * math.pi / 180.0
+      a = math.rad(angle)
 
       x1, y1 = math.cos(a), math.sin(a)
       x, y = x0 + off * x1, y0 + off * y1

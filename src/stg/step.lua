@@ -46,7 +46,7 @@ function list_bullet(t, k, v)
    t[#t + 1] = string.format("%d %d %d\n", k, v.controls[#v.controls], v.time)
 end
 
-function step(t, remove, list, do_list)
+function step(dt, t, remove, list, do_list)
    local ids = {}
    local tm
    local st, err
@@ -58,43 +58,28 @@ function step(t, remove, list, do_list)
    for k, v in pairs(t) do
       do_list(list, k, v)
 
-      tm = v.time
-
-      if tm == 0 then
+      if v.time <= 0 then
          if v.on_remove then
             for k1, v1 in ipairs(v.on_remove) do
                st, err = pcall(v1, k, v)
                if not st then
-                  addError(nil,
-                           string.format("step(%s): on_remove[%d]: %s\n",
+                  addError(string.format("step(%s): on_remove[%d]: %s\n",
                                          tbl_name(t), k1, err))
                end
             end
          end
          ids[#ids + 1] = k
-      elseif tm > 0 then
-         v.time = tm - 1
+      else
+         v.time = v.time - dt
          if v.callback then
             for k1, v1 in ipairs(v.callback) do
                st, err = pcall(v1, k, v)
                if not st then
-                  addError(nil,
-                           string.format("step(%s): callback[%d]: %s\n",
+                  addError(string.format("step(%s): callback[%d]: %s\n",
                                          tbl_name(t), k1, err))
                   ids[#ids + 1] = k
                   break
                end
-            end
-         end
-      elseif v.callback then
-         for k1, v1 in ipairs(v.callback) do
-            st, err = pcall(v1, k, v)
-            if not st then
-               addError(nil,
-                        string.format("step(%s): callback[%d]: %s\n",
-                        tbl_name(t), k1, err))
-               ids[#ids + 1] = k
-               break
             end
          end
       end
@@ -105,23 +90,23 @@ function step(t, remove, list, do_list)
    end
 end
 
-function clearT()
+function clearT(dt)
    local str = { '<TI>' }
 
    str[#str + 1] = '<p align="center">Joints</p>'
-   step(jointData, removeJoint, str)
+   step(dt, jointData, removeJoint, str)
 
    str[#str + 1] = '<p align="center">Objects</p>'
-   step(objectData, removeObject, str, list_object)
+   step(dt, objectData, removeObject, str, list_object)
 
    str[#str + 1] = '<p align="center">Grounds</p>'
-   step(groundData, removeGround, str)
+   step(dt, groundData, removeGround, str)
 
    str[#str + 1] = '<p align="center">Bullets</p>'
-   step(bulletData, removeBullet, str, list_bullet)
+   step(dt, bulletData, removeBullet, str, list_bullet)
 
    str[#str + 1] = '<p align="center">Patterns</p>'
-   step(patternData, removePattern, str)
+   step(dt, patternData, removePattern, str)
 
    ui.addTextArea(2, table.concat(str), nil, -155, 5, 150, 590, nil, nil, 0.5, true)
 end

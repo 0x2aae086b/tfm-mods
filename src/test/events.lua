@@ -5,6 +5,7 @@ function eventNewPlayer(name)
       append = false
    }
    ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 40, 22, nil, nil, nil, true)
+   ui.addTextArea(ERROR_TA, table.concat(_errors), name, 805, 5, 200, 590, nil, nil, 0.5, true)
    --tfm.exec.setShaman(name)
    do_respawn(name)
 end
@@ -18,6 +19,7 @@ function eventNewGame()
    tfm.exec.disableAutoNewGame(true)
    tfm.exec.disableAutoScore(true)
    tfm.exec.setGameTime(0)
+   tfm.exec.addPhysicObject(0, 0, 0, { type=13, color=0xFFFFFF })
 end
 
 function eventPlayerDied(name)

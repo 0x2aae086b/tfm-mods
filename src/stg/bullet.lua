@@ -12,30 +12,12 @@ function addJoint1(t, id1, id2, other)
    t[#t + 1] = id
 end
 
-function do_addControl(controls, control)
-   controls[#controls + 1] = control
-end
-
-function do_removeControl(controls, control)
-   local i = #controls
-   while i > 0 and controls[i] ~= control do
-      controls[i] = nil
-      i = i - 1
-   end
-   --[[if i > 0 then
-      while controls[i] do
-         controls[i] = nil
-         i = i + 1
-      end
-   end]]--
-end
-
-function addBullet(btype, ttl, callback, on_remove, args, ...)
+function addBullet(btype, bullet_args, ttl, callback, on_remove, args)
    local id = newId(bulletId)
 
    _tmp_grounds = {}
    _tmp_joints = {}
-   local st, control, grounds, joints = pcall(btype, ...)
+   local st, control, grounds, joints = pcall(btype, bullet_args)
 
    if st then
       bulletData[id] = {

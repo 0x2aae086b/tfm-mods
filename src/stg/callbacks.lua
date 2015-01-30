@@ -1,3 +1,19 @@
+function shoot_bullet(id, data)
+   local a = data.callback_args
+   if a._cd == nil then
+      a._cd = 0
+   end
+   if a._cd > 0 then
+      a._cd = a._cd - 1
+   else
+      a._cd = a.cd
+      local id = addBullet(a.btype, a.bdata, a.bttl, a.callback, a.on_remove, a.cbargs)
+      if a.mtype ~= nil then
+         addMotion(a.mtype, id, true, a.mdata)
+      end
+   end
+end
+
 function explode(id, data)
    local a = data.callback_args
    addExplosion(a.x, a.y, a.power, a.distance, a.miceOnly, a.p1, a.p2)

@@ -1,17 +1,3 @@
-function addError(name, err)
-   err = string.format("• %s\n", err)
-   local l = #errors
-   if l == MAX_ERRORS then
-      for i = 3, l do
-         errors[i] = errors[i - 1]
-      end
-      errors[2] = err
-   else
-      errors[l + 1] = err
-   end
-   ui.addTextArea(3, table.concat(errors), nil, 805, 5, 200, 590, nil, nil, 0.5, true)
-end
-
 function getText(data)
    local lives = data.lives - 1
    local bombs = data.bombs

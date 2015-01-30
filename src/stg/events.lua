@@ -3,6 +3,8 @@ eventPlayerLeft = deletePlayer
 eventTextAreaCallback = helpTextAreaCallback
 
 function eventNewGame()
+   initTimers()
+
    tfm.exec.disableAfkDeath(true)
    tfm.exec.disableAutoNewGame(true)
    tfm.exec.disableAutoScore(true)
@@ -163,7 +165,7 @@ end
 function eventLoop(ctime, rtime)
    local player, x, y, vx, vy, ax, ay, i
 
-   clearT()
+   clearT(1)
 
    for name, data in pairs(playerData) do
       player = tfm.get.room.playerList[name]
@@ -220,7 +222,7 @@ function eventLoop(ctime, rtime)
             if data.bomb.callback then
                local st, err = pcall(data.bomb.callback, name, data)
                if not st then
-                  addError(name, 'bomb.callback: ' .. err)
+                  addError('bomb.callback: ' .. err)
                end
             end
          end

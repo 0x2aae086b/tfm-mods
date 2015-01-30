@@ -1,6 +1,10 @@
 bullet = {}
 
-bullet.rectangle = function(x, y, angle, width, height, jdata, hitbox_data)
+bullet.rectangle = function(a)
+   local x, y, angle = a.x, a.y, a.angle
+   local width, height = a.width, a.height
+   local jdata, hitbox_data = a.jdata, a.hitbox_data
+
    local dx, dy = math.cos(angle), math.sin(angle)
    local w = width / 2.0
 
@@ -17,8 +21,7 @@ bullet.rectangle = function(x, y, angle, width, height, jdata, hitbox_data)
       type = 12,
       width = width,
       height = height,
-      angle = angle * 180.0 / math.pi,
-      color = 0xFFFFFF,
+      angle = math.deg(angle),
       miceCollision = true,
       groundCollision = false,
       foreground = true,
@@ -44,7 +47,10 @@ bullet.rectangle = function(x, y, angle, width, height, jdata, hitbox_data)
    return id0, {id0}, joints
 end
 
-bullet.circle = function(x, y, R, jdata, hitbox_data)
+bullet.circle = function(a)
+   local x, y, R = a.x, a.y, a.R
+   local jdata, hitbox_data = a.jdata, a.hitbox_data
+
    local point2 = string.format('%d,%d', x, y + 1)
 
    local joint = {
@@ -62,8 +68,7 @@ bullet.circle = function(x, y, R, jdata, hitbox_data)
       miceCollision = true,
       groundCollision = false,
       dynamic = true,
-      restitution = 255,
-      color = 0xFFFFFF
+      restitution = 255
    }
 
    copy(hitbox, hitbox_data)
@@ -84,7 +89,11 @@ bullet.circle = function(x, y, R, jdata, hitbox_data)
    return id0, {id0}, joints
 end
 
-bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_data)
+bullet.butterfly = function(a)
+   local x, y, angle, R = a.x, a.y, a.angle, a.R
+   local center_jdata, wing_jdata = a.center_jdata, a.wing_jdata
+   local hitbox_data = a.hitbox_data
+
    local star = make_star(5, 2)
 
    local wing = {
@@ -111,8 +120,7 @@ bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_dat
       dynamic = true,
       miceCollision = true,
       groundCollision = false,
-      restitution = 255,
-      color = 0xFFFFFF
+      restitution = 255
    }
 
    copy(wing, wing_jdata)
@@ -146,7 +154,12 @@ bullet.butterfly = function(x, y, angle, R, center_jdata, wing_jdata, hitbox_dat
    return id0, {id0}, joints
 end
 
-bullet.jstar = function(x, y, angle, R, points, step, line_jdata, center_jdata, hitbox_data)
+bullet.jstar = function(a)
+   local x, y, angle, R = a.x, a.y, a.angle, a.R
+   local points, step = a.points, a.step
+   local line_jdata, center_jdata = a.line_jdata, a.center_jdata
+   local hitbox_data = a.hitbox_data
+
    local star = make_star(points, step)
 
    local line = {
@@ -178,7 +191,6 @@ bullet.jstar = function(x, y, angle, R, points, step, line_jdata, center_jdata, 
    }
 
    copy(line, line_jdata)
-   copy(center, center_jdata)
    copy(hitbox, hitbox_data)
 
    local joints = {}
@@ -202,12 +214,22 @@ bullet.jstar = function(x, y, angle, R, points, step, line_jdata, center_jdata, 
       addJoint1(joints, id0, id0, line)
    end
 
-   addJoint1(joints, id0, id0, center)
+   if center_jdata then
+      for k, v in ipairs(center_jdata) do
+         copy(center, v)
+         addJoint1(joints, id0, id0, center)
+      end
+   end
 
    return id0, {id0}, joints
 end
 
-bullet.star = function(x, y, angle, R, points, step, do_cap, line_data, center_data, cap_data)
+bullet.star = function(a)
+   local x, y, angle, R = a.x, a.y, a.angle, a.R
+   local points, step, do_cap = a.points, a.step, a.do_cap
+   local line_data, center_data = a.line_data, a.center_data
+   local cap_data = a.cap_data
+
    local star = make_star(points, step)
 
    local line = {
@@ -268,7 +290,7 @@ bullet.star = function(x, y, angle, R, points, step, do_cap, line_data, center_d
    local lines, caps, joints = {}, {}, {}
 
    local x1, y1
-   local a = angle * 180.0 / math.pi
+   local a = math.deg(angle)
    local c, s = math.cos(angle), math.sin(angle)
 
    for k, v in ipairs(star.lines) do

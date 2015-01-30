@@ -9,25 +9,41 @@ function defaultShot(name, data)
    end
 
    local a = math.random() * math.pi
-   local id = addBullet(bullet.jstar,
-                        8, nil, nil, nil,
-                        x + 64 * math.cos(a), y + 64 * math.sin(a),
-                        0, 16, 5, 2,
-                        {color=randomColor()},
-                        nil, nil
-   )
+
+   local bdata = {
+      x = x + 64 * math.cos(a),
+      y = y + 64 * math.sin(a),
+      angle = 0,
+      R = 16,
+      points = 5,
+      step = 2,
+      line_jdata = { color = randomColor() },
+      center_jdata = {{}}
+   }
+
+   local mdata = {
+      last = true,
+      ttl = math.random(1, 4),
+      x = x,
+      y = y,
+      jdata = { speedMotor = 4 * k }
+   }
+
+   local id = addBullet(bullet.jstar, bdata, 8)
 
    a = math.random() * math.pi + math.pi
-   local id1 = addBullet(bullet.jstar,
-                        8, nil, nil, nil,
-                        x + 64 * math.cos(a), y + 64 * math.sin(a),
-                        0, 16, 5, 2,
-                        {color=randomColor()},
-                        nil, nil
-   )
+   bdata.x = x + 64 * math.cos(a)
+   bdata.y = y + 64 * math.sin(a)
+   bdata.line_jdata.color = randomColor()
 
-   addMotion(motion.circle, id, true, true, math.random(1, 4), {speedMotor=4*k}, x, y)
-   addMotion(motion.circle, id1, true, true, math.random(1, 4), {speedMotor=-4*k}, x, y)
+   local id1 = addBullet(bullet.jstar, bdata, 8)
+
+   addMotion(motion.circle, id, true, mdata)
+
+   mdata.ttl = math.random(1, 4)
+   mdata.jdata.speedMotor = - 4 * k
+
+   addMotion(motion.circle, id1, true, mdata)
 end
 
 function homingShot(name, data)

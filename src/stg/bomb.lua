@@ -8,7 +8,7 @@ function bomb(name, data)
          addBomb(name, data)
          updateTextAreas(name, data)
          if not st then
-            addError(name, string.format("bomb: %s: %s", name, err))
+            addError(string.format("bomb: %s: %s", name, err))
          end
       else
          alert(string.format('bombs &lt; %d', data.bomb.cost), name)
