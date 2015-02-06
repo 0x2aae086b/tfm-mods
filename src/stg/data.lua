@@ -84,7 +84,6 @@ bombTypes = {
 patternTypes = {
    {
       func = testPattern,
-      time = 0,
       callback = nil,
 
       cd = 250,
@@ -100,7 +99,6 @@ patternTypes = {
    },
    {
       func = testPattern1,
-      time = 0,
       callback = nil,
 
       cd = 500,
@@ -116,7 +114,6 @@ patternTypes = {
    },
    {
       func = testPattern2,
-      time = 0,
       callback = nil,
 
       cd = 250,
@@ -132,10 +129,9 @@ patternTypes = {
    },
    {
       func = testPattern3,
-      time = 32,
       callback = nil,
 
-      cd = 250,
+      cd = 16000,
       points = 1,
 
       maxBinds = 2,

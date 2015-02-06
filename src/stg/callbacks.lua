@@ -61,3 +61,36 @@ function moveHoming(id, data)
       end
    end
 end
+
+function moveHoming1(id, data)
+   local a = data.callback_args
+   if a.delay > 0 then
+      a.delay = a.delay - 1
+   else
+      local dx, dy
+      local p = nil
+
+      if a.target then
+         p = tfm.get.room.playerList[a.target]
+      end
+
+      if p then
+         dx, dy = p.x - a.x, p.y - a.y
+      elseif a.target_x then
+         dx, dy = a.target_x - a.x, a.target_y - a.y
+      else
+         return
+      end
+
+      local l = math.min(math.sqrt(dx * dx + dy * dy), a.max_step)
+      if l > a.min_step then
+         local ax, a1 = to_axis(-math.atan2(dy, dx))
+         a.jdata.limit2 = l / 30.0
+         a.jdata.axis = ax
+         a.x = a.x + l * math.cos(-a1)
+         a.y = a.y + l * math.sin(-a1)
+         do_addJoint(a.jid, a.gid, 0, a.jdata)
+         a.delay = a.delay1
+      end
+   end
+end

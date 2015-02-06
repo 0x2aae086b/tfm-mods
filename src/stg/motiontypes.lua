@@ -14,6 +14,41 @@ motion.fix = function(ac, controls, args)
    addJoint(id1, id, joint, args.ttl or 3)
 end
 
+motion.follow = function(ac, controls, args)
+   args.x = args.x or 0
+   args.y = args.y or 0
+   args.ttl = args.ttl or 3
+   args.delay = args.delay or 0
+   args.delay1 = args.delay1 or 0
+   args.max_step = args.max_step or 3000
+   args.min_step = args.min_step or 30
+
+   if args.target == nil then
+      args.target = randomKey1(tfm.get.room.playerList, args.no_target, true)
+   end
+
+   local id1 = controls[#controls]
+   local id = ac(controls, args.x, args.y, CONTROL, args.ttl, moveHoming1, nil, args)
+
+   local joint = {
+      type = 0,
+      frequency = args.frequency or (1.0 / (1.0 + args.delay1))
+   }
+   local jdata = {
+      type = 1,
+      forceMotor = 255,
+      speedMotor = 127
+   }
+   copy(jdata, args.jdata)
+
+   addJoint(id1, id, joint, args.ttl)
+
+   args.jdata = jdata
+   args.gid = id
+   args.jid = addJoint(id, 0, joint, args.ttl)
+   --do_removeJoint(args.jid)
+end
+
 motion.line = function(ac, controls, args) -- limit = px / 30
    local x = args.x or 0
    local y = args.y or 0

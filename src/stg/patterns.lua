@@ -65,18 +65,22 @@ function testPattern2(name, data, id, points)
    local bdata = {
       x = p.x,
       y = p.y,
-      angle = math.rad(p.angle),
-      width = math.random(400, 800),
-      height = 13,
-      jdata = { { color = randomColor() }, { color = 0xFFFFFF, line = 16 } },
-      hitbox_data = {
-         dynamic = true,
-         mass = 1,
-         linearDamping = 255,
-         angularDamping = 255
-      }
+      R = 16,
+      jdata = {{ color = randomColor(), line = 32 }},
+      hitbox_data = { width = 0, height = 0, color = 0xFFFFFF, mass = 1 }
    }
-   addBullet(bullet.rectangle, bdata, 8)
+   local mdata = {
+      ttl = 8,
+      last = true,
+      x = p.x,
+      y = p.y,
+      delay = 2,
+      delay1 = 1,
+      max_step = 1000,
+      --no_target = name
+   }
+   local id = addBullet(bullet.circle, bdata, 8)
+   addMotion(motion.follow, id, true, mdata)
 end
 
 function testPattern3(name, data, id, points)

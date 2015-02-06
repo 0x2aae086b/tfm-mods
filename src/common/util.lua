@@ -5,6 +5,14 @@ function randomColor()
    return math.random(0x000000, 0xFFFFFF)
 end
 
+function round(x)
+   local ret = math.floor(x)
+   if x - ret >= 0.5 then
+      ret = ret + 1.0
+   end
+   return ret
+end
+
 function to_table(x)
    if x == nil or type(x) == 'table' then
       return x
@@ -21,7 +29,7 @@ _axis = {
 _axis_step = math.pi / 4.0
 
 function to_axis(angle)
-   local idx = (math.floor(angle / _axis_step) % #_axis)
+   local idx = (round(angle / _axis_step) % #_axis)
    return _axis[idx + 1], _axis_step * idx
 end
 

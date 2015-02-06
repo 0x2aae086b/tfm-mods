@@ -1,212 +1,34 @@
-TIME = os.time()
-TIMER_RES = 250
-
-_timerId = {
-   max = 0,
-   free = {}
-}
-
-_timerData = {
-}
-
-function initTimers()
-   TIME = os.time()
-   _timerId = {
-      max = 0,
-      free = {}
-   }
-   _timerData = {}
-end
-
-function timer()
-   local cur = os.time()
-   while TIME + TIMER_RES <= cur do
-      eventTimer()
-      TIME = TIME + TIMER_RES
-   end
-end
-
-function timers()
-   local cur = os.time()
-   local t, st, ret
-   for k, v in ipairs(_timerData) do
-      t = v.time
-      ret = true
-      while t + v.res <= cur do
-         t = t + v.res
-         st, ret = pcall(v.func, k, v)
-         if not st then
-            addError(nil, string.format('timer %d: %s', k, ret))
-            ret = false
-         end
-         if not ret then
-            break
-         end
-      end
-      if ret then
-         v.time = t
-      else
-         removeTimer(k)
-      end
-   end
-end
-
-function addTimer(func, args, res)
-   local id = newId(_timerId)
-   _timerData[id] = {
-      func = func,
-      args = args,
-      res = res,
-      time = os.time()
-   }
-end
-
-function removeTimer(id)
-   freeId(_timerId, id)
-end
-MAX_ID = 499
-
-function tbl_name(t)
-   return '&lt;table&gt;'
-end
-
-function newId(ids)
-   local free = ids.free
-   local k, v = pairs(free)(free)
-   if k then
-      free[k] = nil
-      return k
-   else
-      if ids.max == MAX_ID then
-         error(string.format("newId: %s.max == MAX_ID", tbl_name(ids)))
-      end
-      ids.max = ids.max + 1
-      return ids.max
-   end
-end
-
-function freeId(ids, id)
-   local free = ids.free
-   if id == ids.max then
-      local t = ids.max - 1
-      while free[t] do
-         free[t] = nil
-         t = t - 1
-      end
-      ids.max = t
-   else
-      free[id] = true
-   end
-end
-_errors = { '<TI><p align="center">Errors</p>' }
-
-ERROR_TA = 3
-MAX_ERRORS = 7
-
-function alert(str, name)
-   ui.addPopup(0, 0, string.format('<font face="mono" size="15">%s</font>', str), name, 200, 150, 400, true)
-end
-
-function addError(err)
-   err = string.format("• %s\n", err)
-   for i = 3, #_errors + 1 do
-      _errors[i] = _errors[i - 1]
-   end
-   _errors[2] = err
-   _errors[MAX_ERRORS + 1] = nil
-   ui.updateTextArea(ERROR_TA, table.concat(_errors), nil)
-end
-dump_func = {
-   ['function'] = function(...)
-      return '&lt;function&gt;'
-   end,
-   ['userdata'] = function(...)
-      return '&lt;userdata&gt;'
-   end,
-   ['thread'] = function(...)
-      return '&lt;thread&gt;'
-   end,
-
-   ['nil'] = function(...)
-      return 'nil'
-   end,
-
-   ['number'] = function(var, ...)
-      return tostring(var)
-   end,
-
-   ['boolean'] = function(var, ...)
-      return tostring(var)
-   end,
-
-   ['string'] = function(var, ...)
-      for k, v in ipairs({{'&', '&amp;'}, {'<', '&lt;'}, {'>', '&gt;'}}) do
-         var = string.gsub(var, v[1], v[2])
-      end
-      return string.format('%q', var)
-   end,
-
-   ['table'] = function(var, off)
-      if off == nil then
-         off = ''
-      end
-
-      local ret = { "{\n" }
-      local off1 = off .. ' '
-
-      for k, v in pairs(var) do
-         ret[#ret + 1] = off1 .. '['
-         ret[#ret + 1] = dump_func[type(k)](k, off1)
-         ret[#ret + 1] = '] = '
-         ret[#ret + 1] = dump_func[type(v)](v, off1)
-         ret[#ret + 1] = ',\n'
-      end
-
-      local i = #ret
-      if i > 1 then
-         ret[i] = '\n'
-      end
-
-      ret[#ret + 1] = off .. '}'
-
-      return table.concat(ret)
-   end
-}
-
-function dump(var)
-   return dump_func[type(var)](var)
-end
-function help(name)
-   ui.addTextArea(100, MODULE_HELP[MODULE_HELP_START], name, 258, 78, 421, 284, nil, nil, nil, true)
-   ui.addTextArea(101, string.format('<p align="center"><font face="mono" size="15">%s</font></p>', MODULE_HELP_START), name, 258, 50, 398, 20, nil, nil, nil, true)
-   ui.addTextArea(102, MODULE_HELP_CONTENTS, name, 100, 50, 150, 312, nil, nil, nil, true)
-   ui.addTextArea(103, MODULE_HELP_CLOSE, name, 664, 50, 15, 20, nil, nil, nil, true)
-end
-
-function helpTextAreaCallback(id, name, callback)
-   if callback == 'help' then
-      help(name)
-   elseif callback == 'help_close' and id == 103 then
-      ui.removeTextArea(100, name)
-      ui.removeTextArea(101, name)
-      ui.removeTextArea(102, name)
-      ui.removeTextArea(103, name)
-   else
-      local str = MODULE_HELP[callback]
-      if str ~= nil then
-         ui.updateTextArea(100, str, name)
-         ui.updateTextArea(101, string.format('<font face="mono" size="15"><p align="center">%s</p></font>', callback), name)
-      else
-         return false
-      end
-   end
-   return true
-end
+do_addObject = tfm.exec.addShamanObject
+do_removeObject = tfm.exec.removeObject
+do_addGround = tfm.exec.addPhysicObject
+do_removeGround = tfm.exec.removePhysicObject
+do_addJoint = tfm.exec.addJoint
+do_removeJoint = tfm.exec.removeJoint
+do_respawn = tfm.exec.respawnPlayer
+do_addExplosion = tfm.exec.explosion
+addParticle = tfm.exec.displayParticle
+setShaman = tfm.exec.setShaman
+setShamanName = tfm.exec.setUIShamanName
+setMapName = tfm.exec.setUIMapName
+setNameColor = tfm.exec.setNameColor
+movePlayer = tfm.exec.movePlayer
+moveObject = tfm.exec.moveObject
+setMap = tfm.exec.newGame
+bindKey = tfm.exec.bindKeyboard
+kill = tfm.exec.killPlayer
 function nop()
 end
 
 function randomColor()
    return math.random(0x000000, 0xFFFFFF)
+end
+
+function round(x)
+   local ret = math.floor(x)
+   if x - ret >= 0.5 then
+      ret = ret + 1.0
+   end
+   return ret
 end
 
 function to_table(x)
@@ -225,7 +47,7 @@ _axis = {
 _axis_step = math.pi / 4.0
 
 function to_axis(angle)
-   local idx = (math.floor(angle / _axis_step) % #_axis)
+   local idx = (round(angle / _axis_step) % #_axis)
    return _axis[idx + 1], _axis_step * idx
 end
 
@@ -413,24 +235,171 @@ function randomValue1(tbl, excl_key, do_exclude)
       return nil
    end
 end
-do_addObject = tfm.exec.addShamanObject
-do_removeObject = tfm.exec.removeObject
-do_addGround = tfm.exec.addPhysicObject
-do_removeGround = tfm.exec.removePhysicObject
-do_addJoint = tfm.exec.addJoint
-do_removeJoint = tfm.exec.removeJoint
-do_respawn = tfm.exec.respawnPlayer
-do_addExplosion = tfm.exec.explosion
-addParticle = tfm.exec.displayParticle
-setShaman = tfm.exec.setShaman
-setShamanName = tfm.exec.setUIShamanName
-setMapName = tfm.exec.setUIMapName
-setNameColor = tfm.exec.setNameColor
-movePlayer = tfm.exec.movePlayer
-moveObject = tfm.exec.moveObject
-setMap = tfm.exec.newGame
-bindKey = tfm.exec.bindKeyboard
-kill = tfm.exec.killPlayer
+keycode = {
+   backspace = 8,
+   enter = 13,
+   shift = 16,
+   ctrl = 17,
+   alt = 18,
+   capslock = 20,
+   esc = 27,
+   space = 32,
+
+   ['0'] = 48, ['1'] = 49, ['2'] = 50, ['3'] = 51, ['4'] = 52,
+   ['5'] = 53, ['6'] = 54, ['7'] = 55, ['8'] = 56, ['9'] = 57,
+
+   a = 81, b = 66, c = 67, d = 68, e = 69, f = 70, g = 71, h = 72, i = 73,
+   j = 74, k = 75, l = 76, m = 77, n = 78, o = 79, p = 80, q = 65, r = 82,
+   s = 83, t = 84, u = 85, v = 86, w = 90, x = 88, y = 89, z = 87,
+
+   [';'] = 186, ['='] = 187, [','] = 188, ['-'] = 189, ['.'] = 190,
+   ['/'] = 191, ['`'] = 192,
+
+   [':'] = 186, ['+'] = 187, ['<'] = 188, ['_'] = 189, ['>'] = 190,
+   ['?'] = 191, ['~'] = 192,
+
+   ['['] = 219, ['\\'] = 220, [']'] = 221, ["'"] = 222,
+   ['{'] = 219, ['|'] = 220,  ['}'] = 221, ['"'] = 222,
+
+   [')'] = 48, ['!'] = 49, ['@'] = 50, ['#'] = 51, ['$'] = 52,
+   ['%'] = 53, ['^'] = 54, ['&'] = 55, ['*'] = 56, ['('] = 57,
+
+   kp0 = 96,  kp1 = 97,  kp2 = 98,  kp3 = 99,  kp4 = 100,
+   kp5 = 101, kp6 = 102, kp7 = 103, kp8 = 104, kp9 = 105,
+
+   ['kp*'] = 106, ['kp+'] = 107, ['kp-'] = 109, ['kp.'] = 110, ['kp/'] = 111,
+
+   left = 37,
+   up = 38,
+   right = 39,
+   down = 40,
+
+   f1 = 112, f2 = 113, f3 = 114, f4 = 115,  f5 = 116,  f6 = 117,
+   f7 = 118, f8 = 119, f9 = 120, f10 = 121, f11 = 122, f12 = 123
+}
+
+particles = {
+   white = 0,
+   purple = 1,
+   orange = 2,
+   soft_white = 4,
+   teal = 9,
+   yellow = 11,
+   red = 13,
+
+   spawn = 3,
+
+   heart = 5,
+   red_heart = 30,
+   pink_heart = 31,
+
+   bubble = 6,
+   bubble1 = 7,
+   bubble2 = 8,
+   water = 14,
+
+   spirit = 10,
+   red_spirit = 12,
+
+   plus1 = 15,
+   plus10 = 16,
+   plus12 = 17,
+   plus14 = 18,
+   plus16 = 19,
+
+   meep = 20,
+
+   red_confetti = 21,
+   green_confetti = 22,
+   blue_confetti = 23,
+   yellow_confetti = 24,
+
+   rain = 25,
+   wind = 26,
+   wind1 = 27,
+   lightning = 28,
+
+   star = 29,
+   flower = 32
+}
+
+objcode = {
+   arrow = 0,
+   small_box = 1,
+   box = 2,
+   small_plank = 3,
+   plank = 4,
+   ball = 6,
+   trampoline = 7,
+   anvil = 10,
+   anvil1 = 1002,
+   B = 11,
+   Bc = 12,
+   Bcc = 13,
+   V = 14,
+   Vc = 15,
+   Vcc = 16,
+   cannon_up = 17,
+   cannon_down = 18,
+   cannon_right = 19,
+   cannon_left = 20,
+   C = 22,
+   bomb = 23,
+   spirit = 24,
+   cheese = 25,
+   blue_portal = 26,
+   orange_portal = 27,
+   balloon1 = 2806,
+   balloon = 28,
+   red_balloon = 29,
+   green_balloon = 30,
+   yellow_balloon = 31,
+   rune = 32,
+   snow = 34,
+   arrow1 = 35,
+   apple = 39,
+   sheep = 40,
+   demolition = 41,
+   totem = 44,
+   ice_plank = 45,
+   choco_plank = 46,
+   cloud = 57,
+   architect = 58,
+   bubble = 59,
+   tiny_plank = 60,
+   companion_crate = 61,
+   stable_rune = 62,
+   ballon_anchor = 66,
+   windmill_anchor = 88
+}
+
+copy(objcode, tfm.enum.shamanObject)
+function help(name)
+   ui.addTextArea(100, MODULE_HELP[MODULE_HELP_START], name, 258, 78, 421, 284, nil, nil, nil, true)
+   ui.addTextArea(101, string.format('<p align="center"><font face="mono" size="15">%s</font></p>', MODULE_HELP_START), name, 258, 50, 398, 20, nil, nil, nil, true)
+   ui.addTextArea(102, MODULE_HELP_CONTENTS, name, 100, 50, 150, 312, nil, nil, nil, true)
+   ui.addTextArea(103, MODULE_HELP_CLOSE, name, 664, 50, 15, 20, nil, nil, nil, true)
+end
+
+function helpTextAreaCallback(id, name, callback)
+   if callback == 'help' then
+      help(name)
+   elseif callback == 'help_close' and id == 103 then
+      ui.removeTextArea(100, name)
+      ui.removeTextArea(101, name)
+      ui.removeTextArea(102, name)
+      ui.removeTextArea(103, name)
+   else
+      local str = MODULE_HELP[callback]
+      if str ~= nil then
+         ui.updateTextArea(100, str, name)
+         ui.updateTextArea(101, string.format('<font face="mono" size="15"><p align="center">%s</p></font>', callback), name)
+      else
+         return false
+      end
+   end
+   return true
+end
 function eventChatCommand(name, message)
    local i, j
    local cmd, arg
@@ -468,6 +437,184 @@ function eventChatCommand(name, message)
    else
       MODULE_CHAT_COMMAND_1(name, cmd, arg)
    end
+end
+MAX_ID = 499
+
+function tbl_name(t)
+   return '&lt;table&gt;'
+end
+
+function newId(ids)
+   local free = ids.free
+   local k, v = pairs(free)(free)
+   if k then
+      free[k] = nil
+      return k
+   else
+      if ids.max == MAX_ID then
+         error(string.format("newId: %s.max == MAX_ID", tbl_name(ids)))
+      end
+      ids.max = ids.max + 1
+      return ids.max
+   end
+end
+
+function freeId(ids, id)
+   local free = ids.free
+   if id == ids.max then
+      local t = ids.max - 1
+      while free[t] do
+         free[t] = nil
+         t = t - 1
+      end
+      ids.max = t
+   else
+      free[id] = true
+   end
+end
+_errors = { '<TI><p align="center">Errors</p>' }
+
+ERROR_TA = 3
+MAX_ERRORS = 7
+
+function alert(str, name)
+   ui.addPopup(0, 0, string.format('<font face="mono" size="15">%s</font>', str), name, 200, 150, 400, true)
+end
+
+function addError(err)
+   err = string.format("• %s\n", err)
+   for i = 3, #_errors + 1 do
+      _errors[i] = _errors[i - 1]
+   end
+   _errors[2] = err
+   _errors[MAX_ERRORS + 1] = nil
+   ui.updateTextArea(ERROR_TA, table.concat(_errors), nil)
+end
+TIME = os.time()
+TIMER_RES = 250
+
+_timerId = {
+   max = 0,
+   free = {}
+}
+
+_timerData = {
+}
+
+function initTimers()
+   TIME = os.time()
+   _timerId = {
+      max = 0,
+      free = {}
+   }
+   _timerData = {}
+end
+
+function timer()
+   local cur = os.time()
+   while TIME + TIMER_RES <= cur do
+      eventTimer()
+      TIME = TIME + TIMER_RES
+   end
+end
+
+function timers()
+   local cur = os.time()
+   local t, st, ret
+   for k, v in ipairs(_timerData) do
+      t = v.time
+      ret = true
+      while t + v.res <= cur do
+         t = t + v.res
+         st, ret = pcall(v.func, k, v)
+         if not st then
+            addError(nil, string.format('timer %d: %s', k, ret))
+            ret = false
+         end
+         if not ret then
+            break
+         end
+      end
+      if ret then
+         v.time = t
+      else
+         removeTimer(k)
+      end
+   end
+end
+
+function addTimer(func, args, res)
+   local id = newId(_timerId)
+   _timerData[id] = {
+      func = func,
+      args = args,
+      res = res,
+      time = os.time()
+   }
+end
+
+function removeTimer(id)
+   freeId(_timerId, id)
+end
+dump_func = {
+   ['function'] = function(...)
+      return '&lt;function&gt;'
+   end,
+   ['userdata'] = function(...)
+      return '&lt;userdata&gt;'
+   end,
+   ['thread'] = function(...)
+      return '&lt;thread&gt;'
+   end,
+
+   ['nil'] = function(...)
+      return 'nil'
+   end,
+
+   ['number'] = function(var, ...)
+      return tostring(var)
+   end,
+
+   ['boolean'] = function(var, ...)
+      return tostring(var)
+   end,
+
+   ['string'] = function(var, ...)
+      for k, v in ipairs({{'&', '&amp;'}, {'<', '&lt;'}, {'>', '&gt;'}}) do
+         var = string.gsub(var, v[1], v[2])
+      end
+      return string.format('%q', var)
+   end,
+
+   ['table'] = function(var, off)
+      if off == nil then
+         off = ''
+      end
+
+      local ret = { "{\n" }
+      local off1 = off .. ' '
+
+      for k, v in pairs(var) do
+         ret[#ret + 1] = off1 .. '['
+         ret[#ret + 1] = dump_func[type(k)](k, off1)
+         ret[#ret + 1] = '] = '
+         ret[#ret + 1] = dump_func[type(v)](v, off1)
+         ret[#ret + 1] = ',\n'
+      end
+
+      local i = #ret
+      if i > 1 then
+         ret[i] = '\n'
+      end
+
+      ret[#ret + 1] = off .. '}'
+
+      return table.concat(ret)
+   end
+}
+
+function dump(var)
+   return dump_func[type(var)](var)
 end
 function split1(str, pattern, maxlen, fmt)
    if fmt == nil then
@@ -585,7 +732,7 @@ function lsTextAreaCallback(id, name, callback)
    end
    return true
 end
-defaultMap = '0'
+defaultMap = '90'
 curMap = defaultMap
 playerData = {}
 function getfield(var, err)

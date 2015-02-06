@@ -1,3 +1,3 @@
-defaultMap = '0'
+defaultMap = '90'
 curMap = defaultMap
 playerData = {}
