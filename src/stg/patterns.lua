@@ -52,7 +52,7 @@ function testPattern1(name, data, id, points)
       bdata.center_jdata.color = randomColor()
       bdata.wing_jdata.color = randomColor()
 
-      mdata.jdata.speedMotor=math.random(2, 6)
+      mdata.jdata.speedMotor = math.random(2, 6)
       mdata.jdata.angle = 2 * math.pi - a
 
       id = addBullet(bullet.butterfly, bdata, 8)
@@ -70,16 +70,17 @@ function testPattern2(name, data, id, points)
       hitbox_data = { width = 0, height = 0, color = 0xFFFFFF, mass = 1 }
    }
    local mdata = {
-      ttl = 8,
+      ttl = 16,
       last = true,
       x = p.x,
       y = p.y,
+      frequency = 0.25,
       delay = 2,
-      delay1 = 1,
+      delay1 = 0,
       max_step = 1000,
       --no_target = name
    }
-   local id = addBullet(bullet.circle, bdata, 8)
+   local id = addBullet(bullet.circle, bdata, 16)
    addMotion(motion.follow, id, true, mdata)
 end
 

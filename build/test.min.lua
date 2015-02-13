@@ -66,7 +66,7 @@ while true do
 s,K=string.find(x,'%s+')
 if s==nil then D=x;c=''break elseif s==1 then x=string.sub(x,K+1)if x==''then D=''c=''break end else D=string.sub(x,1,
 s-1)c=string.sub(x,K+1)break end end;local L=string.lower(D)local l=MODULE_CHAT_COMMAND[L]if l~=nil then
-l(B,L,c)else MODULE_CHAT_COMMAND_1(B,D,c)end end;MAX_ID=499;function tbl_name(o)return'&lt;table&gt;'end
+l(B,L,c)else MODULE_CHAT_COMMAND_1(B,D,c)end end;MAX_ID=1000;function tbl_name(o)return'&lt;table&gt;'end
 function newId(z)local B=z.free
 local C,s=pairs(B)(B)
 if C then B[C]=nil;return C else if z.max==MAX_ID then

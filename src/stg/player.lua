@@ -1,4 +1,3 @@
---[[
 do_respawn_1 = do_respawn
 
 function do_respawn(name)
@@ -6,7 +5,6 @@ function do_respawn(name)
    local s = playerData[name].spawn
    movePlayer(name, s[0], s[1], false, 0, 0, true)
 end
-]]--
 
 function initPlayer(name)
    local data = {

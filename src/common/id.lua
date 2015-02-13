@@ -1,4 +1,4 @@
-MAX_ID = 499
+MAX_ID = 1000
 
 function tbl_name(t)
    return '&lt;table&gt;'

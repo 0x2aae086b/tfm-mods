@@ -174,14 +174,14 @@ function eventLoop(ctime, rtime)
          y = player.y
 
          if x < 0 then
-            x = 10
-         elseif x > 4800 then
-            x = 4790
+            x = 0
+         elseif x > mapWidth then
+            x = mapWidth
          end
          if y < 0 then
-            y = 10
-         elseif y > 1600 then
-            y = 1590
+            y = 0
+         elseif y > mapHeight then
+            y = mapHeight
          end
 
          data.spawn[0] = x
@@ -189,8 +189,8 @@ function eventLoop(ctime, rtime)
 
          vx = -player.vx
          vy = -player.vy
-         ax = -player.vx / 10
-         ay = -player.vy / 10
+         ax = vx / 10.0
+         ay = vy / 10.0
          for i = 1, math.random(8, 16) do
             addParticle(particles.purple,
                         x + math.random(-4, 4), y + math.random(-4, 4),

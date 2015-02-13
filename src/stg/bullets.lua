@@ -99,7 +99,6 @@ bullet.butterfly = function(a)
    local wing = {
       type = 0,
       color = 0xFF00FF,
-      alpha = 0.25,
       line = star.l * R * 2,
       foreground = false
    }
@@ -127,7 +126,6 @@ bullet.butterfly = function(a)
    copy(hitbox, hitbox_data)
 
    local joints = {}
-   local pts = {}
 
    local x1, y1
    local c, s = math.cos(angle), math.sin(angle)

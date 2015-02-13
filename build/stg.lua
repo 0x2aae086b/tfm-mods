@@ -438,7 +438,7 @@ function eventChatCommand(name, message)
       MODULE_CHAT_COMMAND_1(name, cmd, arg)
    end
 end
-MAX_ID = 499
+MAX_ID = 1000
 
 function tbl_name(t)
    return '&lt;table&gt;'
@@ -968,6 +968,9 @@ function addExplosion(x, y, power, distance, miceOnly, particle1, particle2)
 
    do_addExplosion(x, y, power, distance, miceOnly)
 end
+_tmp_grounds = {}
+_tmp_joints = {}
+
 function addGround1(t, x, y, other)
    local id = newId(groundId)
    _tmp_grounds[#_tmp_grounds + 1] = id
@@ -985,11 +988,11 @@ end
 function addBullet(btype, bullet_args, ttl, callback, on_remove, args)
    local id = newId(bulletId)
 
-   _tmp_grounds = {}
-   _tmp_joints = {}
    local st, control, grounds, joints = pcall(btype, bullet_args)
 
    if st then
+      _tmp_grounds = {}
+      _tmp_joints = {}
       bulletData[id] = {
          controls = { control },
          grounds = grounds,
@@ -1006,6 +1009,8 @@ function addBullet(btype, bullet_args, ttl, callback, on_remove, args)
       for _, v in ipairs(_tmp_grounds) do
          removeGround(v)
       end
+      _tmp_grounds = {}
+      _tmp_joints = {}
       freeId(bulletId, id)
       error(string.format('addBullet: %s', control))
    end
@@ -1130,7 +1135,6 @@ bullet.butterfly = function(a)
    local wing = {
       type = 0,
       color = 0xFF00FF,
-      alpha = 0.25,
       line = star.l * R * 2,
       foreground = false
    }
@@ -1158,7 +1162,6 @@ bullet.butterfly = function(a)
    copy(hitbox, hitbox_data)
 
    local joints = {}
-   local pts = {}
 
    local x1, y1
    local c, s = math.cos(angle), math.sin(angle)
@@ -2027,7 +2030,7 @@ function testPattern1(name, data, id, points)
       bdata.center_jdata.color = randomColor()
       bdata.wing_jdata.color = randomColor()
 
-      mdata.jdata.speedMotor=math.random(2, 6)
+      mdata.jdata.speedMotor = math.random(2, 6)
       mdata.jdata.angle = 2 * math.pi - a
 
       id = addBullet(bullet.butterfly, bdata, 8)
@@ -2045,16 +2048,17 @@ function testPattern2(name, data, id, points)
       hitbox_data = { width = 0, height = 0, color = 0xFFFFFF, mass = 1 }
    }
    local mdata = {
-      ttl = 8,
+      ttl = 16,
       last = true,
       x = p.x,
       y = p.y,
+      frequency = 0.25,
       delay = 2,
-      delay1 = 1,
+      delay1 = 0,
       max_step = 1000,
       --no_target = name
    }
-   local id = addBullet(bullet.circle, bdata, 8)
+   local id = addBullet(bullet.circle, bdata, 16)
    addMotion(motion.follow, id, true, mdata)
 end
 
@@ -2207,7 +2211,6 @@ function homingShot(name, data)
 
    addObject(objcode.anvil, x + vx, y - vy, 0, vx, -vy, g, 10, moveHoming, nil, args)
 end
---[[
 do_respawn_1 = do_respawn
 
 function do_respawn(name)
@@ -2215,7 +2218,6 @@ function do_respawn(name)
    local s = playerData[name].spawn
    movePlayer(name, s[0], s[1], false, 0, 0, true)
 end
-]]--
 
 function initPlayer(name)
    local data = {
@@ -2340,7 +2342,11 @@ eventCode = {
    objend = objcode
 }
 
-defaultMap='<C><P defilante="0,0,0,1" L="1600" H="800" G="0,0" /><Z><S /><D><DS Y="200" X="200" /></D><O /></Z></C>'
+--defaultMap='<C><P defilante="0,0,0,1" L="1600" H="800" G="0,0" /><Z><S /><D><DS Y="200" X="200" /></D><O /></Z></C>'
+defaultMap='<C><P L="1600" H="800" G="0,0" /><Z><S /><D><DS Y="200" X="200" /></D><O /></Z></C>'
+mapWidth = 1600
+mapHeight = 800
+
 maxLives = 8
 maxBombs = 6
 
@@ -2933,14 +2939,14 @@ function eventLoop(ctime, rtime)
          y = player.y
 
          if x < 0 then
-            x = 10
-         elseif x > 4800 then
-            x = 4790
+            x = 0
+         elseif x > mapWidth then
+            x = mapWidth
          end
          if y < 0 then
-            y = 10
-         elseif y > 1600 then
-            y = 1590
+            y = 0
+         elseif y > mapHeight then
+            y = mapHeight
          end
 
          data.spawn[0] = x
@@ -2948,8 +2954,8 @@ function eventLoop(ctime, rtime)
 
          vx = -player.vx
          vy = -player.vy
-         ax = -player.vx / 10
-         ay = -player.vy / 10
+         ax = vx / 10.0
+         ay = vy / 10.0
          for i = 1, math.random(8, 16) do
             addParticle(particles.purple,
                         x + math.random(-4, 4), y + math.random(-4, 4),
