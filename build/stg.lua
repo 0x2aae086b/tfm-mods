@@ -483,7 +483,7 @@ end
 
 function addError(err)
    err = string.format("• %s\n", err)
-   for i = 3, #_errors + 1 do
+   for i = #_errors + 1, 3, -1 do
       _errors[i] = _errors[i - 1]
    end
    _errors[2] = err
@@ -618,6 +618,75 @@ make_star = cache2(
       return { lines=ret, points=tmp, r=r, l=math.sqrt(1 - r*r) }
    end
 )
+
+function make_laser(ltype, x, y, x1, y1, step, k, n_step, line, colors)
+   local ret = {{}}
+
+   local angle = math.atan2(y1 - y, x1 - x)
+   local c, s = math.cos(angle), math.sin(angle)
+
+   local dx, dy = 0, 0
+   local dx1, dy1
+   local dx2, dy2
+   local j = 2
+
+   if ltype == 0 then
+      ltype = 2
+      for i = 1, n_step do
+         dy = dy + step
+         dx = dy * dy * k
+         dx2, dy2 = -dy * s, dy * c
+         dx1, dy1 = dx * c + dx2, dx * s + dy2
+         ret[j] = {
+            point1 = string.format("%d,%d", x + dx1, y + dy1),
+            point2 = string.format("%d,%d", x1 + dx2, y1 + dy2)
+         }
+         j = j + 1
+         dx1, dy1 = dx * c - dx2, dx * s - dy2
+         ret[j] = {
+            point1 = string.format("%d,%d", x + dx1, y + dy1),
+            point2 = string.format("%d,%d", x1 - dx2, y1 - dy2)
+         }
+         j = j + 1
+      end
+   elseif ltype == 1 then
+      ltype = 2
+      for j = 1, n_step do
+         dy = dy + step
+         dx2, dy2 = -dy * s, dy * c
+         ret[j] = { point2 = string.format("%d,%d", x1 + dx2, y1 + dy2) }
+         j = j + 1
+         ret[j] = { point2 = string.format("%d,%d", x1 - dx2, y1 - dy2) }
+         j = j + 1
+      end
+   else
+      ltype = 1
+      line = line or 50
+      dx = step * k
+      for i = 1, n_step do
+         line = line + step
+         dx2, dy2 = dx * c, dx * s
+         ret[j] = {
+            point1 = string.format("%d,%d", x + dx2, y + dy2),
+            line = line
+         }
+         j = j + 1
+         dx = dx * 2
+      end
+   end
+
+   if colors then
+      j = 0
+      for i = 2, #ret do
+         if i % ltype == 0 then
+            j = j + 1
+         end
+         ret[i].color = colors[j]
+      end
+   end
+
+   return ret
+end
 function getText(data)
    local lives = data.lives - 1
    local bombs = data.bombs
@@ -976,6 +1045,7 @@ function addGround1(t, x, y, other)
    _tmp_grounds[#_tmp_grounds + 1] = id
    do_addGround(id, x, y, other)
    t[#t + 1] = id
+   return id
 end
 
 function addJoint1(t, id1, id2, other)
@@ -1062,16 +1132,14 @@ bullet.rectangle = function(a)
       groundCollision = false,
       foreground = true,
       dynamic = true,
+      mass = 1,
       restitution = 255
    }
 
    copy(hitbox, hitbox_data)
 
-   local id0 = newId(groundId)
-   _tmp_grounds[#_tmp_grounds + 1] = id0
-   do_addGround(id0, x + dx * w, y + dy * w, hitbox)
-
-   local joints = {}
+   local grounds, joints = {}, {}
+   local id0 = addGround1(grounds, x + dx * w, y + dy * w, hitbox)
 
    if jdata then
       for _, v in ipairs(jdata) do
@@ -1080,18 +1148,16 @@ bullet.rectangle = function(a)
       end
    end
 
-   return id0, {id0}, joints
+   return id0, grounds, joints
 end
 
 bullet.circle = function(a)
    local x, y, R = a.x, a.y, a.R
    local jdata, hitbox_data = a.jdata, a.hitbox_data
 
-   local point2 = string.format('%d,%d', x, y + 1)
-
    local joint = {
       type = 0,
-      point2 = point2,
+      point2 = string.format('%d,%d', x, y + 1),
       color = 0x0000FF,
       line = 2 * R,
       foreground = false
@@ -1104,16 +1170,14 @@ bullet.circle = function(a)
       miceCollision = true,
       groundCollision = false,
       dynamic = true,
+      mass = 1,
       restitution = 255
    }
 
    copy(hitbox, hitbox_data)
 
-   local id0 = newId(groundId)
-   _tmp_grounds[#_tmp_grounds + 1] = id0
-   do_addGround(id0, x, y, hitbox)
-
-   local joints = {}
+   local grounds, joints = {}, {}
+   local id0 = addGround1(grounds, x, y, hitbox)
 
    if jdata then
       for _, v in ipairs(jdata) do
@@ -1122,13 +1186,14 @@ bullet.circle = function(a)
       end
    end
 
-   return id0, {id0}, joints
+   return id0, grounds, joints
 end
 
 bullet.butterfly = function(a)
    local x, y, angle, R = a.x, a.y, a.angle, a.R
    local center_jdata, wing_jdata = a.center_jdata, a.wing_jdata
    local hitbox_data = a.hitbox_data
+   local i
 
    local star = make_star(5, 2)
 
@@ -1153,6 +1218,7 @@ bullet.butterfly = function(a)
       width = R,
       height = R,
       dynamic = true,
+      mass = 1,
       miceCollision = true,
       groundCollision = false,
       restitution = 255
@@ -1161,16 +1227,13 @@ bullet.butterfly = function(a)
    copy(wing, wing_jdata)
    copy(hitbox, hitbox_data)
 
-   local joints = {}
+   local grounds, joints = {}, {}
 
    local x1, y1
    local c, s = math.cos(angle), math.sin(angle)
-
    local v
 
-   local id0 = newId(groundId)
-   _tmp_grounds[#_tmp_grounds + 1] = id0
-   do_addGround(id0, x, y, hitbox)
+   local id0 = addGround1(grounds, x, y, hitbox)
 
    for i = 2, 5 do
       v = star.points[i]
@@ -1185,7 +1248,7 @@ bullet.butterfly = function(a)
    copy(center, center_jdata)
    addJoint1(joints, id0, id0, center)
 
-   return id0, {id0}, joints
+   return id0, grounds, joints
 end
 
 bullet.jstar = function(a)
@@ -1193,6 +1256,7 @@ bullet.jstar = function(a)
    local points, step = a.points, a.step
    local line_jdata, center_jdata = a.line_jdata, a.center_jdata
    local hitbox_data = a.hitbox_data
+   local i
 
    local star = make_star(points, step)
 
@@ -1219,6 +1283,7 @@ bullet.jstar = function(a)
       width = tmp,
       height = tmp,
       dynamic = true,
+      mass = 1,
       miceCollision = true,
       groundCollision = false,
       restitution = 255
@@ -1227,7 +1292,7 @@ bullet.jstar = function(a)
    copy(line, line_jdata)
    copy(hitbox, hitbox_data)
 
-   local joints = {}
+   local grounds, joints = {}, {}
    local pts = {}
 
    local x1, y1
@@ -1238,10 +1303,8 @@ bullet.jstar = function(a)
       pts[#pts + 1] = string.format('%d,%d', x + R * x1, y + R * y1)
    end
 
-   local id0 = newId(groundId)
-   _tmp_grounds[#_tmp_grounds + 1] = id0
-   do_addGround(id0, x, y, hitbox)
-
+   local id0 = addGround1(grounds, x, y, hitbox)
+   
    for i = 1, points do
       line.point1 = pts[i]
       line.point2 = pts[1 + (i + step - 1) % points]
@@ -1255,7 +1318,7 @@ bullet.jstar = function(a)
       end
    end
 
-   return id0, {id0}, joints
+   return id0, grounds, joints
 end
 
 bullet.star = function(a)
@@ -1341,9 +1404,7 @@ bullet.star = function(a)
       end
    end
 
-   local id0 = newId(groundId)
-   _tmp_grounds[#_tmp_grounds + 1] = id0
-   do_addGround(id0, x, y, center)
+   local id0 = addGround1(caps, x, y, center)
 
    if line.dynamic then
       local prev, first = nil, nil
@@ -1392,7 +1453,6 @@ bullet.star = function(a)
    end
 
    append(lines, caps)
-   lines[#lines + 1] = id0
 
    return id0, lines, joints
 end
@@ -1603,24 +1663,19 @@ motion.spiral = function(ac, controls, args)
    motion.line(ac, controls, args)
 
    args.last = last
-   args.jdata = rjoint
+   args.jdata = args.rjoint
    motion.circle(ac, controls, args)
 end
-function addBombTimer(name, player, data, protect, scale)
+function addBombTimer(name, player, data, scale)
    local r = data.bombTime * scale + 2
 
    local obj = {
       type = 13,
-      angle = 0,
       color = 0xFF0000,
       foreground = false,
-      friction=0.0,
-      restitution=2.0,
       width = r,
       height = r,
-      miceCollision = false,
-      groundCollision = protect,
-      dynamic = false
+      miceCollision = false
    }
 
    addGround(
@@ -1643,16 +1698,11 @@ function addBombTimer(name, player, data, protect, scale)
 
    obj = {
       type = 13,
-      angle = 0,
       color = 0x6A7495,
       foreground = false,
-      friction=0.0,
-      restitution=2.0,
       width = r,
       height = r,
-      miceCollision = false,
-      groundCollision = protect,
-      dynamic = false
+      miceCollision = false
    }
 
    addGround(
@@ -1685,127 +1735,90 @@ end
 
 ---------------------------------------------------------------------------
 
-function defaultBombCallback(name, data)
+function bomb1(name, data)
+   local ttl = 20
+   local width = 512
+   local off = 32.0
+
    local player = tfm.get.room.playerList[name]
-
-   local yc = player.y + player.vy
-   local xb
-
-   local x, y
-   local k = data.bombCallbackArgs
-
-   local ttl = 4
-
-   local vx = 4
-   local vy = 0
-
-   local a = { ax = 64, ay = 0 }
-
-   vx = k * vx
-   a.ax = k * a.ax
-   xb = player.x + k * data.bombTime * 5 + 10
-
-   for off = 20, 120, 20 do
-      y = off * k
-      x = xb + y * 1.5
-      addObject(objcode.anvil, x, yc - y, 0, vx, -vy * k, false, ttl, accelerate, nil, a)
-      addObject(objcode.anvil, x, yc + y, 0, vx, vy * k, false, ttl, accelerate, nil, a)
-      vy = vy + 1
-   end
-end
-
-function defaultBomb(name, data)
-   local player = tfm.get.room.playerList[name]
-
-   if not player.isFacingRight then
-      data.bombCallbackArgs = -1
-   else
-      data.bombCallbackArgs = 1
-   end
-
-   addBombTimer(name, player, data, true, 5)
-end
-
-function bomb2(name, data)
-   local player = tfm.get.room.playerList[name]
-
    local x0, y0 = player.x, player.y
-   local center = string.format('%d,%d', x0, y0)
+   local center = string.format("%d,%d", x0, y0)
 
-   local ground = {
-      type = 12,
-      color=0xFFFFFF,
-      foreground = true,
-      width = 512,
-      height = 8,
-      dynamic = true,
-      mass = 8,
-      restitution = 255,
-      linearDamping = 0,
-      angularDamping = 0,
-      groundCollision = false,
-      miceCollision = true
+   local colors = { 0x00FF00, 0x00FFFF, 0x0000FF }
+   local cdata = {
+      x = x0,
+      y = y0,
+      R = 32,
+      hitbox_data = { miceCollision = false, mass = 2, angularDamping = 1 }
    }
-   local ground1 = {
-      type = 13,
-      color = 0xFFFFFF,
-      width = 32,
-      height = 32,
-      dynamic = false,
-      groundCollision = false,
-      miceCollision = false,
-      foreground = true
+   local bdata = {
+      width = width,
+      height = 16,
+      hitbox_data = { mass = 2, linearDamping = 0.5 }
    }
+   local mdata = {
+      last = true,
+      ttl = ttl,
+      jdata = { speedMotor = 255 }
+   }
+
+   addBombTimer(name, player, data, 5)
+
+   local id0 = addBullet(bullet.circle, cdata, ttl)
+   local id00 = id0
+   id0 = bulletData[id0].controls
+   id0 = id0[#id0]
 
    local joint = {
-      type = 3,
-      point1 = center,
-      point2 = nil,
-      forceMotor = 255,
-      speedMotor = 2
-   }
-   local joint1 = {
       type = 3,
       point1 = center,
       point2 = center,
       ratio = 1,
       limit1 = 0,
-      limit2 = 8
+      limit2 = 0
    }
-   local joint2 = {
+   local joint1 = {
       type = 0,
-      frequency = 10
+      frequency = 32
    }
 
-   local angle
    local a
-   local x1, y1
    local x, y
-   local off = 32.0 + ground.width / 2.0
-   local ttl = 20
-   local first = nil
-   local prev = nil
-   local id, id1
+   local x1, y1
+   local first, prev
+   local jdata
+   local i
 
-   addBombTimer(name, player, data, true, 5)
+   for i = 1, 3 do
+      a = math.pi * i * 2.0 / 3.0
 
-   id1 = addGround(x0, y0, ground1, ttl)
+      x, y = math.cos(a), math.sin(a)
+      x1, y1 = x0 + (off + width) * x, y0 + (off + width) * y
+      x, y = x0 + off * x, y0 + off * y
 
-   for angle = 0, 359, 120 do
-      a = math.rad(angle)
+      jdata = make_laser(0, x, y, x1, y1, 5, 0.1, 2, 20)
+      jdata[1] = {
+         point1 = string.format("%d,%d", x, y),
+         point2 = string.format("%d,%d", x1, y1),
+         color = colors[i],
+         alpha = 0.25,
+         line = 20,
+         foreground = true
+      }
 
-      x1, y1 = math.cos(a), math.sin(a)
-      x, y = x0 + off * x1, y0 + off * y1
+      bdata.angle = a
+      bdata.x = x
+      bdata.y = y
+      bdata.jdata = jdata
 
-      ground.angle = angle
+      id = addBullet(bullet.rectangle, bdata, ttl)
+      id = bulletData[id].controls
+      id = id[#id]
 
-      id = addGround(x, y, ground, ttl)
+      addJoint(id, id0, joint, ttl)
 
-      addJoint(id, id1, joint, ttl)
-
-      if prev ~= nil then
+      if prev then
          addJoint(id, prev, joint1, ttl)
-         addJoint(id, prev, joint2, ttl)
       else
          first = id
       end
@@ -1813,79 +1826,82 @@ function bomb2(name, data)
       prev = id
    end
 
-   addJoint(first, id, joint1, ttl)
-   addJoint(first, id, joint2, ttl)
+   addJoint(prev, first, joint1, ttl)
+
+   addMotion(motion.circle, id00, true, mdata)
 end
 
-function bomb3(name, data)
+function bomb2Callback(id, data)
+   local a = data.callback_args
+
+   if a.delay == 1 then
+      local mdata = {
+         last = true,
+         ttl = a.ttl,
+         x = a.x,
+         y = a.y,
+         no_target = a.no_target,
+         delay = 0,
+         delay1 = 0,
+         frequency = 0.5,
+         max_step = 500
+      }
+      addMotion(motion.follow, id, true, mdata)
+      a.delay = 0
+   else
+      a.delay = a.delay - 1
+   end
+end
+
+function bomb2(name, data)
+   local ttl = 20
+   local off = 96.0
+
    local player = tfm.get.room.playerList[name]
-
    local x0, y0 = player.x, player.y
-   local center = string.format('%d,%d', x0, y0)
 
-   local ground = {
-      type = 13,
-      color = 0xFFFFFF,
-      width = 64,
-      height = 64,
-      dynamic = true,
-      mass = 1,
-      linearDamping = 0,
-      angularDamping = 0,
-      groundCollision = false,
-      miceCollision = false,
-      foreground = true
+   local bdata = {
+      R = 48,
+      jdata = {{ foreground = false, line = 128 }},
+      hitbox_data = { color = 0xFFFFFF }
    }
 
-   local joint = {
-      type = 1,
-      axis = '-1,0',
-      forceMotor = 255,
-      speedMotor = 2,
-      limit1 = 0,
-      limit2 = 5
+   local mdata = {
+      ttl = 2,
+      last = true,
+      jdata = { speedMotor = 3, color = 0xFFFFFF }
    }
 
-   local angle
    local a
    local x, y
-   local x1, y1
-   local off = 64.0 + ground.width
-   local ttl = 5
    local id
    local args
+   local i
 
-   addBombTimer(name, player, data, true, 10)
+   addBombTimer(name, player, data, 5)
 
-   local offset = {
-      [0] = 0.15,
-      [60] = 0.13,
-      [120] = 0.11,
-      [180] = 0.075,
-      [240] = 0.05,
-      [300] = 0
-   }
+   for i = 1, #_axis do
+      a = (1 - i) * _axis_step
 
-   for angle = 0, 359, 60 do
-      a = math.rad(angle)
+      x, y = math.cos(a), math.sin(a)
 
-      x1, y1 = math.cos(a), math.sin(a)
-      x, y = x0 + off * x1, y0 + off * y1
+      bdata.x = x0 + off * x
+      bdata.y = y0 + off * y
+      bdata.jdata[1].color = randomColor()
+
+      mdata.jdata.axis = _axis[i]
+      mdata.jdata.speedMotor = 5 - mdata.jdata.speedMotor
 
       args = {
-         x = x0 + math.cos(a + offset[angle]) * 280,
-         y = y0 + math.sin(a + offset[angle]) * 280,
-         power = 127,
-         distance = 3 * ground.width,
-         miceOnly = false,
-         p1 = particles.red_spirit,
-         p2 = nil
+         delay = 2,
+         ttl = ttl - 2,
+         x = x0 + 150 * x,
+         y = y0 + 150 * y,
+         -- no_target = name
       }
 
-      id = addGround(x, y, ground, ttl, nil, explode, args)
-
-      joint.angle = 2.0 * math.pi - a
-      addJoint(id, 0, joint, ttl)
+      id = addBullet(bullet.circle, bdata, ttl, bomb2Callback, nil, args)
+      addMotion(motion.line, id, true, mdata)
    end
 end
 function pattern(name, data, btype, bcode, point)
@@ -2264,7 +2280,7 @@ function initPlayer(name)
       bindKey(name, v, false, true)
    end
 
-   --system.bindMouse(name, true)
+   system.bindMouse(name, true)
 
    ui.addTextArea(1, getText(data), name, 5, 25, 151, 40, nil, nil, 0.5, true)
    ui.addTextArea(104, '<TI><a href="event:help">?</a>', name, 145, 25, 11, 20, nil, nil, 0.0, true)
@@ -2333,7 +2349,7 @@ CONTROL = {
    miceCollision = false
 }
 
-playerKeys = { 32, 83, 40, 100, 101, 102, 104, 65, 68, 69, 81, --[[87,]] 37, 39 }
+playerKeys = { 32, 83, 40, 100, 101, 102, 104, 65, 68, 69, 81, --[[87,]] 37, 39, 38, 90 }
 reservedKeys = invert(playerKeys, true)
 
 eventCode = {
@@ -2365,20 +2381,8 @@ shotTypes = {
 
 bombTypes = {
    {
-      name = 'default bomb',
-      func = defaultBomb,
-      callback = defaultBombCallback,
-      shot = {
-         func = nop,
-         cd = 1
-      },
-      cost = 1,
-      time = 20,
-      cd = 0
-   },
-   {
       name = '',
-      func = bomb2,
+      func = bomb1,
       callback = nil,
       shot = {
          func = nop,
@@ -2390,14 +2394,14 @@ bombTypes = {
    },
    {
       name = '',
-      func = bomb3,
+      func = bomb2,
       callback = nil,
       shot = {
          func = nop,
          cd = 1
       },
       cost = 1,
-      time = 6,
+      time = 20,
       cd = 5
    }
 }
@@ -2467,8 +2471,11 @@ patternTypes = {
 
 playerConfig = {
    Cafecafe = {
-      bomb = bombTypes[2],
+      bomb = bombTypes[1],
       color = 0x9852B4 -- 0xB06FFD
+   },
+   Rar = {
+      color = 0x553399
    }
 }
 MODULE_HELP_START = 'Keys'
@@ -2835,7 +2842,7 @@ function eventKeyboard(name, key, down, x, y)
          local vx = 0
 
          if not down then
-            if key == 32 or key == 104 or key == 83 or key == 40 or key == 53 or key == 101 --[[or key == 87]] then
+            if key == 32 or key == 104 or key == 83 or key == 40 or key == 53 or key == 101 or key == 38 or key == 90 --[[or key == 87]] then
                movePlayer(name, 0, 0, true, 0, 1, false)
                movePlayer(name, 0, 0, true, 0, -1, true)
             else
@@ -2844,7 +2851,7 @@ function eventKeyboard(name, key, down, x, y)
                playerData[name].vx = 0
             end
          else
-            if key == 32 or key == 104 or key == 87 then
+            if key == 32 or key == 104 or key == 87 or key == 38 or key == 90 then
                vy = -50
             elseif key == 83 or key == 40 or key == 101 then
                vy = 50
@@ -2902,7 +2909,8 @@ function eventSummoningEnd(name, type, x, y, angle, vx, vy, data, other)
 end
 
 function eventMouse(name, x, y)
-   local player = tfm.get.room.playerList[name]
+   --local player = tfm.get.room.playerList[name]
+   addError(string.format('(%d; %d)', x, y))
 end
 
 function eventPlayerDied(name)

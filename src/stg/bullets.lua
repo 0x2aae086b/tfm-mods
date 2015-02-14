@@ -26,16 +26,14 @@ bullet.rectangle = function(a)
       groundCollision = false,
       foreground = true,
       dynamic = true,
+      mass = 1,
       restitution = 255
    }
 
    copy(hitbox, hitbox_data)
 
-   local id0 = newId(groundId)
-   _tmp_grounds[#_tmp_grounds + 1] = id0
-   do_addGround(id0, x + dx * w, y + dy * w, hitbox)
-
-   local joints = {}
+   local grounds, joints = {}, {}
+   local id0 = addGround1(grounds, x + dx * w, y + dy * w, hitbox)
 
    if jdata then
       for _, v in ipairs(jdata) do
@@ -44,18 +42,16 @@ bullet.rectangle = function(a)
       end
    end
 
-   return id0, {id0}, joints
+   return id0, grounds, joints
 end
 
 bullet.circle = function(a)
    local x, y, R = a.x, a.y, a.R
    local jdata, hitbox_data = a.jdata, a.hitbox_data
 
-   local point2 = string.format('%d,%d', x, y + 1)
-
    local joint = {
       type = 0,
-      point2 = point2,
+      point2 = string.format('%d,%d', x, y + 1),
       color = 0x0000FF,
       line = 2 * R,
       foreground = false
@@ -68,16 +64,14 @@ bullet.circle = function(a)
       miceCollision = true,
       groundCollision = false,
       dynamic = true,
+      mass = 1,
       restitution = 255
    }
 
    copy(hitbox, hitbox_data)
 
-   local id0 = newId(groundId)
-   _tmp_grounds[#_tmp_grounds + 1] = id0
-   do_addGround(id0, x, y, hitbox)
-
-   local joints = {}
+   local grounds, joints = {}, {}
+   local id0 = addGround1(grounds, x, y, hitbox)
 
    if jdata then
       for _, v in ipairs(jdata) do
@@ -86,13 +80,14 @@ bullet.circle = function(a)
       end
    end
 
-   return id0, {id0}, joints
+   return id0, grounds, joints
 end
 
 bullet.butterfly = function(a)
    local x, y, angle, R = a.x, a.y, a.angle, a.R
    local center_jdata, wing_jdata = a.center_jdata, a.wing_jdata
    local hitbox_data = a.hitbox_data
+   local i
 
    local star = make_star(5, 2)
 
@@ -117,6 +112,7 @@ bullet.butterfly = function(a)
       width = R,
       height = R,
       dynamic = true,
+      mass = 1,
       miceCollision = true,
       groundCollision = false,
       restitution = 255
@@ -125,16 +121,13 @@ bullet.butterfly = function(a)
    copy(wing, wing_jdata)
    copy(hitbox, hitbox_data)
 
-   local joints = {}
+   local grounds, joints = {}, {}
 
    local x1, y1
    local c, s = math.cos(angle), math.sin(angle)
-
    local v
 
-   local id0 = newId(groundId)
-   _tmp_grounds[#_tmp_grounds + 1] = id0
-   do_addGround(id0, x, y, hitbox)
+   local id0 = addGround1(grounds, x, y, hitbox)
 
    for i = 2, 5 do
       v = star.points[i]
@@ -149,7 +142,7 @@ bullet.butterfly = function(a)
    copy(center, center_jdata)
    addJoint1(joints, id0, id0, center)
 
-   return id0, {id0}, joints
+   return id0, grounds, joints
 end
 
 bullet.jstar = function(a)
@@ -157,6 +150,7 @@ bullet.jstar = function(a)
    local points, step = a.points, a.step
    local line_jdata, center_jdata = a.line_jdata, a.center_jdata
    local hitbox_data = a.hitbox_data
+   local i
 
    local star = make_star(points, step)
 
@@ -183,6 +177,7 @@ bullet.jstar = function(a)
       width = tmp,
       height = tmp,
       dynamic = true,
+      mass = 1,
       miceCollision = true,
       groundCollision = false,
       restitution = 255
@@ -191,7 +186,7 @@ bullet.jstar = function(a)
    copy(line, line_jdata)
    copy(hitbox, hitbox_data)
 
-   local joints = {}
+   local grounds, joints = {}, {}
    local pts = {}
 
    local x1, y1
@@ -202,10 +197,8 @@ bullet.jstar = function(a)
       pts[#pts + 1] = string.format('%d,%d', x + R * x1, y + R * y1)
    end
 
-   local id0 = newId(groundId)
-   _tmp_grounds[#_tmp_grounds + 1] = id0
-   do_addGround(id0, x, y, hitbox)
-
+   local id0 = addGround1(grounds, x, y, hitbox)
+   
    for i = 1, points do
       line.point1 = pts[i]
       line.point2 = pts[1 + (i + step - 1) % points]
@@ -219,7 +212,7 @@ bullet.jstar = function(a)
       end
    end
 
-   return id0, {id0}, joints
+   return id0, grounds, joints
 end
 
 bullet.star = function(a)
@@ -305,9 +298,7 @@ bullet.star = function(a)
       end
    end
 
-   local id0 = newId(groundId)
-   _tmp_grounds[#_tmp_grounds + 1] = id0
-   do_addGround(id0, x, y, center)
+   local id0 = addGround1(caps, x, y, center)
 
    if line.dynamic then
       local prev, first = nil, nil
@@ -356,7 +347,6 @@ bullet.star = function(a)
    end
 
    append(lines, caps)
-   lines[#lines + 1] = id0
 
    return id0, lines, joints
 end

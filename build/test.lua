@@ -483,7 +483,7 @@ end
 
 function addError(err)
    err = string.format("• %s\n", err)
-   for i = 3, #_errors + 1 do
+   for i = #_errors + 1, 3, -1 do
       _errors[i] = _errors[i - 1]
    end
    _errors[2] = err

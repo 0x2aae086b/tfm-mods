@@ -104,6 +104,6 @@ motion.spiral = function(ac, controls, args)
    motion.line(ac, controls, args)
 
    args.last = last
-   args.jdata = rjoint
+   args.jdata = args.rjoint
    motion.circle(ac, controls, args)
 end

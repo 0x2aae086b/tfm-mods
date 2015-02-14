@@ -76,7 +76,7 @@ M[v]=true end end;_errors={'<TI><p align="center">Errors</p>'}ERROR_TA=3
 MAX_ERRORS=7;function alert(n,v)
 ui.addPopup(0,0,string.format('<font face="mono" size="15">%s</font>',n),v,200,150,400,true)end
 function addError(I)
-I=string.format("• %s\n",I)for i=3,#_errors+1 do _errors[i]=_errors[i-1]end
+I=string.format("• %s\n",I)for i=#_errors+1,3,-1 do _errors[i]=_errors[i-1]end
 _errors[2]=I;_errors[MAX_ERRORS+1]=nil;ui.updateTextArea(ERROR_TA,table.concat(_errors),
 nil)end;TIME=os.time()TIMER_RES=250;_timerId={max=0,free={}}_timerData={}
 function initTimers()
@@ -104,335 +104,343 @@ make_star=cache2(function(_,b)local l={}local X={}for i=1,_ do a=math.pi*2.0*i/_
 l[#l+1]={math.cos(a),math.sin(a)}end;for i=1,_ do
 X[#X+1]=make_line(l[i],l[1+ (i+b-1)%_])end;local h=length1(X[1])return
 {lines=X,points=l,r=h,l=math.sqrt(1-h*h)}end)
-function getText(Z)local H=Z.lives-1;local D=Z.bombs
-if H>=maxLives then H=maxLives-1 end;if H<0 then H=0 end;if D>maxBombs then D=maxBombs elseif D<0 then D=0 end;if Z.lives<1 then
-l=0 else l=Z.lives end;return
-string.format('<TI><N>Player  <R>%s<N>\nBomb  <VP>%s',string.rep('★',H),string.rep('★',D))end;function updateTextAreas(t,D)ui.updateTextArea(1,getText(D),t)
-ui.updateTextArea(104,'<TI><a href="event:help">?</a>',t)end
-function clear()for O,j in
-ipairs(keys(jointData))do removeJoint(j)end;for U,d in
-ipairs(keys(tfm.get.room.objectList))do removeObject(d)end;for O,h in
-ipairs(keys(groundData))do removeGround(h)end;for R,n in
-ipairs(keys(bulletData))do removeBullet(n)end;for E,w in
-ipairs(keys(patternData))do removePattern(w)end end
-function list_default(P,D,d)P[#P+1]=string.format('%d %d\n',D,d.time)end
-function list_object(j,o,m)local i=tfm.get.room.objectList[o]if i==nil then
-j[#j+1]=string.format('%d &lt;invalid&gt; %d\n',o,m.time)else
-j[#j+1]=string.format('%d (%d, %d) %d\n',o,i.x,i.y,m.time)end end;function list_bullet(g,T,I)
-g[#g+1]=string.format("%d %d %d\n",T,I.controls[#I.controls],I.time)end
-function step(w,T,R,A,N)local s={}local t;local g,E;if N==nil then
-N=list_default end
-for O,_ in pairs(T)do N(A,O,_)
-if _.time<=0 then
-if _.on_remove then
-for c,U in ipairs(_.on_remove)do
-g,E=pcall(U,O,_)if not g then
-addError(string.format("step(%s): on_remove[%d]: %s\n",tbl_name(T),c,E))end end end;s[#s+1]=O else _.time=_.time-w
-if _.callback then
-for x,Q in ipairs(_.callback)do g,E=pcall(Q,O,_)if
-not g then
-addError(string.format("step(%s): callback[%d]: %s\n",tbl_name(T),x,E))s[#s+1]=O;break end end end end end;for y,P in ipairs(s)do R(P)end end
-function clearT(O)local X={'<TI>'}X[#X+1]='<p align="center">Joints</p>'
-step(O,jointData,removeJoint,X)X[#X+1]='<p align="center">Objects</p>'
-step(O,objectData,removeObject,X,list_object)X[#X+1]='<p align="center">Grounds</p>'
-step(O,groundData,removeGround,X)X[#X+1]='<p align="center">Bullets</p>'
-step(O,bulletData,removeBullet,X,list_bullet)X[#X+1]='<p align="center">Patterns</p>'
-step(O,patternData,removePattern,X)
-ui.addTextArea(2,table.concat(X),nil,-155,5,150,590,nil,nil,0.5,true)end
-function shoot_bullet(v,s)local Z=s.callback_args;if Z._cd==nil then Z._cd=0 end
-if Z._cd>0 then
-Z._cd=Z._cd-1 else Z._cd=Z.cd
-local v=addBullet(Z.btype,Z.bdata,Z.bttl,Z.callback,Z.on_remove,Z.cbargs)
-if Z.mtype~=nil then addMotion(Z.mtype,v,true,Z.mdata)end end end;function explode(r,t)local B=t.callback_args
-addExplosion(B.x,B.y,B.power,B.distance,B.miceOnly,B.p1,B.p2)end
-function explode1(l,Y)
-local e=Y.callback_args
-if e.t<=0 then
-local g=randomKey1(tfm.get.room.playerList,Y.user,true)local J,_=0,0;if g~=nil then local t=tfm.get.room.playerList[g]
-J,_=t.x,t.y end
-addExplosion(J,_,e.power,e.distance,e.miceOnly,e.p1,e.p2)e.t=e.cd else e.t=e.t-1 end end;function accelerate(x,h)local i=h.callback_args
-moveObject(x,0,0,true,i.ax,i.ay,true)end
-function moveHoming(W,h)
+function make_laser(Z,H,D,t,O,j,U,d,h,R)local n={{}}local E=math.atan2(O-D,t-H)
+local w,P=math.cos(E),math.sin(E)local o,m=0,0;local i,g;local T,I;local A=2
+if Z==0 then Z=2
+for i=1,d do m=m+j;o=m*m*U;T,I=-m*P,m*w
+i,g=o*w+T,o*P+I
+n[A]={point1=string.format("%d,%d",H+i,D+g),point2=string.format("%d,%d",t+T,O+I)}A=A+1;i,g=o*w-T,o*P-I
+n[A]={point1=string.format("%d,%d",H+i,D+g),point2=string.format("%d,%d",t-T,
+O-I)}A=A+1 end elseif Z==1 then Z=2;for A=1,d do m=m+j;T,I=-m*P,m*w
+n[A]={point2=string.format("%d,%d",t+T,O+I)}A=A+1
+n[A]={point2=string.format("%d,%d",t-T,O-I)}A=A+1 end else
+Z=1;h=h or 50;o=j*U;for i=1,d do h=h+j;T,I=o*w,o*P
+n[A]={point1=string.format("%d,%d",H+T,D+I),line=h}A=A+1;o=o*2 end end;if R then A=0
+for i=2,#n do if i%Z==0 then A=A+1 end;n[i].color=R[A]end end;return n end
+function getText(N)local s=N.lives-1;local t=N.bombs
+if s>=maxLives then s=maxLives-1 end;if s<0 then s=0 end;if t>maxBombs then t=maxBombs elseif t<0 then t=0 end;if N.lives<1 then
+l=0 else l=N.lives end;return
+string.format('<TI><N>Player  <R>%s<N>\nBomb  <VP>%s',string.rep('★',s),string.rep('★',t))end;function updateTextAreas(g,E)ui.updateTextArea(1,getText(E),g)
+ui.updateTextArea(104,'<TI><a href="event:help">?</a>',g)end
+function clear()for O,_ in
+ipairs(keys(jointData))do removeJoint(_)end;for A,c in
+ipairs(keys(tfm.get.room.objectList))do removeObject(c)end;for U,_ in
+ipairs(keys(groundData))do removeGround(_)end;for E,x in
+ipairs(keys(bulletData))do removeBullet(x)end;for R,Q in
+ipairs(keys(patternData))do removePattern(Q)end end
+function list_default(y,P,O)y[#y+1]=string.format('%d %d\n',P,O.time)end
+function list_object(X,s,Z)local r=tfm.get.room.objectList[s]if r==nil then
+X[#X+1]=string.format('%d &lt;invalid&gt; %d\n',s,Z.time)else
+X[#X+1]=string.format('%d (%d, %d) %d\n',s,r.x,r.y,Z.time)end end;function list_bullet(B,l,Y)
+B[#B+1]=string.format("%d %d %d\n",l,Y.controls[#Y.controls],Y.time)end
+function step(e,g,J,_,t)local x={}local h;local i,W;if t==nil then
+t=list_default end
+for a,b in pairs(g)do t(_,a,b)
+if b.time<=0 then
+if b.on_remove then
+for m,c in ipairs(b.on_remove)do
+i,W=pcall(c,a,b)if not i then
+addError(string.format("step(%s): on_remove[%d]: %s\n",tbl_name(g),m,W))end end end;x[#x+1]=a else b.time=b.time-e
+if b.callback then
+for p,q in ipairs(b.callback)do i,W=pcall(q,a,b)if
+not i then
+addError(string.format("step(%s): callback[%d]: %s\n",tbl_name(g),p,W))x[#x+1]=a;break end end end end end;for O,s in ipairs(x)do J(s)end end
+function clearT(c)local T={'<TI>'}T[#T+1]='<p align="center">Joints</p>'
+step(c,jointData,removeJoint,T)T[#T+1]='<p align="center">Objects</p>'
+step(c,objectData,removeObject,T,list_object)T[#T+1]='<p align="center">Grounds</p>'
+step(c,groundData,removeGround,T)T[#T+1]='<p align="center">Bullets</p>'
+step(c,bulletData,removeBullet,T,list_bullet)T[#T+1]='<p align="center">Patterns</p>'
+step(c,patternData,removePattern,T)
+ui.addTextArea(2,table.concat(T),nil,-155,5,150,590,nil,nil,0.5,true)end
+function shoot_bullet(o,F)local i=F.callback_args;if i._cd==nil then i._cd=0 end
+if i._cd>0 then
+i._cd=i._cd-1 else i._cd=i.cd
+local o=addBullet(i.btype,i.bdata,i.bttl,i.callback,i.on_remove,i.cbargs)
+if i.mtype~=nil then addMotion(i.mtype,o,true,i.mdata)end end end;function explode(D,k)local J=k.callback_args
+addExplosion(J.x,J.y,J.power,J.distance,J.miceOnly,J.p1,J.p2)end
+function explode1(K,D)
+local R=D.callback_args
+if R.t<=0 then
+local i=randomKey1(tfm.get.room.playerList,D.user,true)local S,o=0,0;if i~=nil then local w=tfm.get.room.playerList[i]
+S,o=w.x,w.y end
+addExplosion(S,o,R.power,R.distance,R.miceOnly,R.p1,R.p2)R.t=R.cd else R.t=R.t-1 end end;function accelerate(m,G)local e=G.callback_args
+moveObject(m,0,0,true,e.ax,e.ay,true)end
+function moveHoming(j,U)
 if
-h.time<=7 and h.time>=5 then local b=h.callback_args
-local x=tfm.get.room.playerList[b.target]
-if x~=nil then local a=x.x;local m=x.y;local c=b.x;local _=b.y;a=a-c;m=m-_;local p=a*a+m*m;if p>0 then p=b.v/
-math.sqrt(p)a=a*p;m=m*p end
-moveObject(W,0,0,true,a,m,false)end end end
-function moveHoming1(q,O)local s=O.callback_args
-if s.delay>0 then s.delay=s.delay-1 else local c,T;local o=nil;if s.target then
-o=tfm.get.room.playerList[s.target]end
-if o then c,T=o.x-s.x,o.y-s.y elseif s.target_x then c,T=s.target_x-s.x,
-s.target_y-s.y else return end
-local F=math.min(math.sqrt(c*c+T*T),s.max_step)
-if F>s.min_step then local i,D=to_axis(-math.atan2(T,c))s.jdata.limit2=
-F/30.0;s.jdata.axis=i
-s.x=s.x+F*math.cos(-D)s.y=s.y+F*math.sin(-D)
-do_addJoint(s.jid,s.gid,0,s.jdata)s.delay=s.delay1 end end end
-function addObject(k,J,K,D,R,i,S,o,w,m,G)local e=do_addObject(k,J,K,D,R,i,S)if o==nil then o=3 end
-objectData[e]={time=o,callback=to_table(w),on_remove=to_table(m),callback_args=G}return e end
-function removeObject(j)do_removeObject(j)objectData[j]=nil end
-function addGround(U,N,y,n,B,K,a)local Q=newId(groundId)do_addGround(Q,U,N,y)
-if n==nil then n=3 end
-groundData[Q]={time=n,callback=to_table(B),on_remove=to_table(K),callback_args=a}return Q end;function removeGround(L)do_removeGround(L)groundData[L]=nil
-freeId(groundId,L)end
-function addJoint(y,a,D,p,M,J,k)local P=newId(jointId)
-do_addJoint(P,y,a,D)if p==nil then p=-1 end;if D==nil then D={}end
-jointData[P]={time=p,callback=to_table(M),on_remove=to_table(J),callback_args=k}return P end
-function removeJoint(u)do_removeJoint(u)jointData[u]=nil;freeId(jointId,u)end
-function addPattern(E,C,l,p)local i=nil;if l.time~=nil then i=newId(patternId)
-patternData[i]={time=l.time,callback=l.callback,on_remove=l.on_remove}end
-l.func(E,C,i,p)return i end
-function removePattern(L)patternData[L]=nil;freeId(patternId,L)end
-function addExplosion(P,u,i,j,K,h,A)if h~=nil then addParticle(h,P,u,0,0,0,0)end
-if A~=nil then end;do_addExplosion(P,u,i,j,K)end;_tmp_grounds={}_tmp_joints={}function addGround1(v,l,o,F)local e=newId(groundId)_tmp_grounds[
-#_tmp_grounds+1]=e;do_addGround(e,l,o,F)
-v[#v+1]=e end;function addJoint1(T,F,x,l)
-local Y=newId(jointId)_tmp_joints[#_tmp_joints+1]=Y
-do_addJoint(Y,F,x,l)T[#T+1]=Y end
-function addBullet(Z,t,y,p,H,f)
-local K=newId(bulletId)local A,_,Q,s=pcall(Z,t)
-if A then _tmp_grounds={}_tmp_joints={}
-bulletData[K]={controls={_},grounds=Q,joints=s,time=y or 6,callback=to_table(p),on_remove=to_table(H),callback_args=f}else for P,B in ipairs(_tmp_joints)do removeJoint(B)end;for n,g in
-ipairs(_tmp_grounds)do removeGround(g)end;_tmp_grounds={}
-_tmp_joints={}freeId(bulletId,K)
-error(string.format('addBullet: %s',_))end;return K end
-function removeBullet(k)local U=bulletData[k]for l,X in ipairs(U.joints)do do_removeJoint(X)
-freeId(jointId,X)end;for f,b in ipairs(U.grounds)do
-do_removeGround(b)freeId(groundId,b)end
-bulletData[k]=nil;freeId(bulletId,k)end;bullet={}
-bullet.rectangle=function(v)local z,A,d=v.x,v.y,v.angle;local r,H=v.width,v.height
-local c,x=v.jdata,v.hitbox_data;local q,t=math.cos(d),math.sin(d)local O=r/2.0
-local G={type=0,point1=string.format("%d,%d",z,A),point2=string.format("%d,%d",
-z+q*r,A+t*r),color=0xFF0000,line=2.0*H+4,foreground=false}
-local N={type=12,width=r,height=H,angle=math.deg(d),miceCollision=true,groundCollision=false,foreground=true,dynamic=true,restitution=255}copy(N,x)local a=newId(groundId)
-_tmp_grounds[#_tmp_grounds+1]=a;do_addGround(a,z+q*O,A+t*O,N)local P={}if c then for l,j in ipairs(c)do copy(G,j)
-addJoint1(P,a,a,G)end end;return a,{a},P end
-bullet.circle=function(I)local q,a,j=I.x,I.y,I.R;local P,S=I.jdata,I.hitbox_data
-local U=string.format('%d,%d',q,a+1)local Z={type=0,point2=U,color=0x0000FF,line=2*j,foreground=false}
-local K={type=13,width=j,height=j,miceCollision=true,groundCollision=false,dynamic=true,restitution=255}copy(K,S)local b=newId(groundId)
-_tmp_grounds[#_tmp_grounds+1]=b;do_addGround(b,q,a,K)local v={}if P then for u,s in ipairs(P)do copy(Z,s)
-addJoint1(v,b,b,Z)end end;return b,{b},v end
-bullet.butterfly=function(q)local K,X,o,u=q.x,q.y,q.angle,q.R;local F,O=q.center_jdata,q.wing_jdata
-local R=q.hitbox_data;local Y=make_star(5,2)
-local Z={type=0,color=0xFF00FF,line=Y.l*u*2,foreground=false}
-local H={type=0,point1=string.format('%d,%d',K,X),point2=string.format('%d,%d',K,X+1),color=0x0000FF,line=u*2,foreground=false}
-local T={type=13,width=u,height=u,dynamic=true,miceCollision=true,groundCollision=false,restitution=255}copy(Z,O)copy(T,R)local V={}local b,t;local G,g=math.cos(o),math.sin(o)
-local M;local x=newId(groundId)
-_tmp_grounds[#_tmp_grounds+1]=x;do_addGround(x,K,X,T)
-for i=2,5 do M=Y.points[i]b,t=M[1]*G-M[2]*g,M[1]*g+
-M[2]*G;b,t=K+u*b,X+u*t
-Z.point1=string.format('%d,%d',b,t)Z.point2=string.format('%d,%d',b,t+1)
-addJoint1(V,x,x,Z)end;copy(H,F)addJoint1(V,x,x,H)return x,{x},V end
-bullet.jstar=function(i)local w,S,r,V=i.x,i.y,i.angle,i.R;local X,D=i.points,i.step
-local K,j=i.line_jdata,i.center_jdata;local _=i.hitbox_data;local I=make_star(X,D)
-local C={type=0,color=0xFFFFFF,line=5,foreground=true}local Q=V*I.r
-local f={type=0,point1=string.format('%d,%d',w,S),point2=string.format('%d,%d',w,S+1),color=0xFFFFFF,line=Q*2,foreground=true}
-local H={type=13,width=Q,height=Q,dynamic=true,miceCollision=true,groundCollision=false,restitution=255}copy(C,K)copy(H,_)local U={}local z={}local E,B
-local k,M=math.cos(r),math.sin(r)
-for Y,o in ipairs(I.points)do E,B=o[1]*k-o[2]*M,o[1]*M+o[2]*k;z[#z+1]=string.format('%d,%d',
-w+V*E,S+V*B)end;local T=newId(groundId)
-_tmp_grounds[#_tmp_grounds+1]=T;do_addGround(T,w,S,H)for i=1,X do C.point1=z[i]
-C.point2=z[1+ (i+D-1)%X]addJoint1(U,T,T,C)end
-if j then for d,N in ipairs(j)do
-copy(f,N)addJoint1(U,T,T,f)end end;return T,{T},U end
-bullet.star=function(f)local l,B,U,y=f.x,f.y,f.angle,f.R;local t,e,Z=f.points,f.step,f.do_cap
-local J,M=f.line_data,f.center_data;local P=f.cap_data;local u=make_star(t,e)
-local w={type=12,height=1,color=0xFFFFFF,groundCollision=false,miceCollision=false,dynamic=true,foreground=true,restitution=255}local D=y*u.r
-local R={type=13,width=D,height=D,color=0xFFFFFF,groundCollision=false,miceCollision=true,dynamic=true,foreground=true,restitution=255}
-local Y={type=13,color=0xFFFFFF,groundCollision=false,miceCollision=false,dynamic=true,foreground=true,restitution=255}D=string.format('%d,%d',l,B)
-local v={type=3,point1=D,point2=D,ratio=1,limit1=0,limit2=0}local O={type=0,frequency=10}copy(w,J)copy(R,M)copy(Y,P)
-local S,H,L={},{},{}local x,o;local f=math.deg(U)local W,F=math.cos(U),math.sin(U)
-for a,A in
-ipairs(u.lines)do w.angle=A.angle+f;w.width=A.width*y
-x,o=A.x*W-A.y*F,A.x*F+A.y*W;addGround1(S,l+y*x,B+y*o,w)end;if Z then
-for p,j in ipairs(u.points)do x,o=j[1]*W-j[2]*F,j[1]*F+j[2]*W;addGround1(H,
-l+y*x,B+y*o,Y)end end
-local i=newId(groundId)_tmp_grounds[#_tmp_grounds+1]=i
-do_addGround(i,l,B,R)
-if w.dynamic then local A,C=nil,nil;for X,r in ipairs(S)do addJoint1(L,r,i,v)if A~=nil then
-addJoint1(L,r,A,O)else C=r end;A=r end
-addJoint1(L,C,A,O)elseif R.dynamic then for Q,X in ipairs(S)do addJoint1(L,X,i,v)end end
-if Z then
-if Y.dynamic then local X,h=nil,nil
-for i=1,t do addJoint1(L,H[i],S[i],v)if X~=nil then
-addJoint1(L,H[i],X,O)else h=H[i]end;X=H[i]end;addJoint1(L,h,X,O)elseif w.dynamic then
-for i=1,t do addJoint1(L,H[i],S[i],v)end end end;append(S,H)S[#S+1]=i;return i,S,L end
-function bomb(F,o)
+U.time<=7 and U.time>=5 then local N=U.callback_args
+local y=tfm.get.room.playerList[N.target]
+if y~=nil then local n=y.x;local B=y.y;local K=N.x;local a=N.y;n=n-K;B=B-a;local Q=n*n+B*B;if Q>0 then Q=N.v/
+math.sqrt(Q)n=n*Q;B=B*Q end
+moveObject(j,0,0,true,n,B,false)end end end
+function moveHoming1(L,y)local D=y.callback_args
+if D.delay>0 then D.delay=D.delay-1 else local M,J;local k=nil;if D.target then
+k=tfm.get.room.playerList[D.target]end
+if k then M,J=k.x-D.x,k.y-D.y elseif D.target_x then M,J=D.target_x-D.x,
+D.target_y-D.y else return end
+local P=math.min(math.sqrt(M*M+J*J),D.max_step)
+if P>D.min_step then local u,E=to_axis(-math.atan2(J,M))D.jdata.limit2=
+P/30.0;D.jdata.axis=u
+D.x=D.x+P*math.cos(-E)D.y=D.y+P*math.sin(-E)
+do_addJoint(D.jid,D.gid,0,D.jdata)D.delay=D.delay1 end end end
+function addObject(C,l,p,i,L,P,u,j,K,h,A)local v=do_addObject(C,l,p,i,L,P,u)if j==nil then j=3 end
+objectData[v]={time=j,callback=to_table(K),on_remove=to_table(h),callback_args=A}return v end
+function removeObject(l)do_removeObject(l)objectData[l]=nil end
+function addGround(o,F,e,T,x,l,Y)local Z=newId(groundId)do_addGround(Z,o,F,e)
+if T==nil then T=3 end
+groundData[Z]={time=T,callback=to_table(x),on_remove=to_table(l),callback_args=Y}return Z end;function removeGround(t)do_removeGround(t)groundData[t]=nil
+freeId(groundId,t)end
+function addJoint(y,p,H,f,K,A,_)local Q=newId(jointId)
+do_addJoint(Q,y,p,H)if f==nil then f=-1 end;if H==nil then H={}end
+jointData[Q]={time=f,callback=to_table(K),on_remove=to_table(A),callback_args=_}return Q end
+function removeJoint(s)do_removeJoint(s)jointData[s]=nil;freeId(jointId,s)end
+function addPattern(K,P,B,n)local v=nil;if B.time~=nil then v=newId(patternId)
+patternData[v]={time=B.time,callback=B.callback,on_remove=B.on_remove}end
+B.func(K,P,v,n)return v end
+function removePattern(g)patternData[g]=nil;freeId(patternId,g)end
+function addExplosion(k,U,l,X,f,b,v)if b~=nil then addParticle(b,k,U,0,0,0,0)end
+if v~=nil then end;do_addExplosion(k,U,l,X,f)end;_tmp_grounds={}_tmp_joints={}function addGround1(z,A,d,r)local H=newId(groundId)_tmp_grounds[
+#_tmp_grounds+1]=H;do_addGround(H,A,d,r)
+z[#z+1]=H;return H end;function addJoint1(c,v,x,q)
+local t=newId(jointId)_tmp_joints[#_tmp_joints+1]=t
+do_addJoint(t,v,x,q)c[#c+1]=t end
+function addBullet(O,G,z,q,N,a)
+local H=newId(bulletId)local P,l,j,I=pcall(O,G)
+if P then _tmp_grounds={}_tmp_joints={}
+bulletData[H]={controls={l},grounds=j,joints=I,time=z or 6,callback=to_table(q),on_remove=to_table(N),callback_args=a}else for y,S in ipairs(_tmp_joints)do removeJoint(S)end;for U,Z in
+ipairs(_tmp_grounds)do removeGround(Z)end;_tmp_grounds={}
+_tmp_joints={}freeId(bulletId,H)
+error(string.format('addBullet: %s',l))end;return H end
+function removeBullet(K)local b=bulletData[K]for u,a in ipairs(b.joints)do do_removeJoint(a)
+freeId(jointId,a)end;for s,q in ipairs(b.grounds)do
+do_removeGround(q)freeId(groundId,q)end
+bulletData[K]=nil;freeId(bulletId,K)end;bullet={}
+bullet.rectangle=function(K)local X,o,u=K.x,K.y,K.angle;local F,O=K.width,K.height
+local R,Y=K.jdata,K.hitbox_data;local Z,H=math.cos(u),math.sin(u)local T=F/2.0
+local V={type=0,point1=string.format("%d,%d",X,o),point2=string.format("%d,%d",
+X+Z*F,o+H*F),color=0xFF0000,line=2.0*O+4,foreground=false}
+local b={type=12,width=F,height=O,angle=math.deg(u),miceCollision=true,groundCollision=false,foreground=true,dynamic=true,mass=1,restitution=255}copy(b,Y)local t,G={},{}local g=addGround1(t,X+Z*T,o+H*T,b)
+if R then for M,x in
+ipairs(R)do copy(V,x)addJoint1(G,g,g,V)end end;return g,t,G end
+bullet.circle=function(i)local w,S,r=i.x,i.y,i.R;local V,s=i.jdata,i.hitbox_data
+local X={type=0,point2=string.format('%d,%d',w,S+1),color=0x0000FF,line=
+2*r,foreground=false}
+local D={type=13,width=r,height=r,miceCollision=true,groundCollision=false,dynamic=true,mass=1,restitution=255}copy(D,s)local K,j={},{}local _=addGround1(K,w,S,D)if V then for c,I in ipairs(V)do copy(X,I)
+addJoint1(j,_,_,X)end end;return _,K,j end
+bullet.butterfly=function(C)local Q,f,H,U=C.x,C.y,C.angle,C.R;local z,j=C.center_jdata,C.wing_jdata
+local E=C.hitbox_data;local B;local _=make_star(5,2)
+local k={type=0,color=0xFF00FF,line=_.l*U*2,foreground=false}
+local S={type=0,point1=string.format('%d,%d',Q,f),point2=string.format('%d,%d',Q,f+1),color=0x0000FF,line=U*2,foreground=false}
+local M={type=13,width=U,height=U,dynamic=true,mass=1,miceCollision=true,groundCollision=false,restitution=255}copy(k,j)copy(M,E)local T,Y={},{}local X,o
+local d,N=math.cos(H),math.sin(H)local l;local y=addGround1(T,Q,f,M)
+for B=2,5 do l=_.points[B]X,o=l[1]*d-l[2]*N,
+l[1]*N+l[2]*d;X,o=Q+U*X,f+U*o
+k.point1=string.format('%d,%d',X,o)k.point2=string.format('%d,%d',X,o+1)
+addJoint1(Y,y,y,k)end;copy(S,z)addJoint1(Y,y,y,S)return y,T,Y end
+bullet.jstar=function(t)local e,Z,J,M=t.x,t.y,t.angle,t.R;local P,u=t.points,t.step
+local w,y=t.line_jdata,t.center_jdata;local D=t.hitbox_data;local R;local Y=make_star(P,u)
+local v={type=0,color=0xFFFFFF,line=5,foreground=true}local O=M*Y.r
+local S={type=0,point1=string.format('%d,%d',e,Z),point2=string.format('%d,%d',e,Z+1),color=0xFFFFFF,line=O*2,foreground=true}
+local H={type=13,width=O,height=O,dynamic=true,mass=1,miceCollision=true,groundCollision=false,restitution=255}copy(v,w)copy(H,D)local L,x={},{}local o={}local W,F
+local f,i=math.cos(J),math.sin(J)
+for A,p in ipairs(Y.points)do W,F=p[1]*f-p[2]*i,p[1]*i+p[2]*f;o[#o+1]=string.format('%d,%d',
+e+M*W,Z+M*F)end;local a=addGround1(L,e,Z,H)for R=1,P do v.point1=o[R]
+v.point2=o[1+ (R+u-1)%P]addJoint1(x,a,a,v)end
+if y then for j,A in ipairs(y)do
+copy(S,A)addJoint1(x,a,a,S)end end;return a,L,x end
+bullet.star=function(C)local J,B,D,X=C.x,C.y,C.angle,C.R;local e,O,r=C.points,C.step,C.do_cap
+local Q,h=C.line_data,C.center_data;local F=C.cap_data;local o=make_star(e,O)
+local v={type=12,height=1,color=0xFFFFFF,groundCollision=false,miceCollision=false,dynamic=true,foreground=true,restitution=255}local l=X*o.r
+local d={type=13,width=l,height=l,color=0xFFFFFF,groundCollision=false,miceCollision=true,dynamic=true,foreground=true,restitution=255}
+local a={type=13,color=0xFFFFFF,groundCollision=false,miceCollision=false,dynamic=true,foreground=true,restitution=255}l=string.format('%d,%d',J,B)
+local u={type=3,point1=l,point2=l,ratio=1,limit1=0,limit2=0}local w={type=0,frequency=10}copy(v,Q)copy(d,h)copy(a,F)
+local Z,j,p={},{},{}local W,R;local C=math.deg(D)local P,k=math.cos(D),math.sin(D)
+for z,L in
+ipairs(o.lines)do v.angle=L.angle+C;v.width=L.width*X
+W,R=L.x*P-L.y*k,L.x*k+L.y*P;addGround1(Z,J+X*W,B+X*R,v)end;if r then
+for x,q in ipairs(o.points)do W,R=q[1]*P-q[2]*k,q[1]*k+q[2]*P;addGround1(j,
+J+X*W,B+X*R,a)end end
+local t=addGround1(j,J,B,d)
+if v.dynamic then local s,c=nil,nil;for A,x in ipairs(Z)do addJoint1(p,x,t,u)if s~=nil then
+addJoint1(p,x,s,w)else c=x end;s=x end
+addJoint1(p,c,s,w)elseif d.dynamic then for b,q in ipairs(Z)do addJoint1(p,q,t,u)end end
+if r then
+if a.dynamic then local b,s=nil,nil
+for i=1,e do addJoint1(p,j[i],Z[i],u)if b~=nil then
+addJoint1(p,j[i],b,w)else s=j[i]end;b=j[i]end;addJoint1(p,s,b,w)elseif v.dynamic then
+for i=1,e do addJoint1(p,j[i],Z[i],u)end end end;append(Z,j)return t,Z,p end
+function bomb(y,o)
 if o.bomb_cd==0 and not o.bombing then
 if o.bombs>=o.bomb.cost then o.bombs=o.bombs-
 o.bomb.cost;o.bombing=true;o.bombTime=o.bomb.time
-local r,v=pcall(o.bomb.func,F,o)addBomb(F,o)updateTextAreas(F,o)if not r then
-addError(string.format("bomb: %s: %s",F,v))end else
-alert(string.format('bombs &lt; %d',o.bomb.cost),F)end end end
-function addBomb(l,d)local J=bombs.top+1
-local o=string.format('<TI><font color="#%X">%s <font color="#5F5F8D">|</font> %s</font>',d.color,l,d.bomb.name)d.bomb_id=J;bombs.top=J;bombs.val[J]=o;setShamanName(o)end
-function removeBomb(Q,e)local a=e.bomb_id;e.bomb_id=nil;bombs.val[a]=nil
-if a==bombs.top then a=a-1;while
-bombs.val[a]==nil and a>0 do a=a-1 end;bombs.top=a;if a>0 then
-a=bombs.val[a]else a=''end;setShamanName(a)end end;function do_addControl(u,o)u[#u+1]=o end;function do_removeControl(w,C)
-while w[C]do w[C]=nil;C=C+1 end end;function motionEnd(Z,j)
-do_removeControl(j.callback_args._controls,j.callback_args._idx)end
-function addControl(d,...)local p=#d+1
-local O=addGround(...)local W=groundData[O]
-if W.callback_args==nil then
-W.callback_args={_controls=d,_idx=p}else W.callback_args._controls=d;W.callback_args._idx=p end;if W.on_remove==nil then W.on_remove={motionEnd}else
-W.on_remove[#W.on_remove+1]=motionEnd end;d[#d+1]=O;return O end;function addControl1(R,...)return addGround(...)end
-function addMotion(l,P,u,k)local t;local Q;if u then
-t=bulletData[P].controls;Q=addControl else t={P}Q=addControl1 end
-local J,F=pcall(l,Q,t,k)if not J then
-error(string.format("addMotion: %s",F))end end;motion={}
-motion.fix=function(o,z,P)local L=0;local p=z[#z]local x={type=0,frequency=10}
-copy(x,P.jdata)if not P.last then
-L=o(z,P.x or 0,P.y or 0,CONTROL,P.ttl or 3)end;addJoint(p,L,x,P.ttl or 3)end
-motion.follow=function(o,J,x)x.x=x.x or 0;x.y=x.y or 0;x.ttl=x.ttl or 3
-x.delay=x.delay or 0;x.delay1=x.delay1 or 0;x.max_step=x.max_step or 3000;x.min_step=x.min_step or
-30;if x.target==nil then
-x.target=randomKey1(tfm.get.room.playerList,x.no_target,true)end;local P=J[#J]
-local O=o(J,x.x,x.y,CONTROL,x.ttl,moveHoming1,nil,x)
-local q={type=0,frequency=x.frequency or(1.0/ (1.0+x.delay1))}local s={type=1,forceMotor=255,speedMotor=127}copy(s,x.jdata)
-addJoint(P,O,q,x.ttl)x.jdata=s;x.gid=O;x.jid=addJoint(O,0,q,x.ttl)end
-motion.line=function(p,c,A)local X=A.x or 0;local k=A.y or 0;local x=A.ttl or 3;local r=0;local h
-local b={type=1,axis='-1,0',angle=0,forceMotor=255,speedMotor=1}copy(b,A.jdata)if A.free_angle then
-motion.fix(p,c,{ttl=x,x=X,y=k})end;h=c[#c]
-if not A.last then r=p(c,X,k,CONTROL,x)end;addJoint(h,r,b,x)end
-motion.circle=function(D,b,r)local q=0;local d=b[#b]local s={type=3,forceMotor=255,speedMotor=1}
-copy(s,r.jdata)if not r.last then
-q=D(b,r.x or 0,r.y or 0,CONTROL,r.ttl or 3)end;if r.x and r.y then
-s.point1=string.format('%d,%d',r.x,r.y)end;addJoint(d,q,s,r.ttl or 3)end
-motion.spiral=function(y,o,_)local b=_.last;_.last=false;_.jdata=_.tjoint
-motion.line(y,o,_)_.last=b;_.jdata=rjoint;motion.circle(y,o,_)end
-function addBombTimer(K,x,y,i,g)local f=y.bombTime*g+2
-local d={type=13,angle=0,color=0xFF0000,foreground=false,friction=0.0,restitution=2.0,width=f,height=f,miceCollision=false,groundCollision=i,dynamic=false}
-addGround(x.x,x.y,d,y.bombTime,moveBombTimer,nil,{player=K,pdata=y,offset=2,scale=g,obj=d})f=f-2
-d={type=13,angle=0,color=0x6A7495,foreground=false,friction=0.0,restitution=2.0,width=f,height=f,miceCollision=false,groundCollision=i,dynamic=false}
-addGround(x.x,x.y,d,y.bombTime,moveBombTimer,nil,{player=K,pdata=y,offset=0,scale=g,obj=d})end
-function moveBombTimer(F,u)local N=u.callback_args
-local O=tfm.get.room.playerList[N.player]local d=N.pdata.bombTime*N.scale+N.offset
-N.obj.width=d;N.obj.height=d;do_addGround(F,O.x,O.y,N.obj)end
-function defaultBombCallback(z,x)local p=tfm.get.room.playerList[z]
-local C=p.y+p.vy;local u;local o,e;local I=x.bombCallbackArgs;local t=4;local W=4;local k=0;local w={ax=64,ay=0}W=I*W
-w.ax=I*w.ax;u=p.x+I*x.bombTime*5+10
-for off=20,120,20 do e=off*I
-o=u+e*1.5
-addObject(objcode.anvil,o,C-e,0,W,-k*I,false,t,accelerate,nil,w)
-addObject(objcode.anvil,o,C+e,0,W,k*I,false,t,accelerate,nil,w)k=k+1 end end
-function defaultBomb(a,w)local Y=tfm.get.room.playerList[a]
-if
-not Y.isFacingRight then w.bombCallbackArgs=-1 else w.bombCallbackArgs=1 end;addBombTimer(a,Y,w,true,5)end
-function bomb2(M,w)local E=tfm.get.room.playerList[M]local s,X=E.x,E.y
-local i=string.format('%d,%d',s,X)
-local B={type=12,color=0xFFFFFF,foreground=true,width=512,height=8,dynamic=true,mass=8,restitution=255,linearDamping=0,angularDamping=0,groundCollision=false,miceCollision=true}
-local I={type=13,color=0xFFFFFF,width=32,height=32,dynamic=false,groundCollision=false,miceCollision=false,foreground=true}local C={type=3,point1=i,point2=nil,forceMotor=255,speedMotor=2}
-local F={type=3,point1=i,point2=i,ratio=1,limit1=0,limit2=8}local Q={type=0,frequency=10}local j;local t;local _,R;local S,v
-local h=32.0+B.width/2.0;local N=20;local z=nil;local n=nil;local c,g;addBombTimer(M,E,w,true,5)
-g=addGround(s,X,I,N)
-for j=0,359,120 do t=math.rad(j)_,R=math.cos(t),math.sin(t)
-S,v=s+h*_,X+h*R;B.angle=j;c=addGround(S,v,B,N)addJoint(c,g,C,N)if n~=nil then
-addJoint(c,n,F,N)addJoint(c,n,Q,N)else z=c end;n=c end;addJoint(z,c,F,N)addJoint(z,c,Q,N)end
-function bomb3(K,e)local S=tfm.get.room.playerList[K]local M,n=S.x,S.y
-local N=string.format('%d,%d',M,n)
-local m={type=13,color=0xFFFFFF,width=64,height=64,dynamic=true,mass=1,linearDamping=0,angularDamping=0,groundCollision=false,miceCollision=false,foreground=true}
-local P={type=1,axis='-1,0',forceMotor=255,speedMotor=2,limit1=0,limit2=5}local f;local g;local c,F;local C,r;local u=64.0+m.width;local A=5;local Z;local o
-addBombTimer(K,S,e,true,10)
-local v={[0]=0.15,[60]=0.13,[120]=0.11,[180]=0.075,[240]=0.05,[300]=0}
-for f=0,359,60 do g=math.rad(f)C,r=math.cos(g),math.sin(g)
-c,F=M+u*C,n+u*r
-o={x=M+math.cos(g+v[f])*280,y=n+
-math.sin(g+v[f])*280,power=127,distance=3*m.width,miceOnly=false,p1=particles.red_spirit,p2=nil}Z=addGround(c,F,m,A,nil,explode,o)
-P.angle=2.0*math.pi-g;addJoint(Z,0,P,A)end end
-function pattern(S,u,z,Y,Z)local A=u.patterns[z][Y]
-if A~=nil then local o=#A.points+1
-if o>=
-A.type.points then local y=os.time()
-if y-A.lastTime>=A.type.cd then A.lastTime=y
-A.points[o]=Z;local p,R=pcall(addPattern,S,u,A.type,A.points)A.points={}if not p then
-addError(string.format("pattern: %s: %s",S,R))end end else A.points[o]=Z end end end
-function bind(r,D,W,L)local Q=playerData[r]local v=Q.patterns[D]if v[W]~=nil then
-do_unbind(Q,v[W],D,W)end
-v[W]={id=L,type=patternTypes[L],points={},lastTime=0}v=Q.pattern_data[L]
-if D=='key'then bindKey(r,W,true,true)end
-if v==nil then Q.pattern_data[L]={binds=1}else v.binds=v.binds+1 end end
-function do_unbind(y,g,c,b)local P=y.pattern_data[g.id]if P.binds<=1 then
-y.pattern_data[g.id]=nil else P.binds=P.binds-1 end;y.patterns[c][b]=
+local _,b=pcall(o.bomb.func,y,o)addBomb(y,o)updateTextAreas(y,o)if not _ then
+addError(string.format("bomb: %s: %s",y,b))end else
+alert(string.format('bombs &lt; %d',o.bomb.cost),y)end end end
+function addBomb(K,x)local y=bombs.top+1
+local i=string.format('<TI><font color="#%X">%s <font color="#5F5F8D">|</font> %s</font>',x.color,K,x.bomb.name)x.bomb_id=y;bombs.top=y;bombs.val[y]=i;setShamanName(i)end
+function removeBomb(g,f)local d=f.bomb_id;f.bomb_id=nil;bombs.val[d]=nil
+if d==bombs.top then d=d-1;while
+bombs.val[d]==nil and d>0 do d=d-1 end;bombs.top=d;if d>0 then
+d=bombs.val[d]else d=''end;setShamanName(d)end end;function do_addControl(F,u)F[#F+1]=u end;function do_removeControl(N,O)
+while N[O]do N[O]=nil;O=O+1 end end;function motionEnd(d,z)
+do_removeControl(z.callback_args._controls,z.callback_args._idx)end
+function addControl(x,...)local p=#x+1
+local C=addGround(...)local u=groundData[C]
+if u.callback_args==nil then
+u.callback_args={_controls=x,_idx=p}else u.callback_args._controls=x;u.callback_args._idx=p end;if u.on_remove==nil then u.on_remove={motionEnd}else
+u.on_remove[#u.on_remove+1]=motionEnd end;x[#x+1]=C;return C end;function addControl1(y,...)return addGround(...)end
+function addMotion(o,e,I,t)local W;local k;if I then
+W=bulletData[e].controls;k=addControl else W={e}k=addControl1 end
+local w,a=pcall(o,k,W,t)if not w then
+error(string.format("addMotion: %s",a))end end;motion={}
+motion.fix=function(w,Y,M)local E=0;local s=Y[#Y]local X={type=0,frequency=10}
+copy(X,M.jdata)if not M.last then
+E=w(Y,M.x or 0,M.y or 0,CONTROL,M.ttl or 3)end;addJoint(s,E,X,M.ttl or 3)end
+motion.follow=function(i,B,I)I.x=I.x or 0;I.y=I.y or 0;I.ttl=I.ttl or 3
+I.delay=I.delay or 0;I.delay1=I.delay1 or 0;I.max_step=I.max_step or 3000;I.min_step=I.min_step or
+30;if I.target==nil then
+I.target=randomKey1(tfm.get.room.playerList,I.no_target,true)end;local C=B[#B]
+local F=i(B,I.x,I.y,CONTROL,I.ttl,moveHoming1,nil,I)
+local Q={type=0,frequency=I.frequency or(1.0/ (1.0+I.delay1))}local j={type=1,forceMotor=255,speedMotor=127}copy(j,I.jdata)
+addJoint(C,F,Q,I.ttl)I.jdata=j;I.gid=F;I.jid=addJoint(F,0,Q,I.ttl)end
+motion.line=function(t,s,B)local M=B.x or 0;local _=B.y or 0;local R=B.ttl or 3;local i=0;local y
+local S={type=1,axis='-1,0',angle=0,forceMotor=255,speedMotor=1}copy(S,B.jdata)if B.free_angle then
+motion.fix(t,s,{ttl=R,x=M,y=_})end;y=s[#s]
+if not B.last then i=t(s,M,_,CONTROL,R)end;addJoint(y,i,S,R)end
+motion.circle=function(S,i,v)local h=0;local N=i[#i]local B={type=3,forceMotor=255,speedMotor=1}
+copy(B,v.jdata)if not v.last then
+h=S(i,v.x or 0,v.y or 0,CONTROL,v.ttl or 3)end;if v.x and v.y then
+B.point1=string.format('%d,%d',v.x,v.y)end;addJoint(N,h,B,v.ttl or 3)end
+motion.spiral=function(z,n,c)local g=c.last;c.last=false;c.jdata=c.tjoint
+motion.line(z,n,c)c.last=g;c.jdata=c.rjoint;motion.circle(z,n,c)end
+function addBombTimer(K,e,S,M)local n=S.bombTime*M+2
+local N={type=13,color=0xFF0000,foreground=false,width=n,height=n,miceCollision=false}
+addGround(e.x,e.y,N,S.bombTime,moveBombTimer,nil,{player=K,pdata=S,offset=2,scale=M,obj=N})n=n-2
+N={type=13,color=0x6A7495,foreground=false,width=n,height=n,miceCollision=false}
+addGround(e.x,e.y,N,S.bombTime,moveBombTimer,nil,{player=K,pdata=S,offset=0,scale=M,obj=N})end
+function moveBombTimer(x,m)local P=m.callback_args
+local N=tfm.get.room.playerList[P.player]local f=P.pdata.bombTime*P.scale+P.offset
+P.obj.width=f;P.obj.height=f;do_addGround(x,N.x,N.y,P.obj)end
+function bomb1(g,c)local F=20;local m=512;local K=32.0
+local C=tfm.get.room.playerList[g]local r,u=C.x,C.y;local A=string.format("%d,%d",r,u)
+local M={0x00FF00,0x00FFFF,0x0000FF}
+local Z={x=r,y=u,R=32,hitbox_data={miceCollision=false,mass=2,angularDamping=1}}
+local o={width=m,height=16,hitbox_data={mass=2,linearDamping=0.5}}local v={last=true,ttl=F,jdata={speedMotor=255}}
+addBombTimer(g,C,c,5)local S=addBullet(bullet.circle,Z,F)local z=S
+S=bulletData[S].controls;S=S[#S]local Y={type=3,point1=A,point2=A,ratio=1,limit1=0,limit2=0}
+local p={type=0,frequency=32}local R;local D,W;local L,Q;local y,b;local P;local B
+for B=1,3 do R=math.pi*B*2.0/3.0
+D,W=math.cos(R),math.sin(R)L,Q=r+ (K+m)*D,u+ (K+m)*W;D,W=r+K*D,u+K*W
+P=make_laser(0,D,W,L,Q,5,0.1,2,20)
+P[1]={point1=string.format("%d,%d",D,W),point2=string.format("%d,%d",L,Q),color=M[B],alpha=0.25,line=20,foreground=true}o.angle=R;o.x=D;o.y=W;o.jdata=P
+id=addBullet(bullet.rectangle,o,F)id=bulletData[id].controls;id=id[#id]
+addJoint(id,S,Y,F)if b then addJoint(id,b,p,F)else y=id end;b=id end;addJoint(b,y,p,F)addMotion(motion.circle,z,true,v)end
+function bomb2Callback(M,d)local i=d.callback_args
+if i.delay==1 then
+local m={last=true,ttl=i.ttl,x=i.x,y=i.y,no_target=i.no_target,delay=0,delay1=0,frequency=0.5,max_step=500}addMotion(motion.follow,M,true,m)i.delay=0 else
+i.delay=i.delay-1 end end
+function bomb2(O,H)local Z=20;local c=96.0;local h=tfm.get.room.playerList[O]
+local M,G=h.x,h.y
+local n={R=48,jdata={{foreground=false,line=128}},hitbox_data={color=0xFFFFFF}}
+local U={ttl=2,last=true,jdata={speedMotor=3,color=0xFFFFFF}}local z;local j,b;local P;local A;local D;addBombTimer(O,h,H,5)
+for D=1,#_axis do
+z=(1-D)*_axis_step;j,b=math.cos(z),math.sin(z)n.x=M+c*j;n.y=G+c*b
+n.jdata[1].color=randomColor()U.jdata.axis=_axis[D]
+U.jdata.speedMotor=5-U.jdata.speedMotor;A={delay=2,ttl=Z-2,x=M+150*j,y=G+150*b}P=addBullet(bullet.circle,n,Z,bomb2Callback,
+nil,A)
+addMotion(motion.line,P,true,U)end end
+function pattern(n,Q,O,U,N)local o=Q.patterns[O][U]
+if o~=nil then local v=#o.points+1
+if v>=
+o.type.points then local Y=os.time()
+if Y-o.lastTime>=o.type.cd then o.lastTime=Y
+o.points[v]=N;local u,R=pcall(addPattern,n,Q,o.type,o.points)o.points={}if not u then
+addError(string.format("pattern: %s: %s",n,R))end end else o.points[v]=N end end end
+function bind(X,q,B,H)local D=playerData[X]local v=D.patterns[q]if v[B]~=nil then
+do_unbind(D,v[B],q,B)end
+v[B]={id=H,type=patternTypes[H],points={},lastTime=0}v=D.pattern_data[H]
+if q=='key'then bindKey(X,B,true,true)end
+if v==nil then D.pattern_data[H]={binds=1}else v.binds=v.binds+1 end end
+function do_unbind(t,A,W,V)local s=t.pattern_data[A.id]if s.binds<=1 then
+t.pattern_data[A.id]=nil else s.binds=s.binds-1 end;t.patterns[W][V]=
 nil end
-function unbind(B,M,d)local i=playerData[B]
-if M==nil then i.patterns={key={},obj={},objend={}}
-i.pattern_data={}elseif d==nil then local m={}
-for O,H in pairs(i.patterns[M])do m[#m+1]={O,H}end;for x,Z in ipairs(m)do do_unbind(i,Z[2],M,Z[1])end else
-local c=i.patterns[M][d]if c~=nil then do_unbind(i,c,M,d)end end end
-function testPattern(h,M,G,n)local U=n[1]local z=6;local i=48;local j=math.random(2,8)local b,P,O
-local A=math.rad(U.angle)for i=0,z-1 do b=A+2.0*math.pi*i/z
-P,O=math.cos(b),math.sin(b)
-addObject(U.type,U.x+i*P,U.y+i*O,U.angle+360*i/z,j*P,j*O,false,9)end end
-function testPattern1(i,P,U,D)local Q=D[1]local O=math.random(8,16)local N,o,v;local Y;local U
-local u={angle=0.25-math.pi/2.0,R=16,center_jdata={},wing_jdata={line=24,alpha=0.5},hitbox_data={width=0,height=0,color=0xFFFFFF,mass=1}}local R={ttl=2,last=true,jdata={}}
-for i=1,O do Y=math.random(64,96)N=
+function unbind(h,L,_)local W=playerData[h]
+if L==nil then W.patterns={key={},obj={},objend={}}
+W.pattern_data={}elseif _==nil then local w={}
+for A,p in pairs(W.patterns[L])do w[#w+1]={A,p}end;for K,c in ipairs(w)do do_unbind(W,c[2],L,c[1])end else
+local o=W.patterns[L][_]if o~=nil then do_unbind(W,o,L,_)end end end
+function testPattern(L,E,g,d)local k=d[1]local l=6;local J=48;local h=math.random(2,8)local H,A,y
+local Y=math.rad(k.angle)for i=0,l-1 do H=Y+2.0*math.pi*i/l
+A,y=math.cos(H),math.sin(H)
+addObject(k.type,k.x+J*A,k.y+J*y,k.angle+360*i/l,h*A,h*y,false,9)end end
+function testPattern1(O,D,I,y)local R=y[1]local E=math.random(8,16)local b,N,F;local t;local I
+local M={angle=0.25-math.pi/2.0,R=16,center_jdata={},wing_jdata={line=24,alpha=0.5},hitbox_data={width=0,height=0,color=0xFFFFFF,mass=1}}local s={ttl=2,last=true,jdata={}}
+for i=1,E do t=math.random(64,96)b=
 math.random()*2.0*math.pi
-o,v=math.cos(N),math.sin(N)u.x=Q.x+Y*o;u.y=Q.y+Y*v
-u.center_jdata.color=randomColor()u.wing_jdata.color=randomColor()
-R.jdata.speedMotor=math.random(2,6)R.jdata.angle=2*math.pi-N
-U=addBullet(bullet.butterfly,u,8)addMotion(motion.line,U,true,R)end end
-function testPattern2(X,q,B,H)local D=H[1]
-local v={x=D.x,y=D.y,R=16,jdata={{color=randomColor(),line=32}},hitbox_data={width=0,height=0,color=0xFFFFFF,mass=1}}
-local t={ttl=16,last=true,x=D.x,y=D.y,frequency=0.25,delay=2,delay1=0,max_step=1000}local B=addBullet(bullet.circle,v,16)
-addMotion(motion.follow,B,true,t)end
-function testPattern3(A,W,V,s)local h=s[1]local L=randomColor()
-local _,w=to_axis(math.rad(-h.angle))
-local p={x=h.x,y=h.y,angle=w,R=36,points=math.random(5,8),step=2,line_jdata={color=L},center_jdata={{foreground=false,color=L,line=76},{color=0x6A7495,line=70}},hitbox_data={dynamic=true,miceCollision=false}}
-local k={cd=0,btype=bullet.rectangle,bttl=10,bdata={x=h.x,y=h.y,angle=-w,width=128,height=13,jdata={{color=randomColor(),foreground=false},{color=0xFFFFFF,line=16,foreground=true}},hitbox_data={dynamic=true,fixedRotation=true,mass=1}},mtype=motion.line,mdata={x=h.x,y=h.y,ttl=1,last=true,free_angle=true,jdata={speedMotor=8,axis=_}}}local V=addBullet(bullet.jstar,p,32,shoot_bullet,nil,k)
-addMotion(motion.circle,V,true,{last=true,ttl=2,jdata={speedMotor=4}})end
-function shoot(K,c)
-if c.shot_cd==0 then
-if c.bombing and c.bomb.shot~=nil then
-c.shot_cd=c.bomb.shot.cd;local o,L=pcall(c.bomb.shot.func,K,c)if not o then
-addError(string.format("shoot(bombing): %s: %s",K,L))end else c.shot_cd=c.shot.cd
-local E,g=pcall(c.shot.func,K,c)if not E then
-addError(string.format("shoot: %s: %s",K,g))end end end end
-function defaultShot(d,k)local l=tfm.get.room.playerList[d]local c,J=l.x,l.y;local h;if
-l.isFacingRight then h=-1 else h=1 end;local H=math.random()*math.pi
-local A={x=c+64*
-math.cos(H),y=J+64*math.sin(H),angle=0,R=16,points=5,step=2,line_jdata={color=randomColor()},center_jdata={{}}}
-local y={last=true,ttl=math.random(1,4),x=c,y=J,jdata={speedMotor=4*h}}local E=addBullet(bullet.jstar,A,8)H=
+N,F=math.cos(b),math.sin(b)M.x=R.x+t*N;M.y=R.y+t*F
+M.center_jdata.color=randomColor()M.wing_jdata.color=randomColor()
+s.jdata.speedMotor=math.random(2,6)s.jdata.angle=2*math.pi-b
+I=addBullet(bullet.butterfly,M,8)addMotion(motion.line,I,true,s)end end
+function testPattern2(b,w,t,j)local S=j[1]
+local G={x=S.x,y=S.y,R=16,jdata={{color=randomColor(),line=32}},hitbox_data={width=0,height=0,color=0xFFFFFF,mass=1}}
+local i={ttl=16,last=true,x=S.x,y=S.y,frequency=0.25,delay=2,delay1=0,max_step=1000}local t=addBullet(bullet.circle,G,16)
+addMotion(motion.follow,t,true,i)end
+function testPattern3(e,Q,b,L)local A=L[1]local w=randomColor()
+local C,J=to_axis(math.rad(-A.angle))
+local l={x=A.x,y=A.y,angle=J,R=36,points=math.random(5,8),step=2,line_jdata={color=w},center_jdata={{foreground=false,color=w,line=76},{color=0x6A7495,line=70}},hitbox_data={dynamic=true,miceCollision=false}}
+local o={cd=0,btype=bullet.rectangle,bttl=10,bdata={x=A.x,y=A.y,angle=-J,width=128,height=13,jdata={{color=randomColor(),foreground=false},{color=0xFFFFFF,line=16,foreground=true}},hitbox_data={dynamic=true,fixedRotation=true,mass=1}},mtype=motion.line,mdata={x=A.x,y=A.y,ttl=1,last=true,free_angle=true,jdata={speedMotor=8,axis=C}}}local b=addBullet(bullet.jstar,l,32,shoot_bullet,nil,o)
+addMotion(motion.circle,b,true,{last=true,ttl=2,jdata={speedMotor=4}})end
+function shoot(B,G)
+if G.shot_cd==0 then
+if G.bombing and G.bomb.shot~=nil then
+G.shot_cd=G.bomb.shot.cd;local k,K=pcall(G.bomb.shot.func,B,G)if not k then
+addError(string.format("shoot(bombing): %s: %s",B,K))end else G.shot_cd=G.shot.cd
+local S,g=pcall(G.shot.func,B,G)if not S then
+addError(string.format("shoot: %s: %s",B,g))end end end end
+function defaultShot(F,l)local Q=tfm.get.room.playerList[F]local z,K=Q.x,Q.y;local p;if
+Q.isFacingRight then p=-1 else p=1 end;local w=math.random()*math.pi
+local a={x=z+64*
+math.cos(w),y=K+64*math.sin(w),angle=0,R=16,points=5,step=2,line_jdata={color=randomColor()},center_jdata={{}}}
+local R={last=true,ttl=math.random(1,4),x=z,y=K,jdata={speedMotor=4*p}}local c=addBullet(bullet.jstar,a,8)w=
 math.random()*math.pi+math.pi
-A.x=c+64*math.cos(H)A.y=J+64*math.sin(H)
-A.line_jdata.color=randomColor()local Y=addBullet(bullet.jstar,A,8)
-addMotion(motion.circle,E,true,y)y.ttl=math.random(1,4)y.jdata.speedMotor=-4*h
-addMotion(motion.circle,Y,true,y)end
-function homingShot(O,D)
-local I=randomKey1(tfm.get.room.playerList,O,false)local R=tfm.get.room.playerList[O]local c=R.x;local n=R.y;local E=2
-local b=2;local N=false;if not R.isFacingRight then E=-E end;c=c+16*E
-local F={target=I,x=c,y=n+32,v=128}
-addObject(objcode.anvil,c+E,n+b,0,E,b,N,10,moveHoming,nil,F)local F={target=I,x=c,y=n-32,v=128}
-addObject(objcode.anvil,c+E,n-b,0,E,-b,N,10,moveHoming,nil,F)end;do_respawn_1=do_respawn
-function do_respawn(y)do_respawn_1(y)
-local O=playerData[y].spawn;movePlayer(y,O[0],O[1],false,0,0,true)end
-function initPlayer(t)
-local M={color=randomColor(),shooting=false,bombing=false,shot=shotTypes[1],bomb=bombTypes[1],bombTime=nil,patterns={key={},obj={},objend={}},pattern_data={},spawn={200,200},vx=0,lives=5,bombs=3,resetBombs=3,shot_cd=0,bomb_cd=0,bomb_id=nil}if playerConfig[t]==nil then playerConfig[t]={}end
-copy(M,playerConfig[t])playerData[t]=M;for s,b in pairs(playerKeys)do bindKey(t,b,true,true)
-bindKey(t,b,false,true)end
-ui.addTextArea(1,getText(M),t,5,25,151,40,nil,nil,0.5,true)
-ui.addTextArea(104,'<TI><a href="event:help">?</a>',t,145,25,11,20,nil,nil,0.0,true)
-ui.addTextArea(ERROR_TA,table.concat(_errors),t,805,5,200,590,nil,nil,0.5,true)do_respawn(t)setShaman(t)
-setNameColor(t,playerData[t].color)end
-function resetPlayer(w)
-local t={shooting=false,bombing=false,bombTime=nil,lives=5,bombs=3,shot_cd=0,bomb_cd=0,vx=0,bomb_id=nil}local j=playerData[w]copy(j,t)updateTextAreas(w,j)
-do_respawn(w)setShaman(w)setNameColor(w,j.color)end;function deletePlayer(S)local G=playerData[S]if G.bombing then removeBomb(S,G)end;playerData[S]=
+a.x=z+64*math.cos(w)a.y=K+64*math.sin(w)
+a.line_jdata.color=randomColor()local u=addBullet(bullet.jstar,a,8)
+addMotion(motion.circle,c,true,R)R.ttl=math.random(1,4)R.jdata.speedMotor=-4*p
+addMotion(motion.circle,u,true,R)end
+function homingShot(e,s)
+local n=randomKey1(tfm.get.room.playerList,e,false)local h=tfm.get.room.playerList[e]local L=h.x;local Z=h.y;local E=2
+local W=2;local Q=false;if not h.isFacingRight then E=-E end;L=L+16*E
+local M={target=n,x=L,y=Z+32,v=128}
+addObject(objcode.anvil,L+E,Z+W,0,E,W,Q,10,moveHoming,nil,M)local M={target=n,x=L,y=Z-32,v=128}
+addObject(objcode.anvil,L+E,Z-W,0,E,-W,Q,10,moveHoming,nil,M)end;do_respawn_1=do_respawn
+function do_respawn(H)do_respawn_1(H)
+local k=playerData[H].spawn;movePlayer(H,k[0],k[1],false,0,0,true)end
+function initPlayer(s)
+local q={color=randomColor(),shooting=false,bombing=false,shot=shotTypes[1],bomb=bombTypes[1],bombTime=nil,patterns={key={},obj={},objend={}},pattern_data={},spawn={200,200},vx=0,lives=5,bombs=3,resetBombs=3,shot_cd=0,bomb_cd=0,bomb_id=nil}if playerConfig[s]==nil then playerConfig[s]={}end
+copy(q,playerConfig[s])playerData[s]=q;for N,T in pairs(playerKeys)do bindKey(s,T,true,true)
+bindKey(s,T,false,true)end
+system.bindMouse(s,true)
+ui.addTextArea(1,getText(q),s,5,25,151,40,nil,nil,0.5,true)
+ui.addTextArea(104,'<TI><a href="event:help">?</a>',s,145,25,11,20,nil,nil,0.0,true)
+ui.addTextArea(ERROR_TA,table.concat(_errors),s,805,5,200,590,nil,nil,0.5,true)do_respawn(s)setShaman(s)
+setNameColor(s,playerData[s].color)end
+function resetPlayer(A)
+local M={shooting=false,bombing=false,bombTime=nil,lives=5,bombs=3,shot_cd=0,bomb_cd=0,vx=0,bomb_id=nil}local v=playerData[A]copy(v,M)updateTextAreas(A,v)
+do_respawn(A)setShaman(A)setNameColor(A,v.color)end;function deletePlayer(E)local T=playerData[E]if T.bombing then removeBomb(E,T)end;playerData[E]=
 nil end
-function respawn(i)
-do_respawn(i)setNameColor(i,playerData[i].color)end;playerData={}objectData={}groundData={}jointData={}patternData={}bulletData={}
+function respawn(D)
+do_respawn(D)setNameColor(D,playerData[D].color)end;playerData={}objectData={}groundData={}jointData={}patternData={}bulletData={}
 MAX_ID=400;MAX_ERRORS=7
-CONTROL={type=13,dynamic=true,mass=1,groundCollision=false,miceCollision=false}playerKeys={32,83,40,100,101,102,104,65,68,69,81,37,39}
-reservedKeys=invert(playerKeys,true)eventCode={key=keycode,obj=objcode,objend=objcode}
+CONTROL={type=13,dynamic=true,mass=1,groundCollision=false,miceCollision=false}
+playerKeys={32,83,40,100,101,102,104,65,68,69,81,37,39,38,90}reservedKeys=invert(playerKeys,true)
+eventCode={key=keycode,obj=objcode,objend=objcode}
 defaultMap='<C><P L="1600" H="800" G="0,0" /><Z><S /><D><DS Y="200" X="200" /></D><O /></Z></C>'mapWidth=1600;mapHeight=800;maxLives=8;maxBombs=6
 shotTypes={{name='default shot',func=defaultShot,cd=1},{name='homing anvils',func=homingShot,cd=2}}
-bombTypes={{name='default bomb',func=defaultBomb,callback=defaultBombCallback,shot={func=nop,cd=1},cost=1,time=20,cd=0},{name='',func=bomb2,callback=
-nil,shot={func=nop,cd=1},cost=1,time=20,cd=5},{name='',func=bomb3,callback=nil,shot={func=nop,cd=1},cost=1,time=6,cd=5}}
+bombTypes={{name='',func=bomb1,callback=nil,shot={func=nop,cd=1},cost=1,time=20,cd=5},{name='',func=bomb2,callback=nil,shot={func=nop,cd=1},cost=1,time=20,cd=5}}
 patternTypes={{func=testPattern,callback=nil,cd=250,points=1,maxBinds=3,restrict={key={},obj=nil,objend=nil}},{func=testPattern1,callback=
 nil,cd=500,points=1,maxBinds=3,restrict={key=nil,obj=nil,objend=nil}},{func=testPattern2,callback=
 nil,cd=250,points=1,maxBinds=3,restrict={key={},obj=nil,objend=nil}},{func=testPattern3,callback=
 nil,cd=16000,points=1,maxBinds=2,restrict={key={},obj=nil,objend=nil}}}
-playerConfig={Cafecafe={bomb=bombTypes[2],color=0x9852B4}}MODULE_HELP_START='Keys'
+playerConfig={Cafecafe={bomb=bombTypes[1],color=0x9852B4},Rar={color=0x553399}}MODULE_HELP_START='Keys'
 MODULE_HELP_CONTENTS=[[<font face="mono" size="15"><a href="event:Keys">Keys</a>
 <a href="event:Commands">Commands</a>
 <a href="event:Shot types">Shot types</a>
@@ -480,112 +488,114 @@ Right - D, →</font>
 ]]}
 MODULE_HELP_CLOSE='<TI><a href="event:help_close"><p align="center">X</p></a>'
 do
-local e=function(Q,b)local L={'<font face="mono" size="15">'}
-for A,w in ipairs(Q)do
-if w.name then
-L[#L+1]=string.format('%d - %s\n',A,w.name)else L[#L+1]=string.format('%d\n',A)end
-if w.cost then L[#L+1]=string.format('    Cost: %d\n',w.cost)end;if w.time then
-L[#L+1]=string.format('    Duration: %fs\n',w.time/2.0)end;if w.cd then
-L[#L+1]=string.format('    Cooldown: %fs\n',w.cd/b)end;if w.maxBinds then
-L[#L+1]=string.format('    Max. binds: %d\n',w.maxBinds)end;L[#L+1]='\n'end;return table.concat(L)end;MODULE_HELP['Shot types']=e(shotTypes,2.0)
-MODULE_HELP['Bomb types']=e(bombTypes,2.0)MODULE_HELP['Pattern types']=e(patternTypes,1000.0)end
+local k=function(u,T)local n={'<font face="mono" size="15">'}
+for z,O in ipairs(u)do
+if O.name then
+n[#n+1]=string.format('%d - %s\n',z,O.name)else n[#n+1]=string.format('%d\n',z)end
+if O.cost then n[#n+1]=string.format('    Cost: %d\n',O.cost)end;if O.time then
+n[#n+1]=string.format('    Duration: %fs\n',O.time/2.0)end;if O.cd then
+n[#n+1]=string.format('    Cooldown: %fs\n',O.cd/T)end;if O.maxBinds then
+n[#n+1]=string.format('    Max. binds: %d\n',O.maxBinds)end;n[#n+1]='\n'end;return table.concat(n)end;MODULE_HELP['Shot types']=k(shotTypes,2.0)
+MODULE_HELP['Bomb types']=k(bombTypes,2.0)MODULE_HELP['Pattern types']=k(patternTypes,1000.0)end
 do
-local C=function(J,l)local o={'<font face="mono" size="15">'}local B;for G,K in ipairs(keys1(J))do
-B=l-#K;if B>0 then G=K..string.rep(' ',B)else G=K end
-o[#o+1]=string.format('%s = %4d\n',G,J[K])end
-o[#o+1]='</font>'return table.concat(o)end;MODULE_HELP['Shaman objects']=C(objcode,15)end
-MODULE_CHAT_COMMAND={['help']=help,['clear']=clear,['color']=function(S,g,F)F=string.upper(F)
-if F==''or F=='RANDOM'or F==
-'RND'then setColor(S,randomColor())playerConfig[S].color=
-nil else local l=tonumber(F)if l~=nil then if l>0xFFFFFF then l=0xFFFFFF end
-setColor(S,F)playerConfig[S].color=F else
-alert('Invalid color: '..F,S)end end end,['reset']=function(Q,a,z)
-z=string.lower(z)if z==''or z=='map'then setMap(defaultMap)else
-parsePlayerNames(Q,z,resetPlayer)end end,['init']=function(y,K,p)local w=function(y)
-deletePlayer(y)initPlayer(y)end
-parsePlayerNames(y,p,w)end,['respawn']=function(a,F,R)
-parsePlayerNames(a,R,respawn)end,['shot']=function(w,c,u)local e=tonumber(u)if e==nil then
-alert('Invalid shot type: '..u,w)return end;e=shotTypes[e]
-if e~=nil then
-playerData[w].shot=e else alert('Invalid shot type: '..u,w)end end,['bomb']=function(s,n,h)
-local L=tonumber(h)
-if L==nil then alert('Invalid bomb type: '..h,s)return end;L=bombTypes[L]if L~=nil then playerData[s].bomb=L else
-alert('Invalid bomb type: '..h,s)end end,['bind']=function(Z,E,W)
-W=split(W)if#W<3 then alert('Too few arguments',Z)return elseif#W>3 then
-alert('Too many arguments',Z)return end
-i=tonumber(W[1])local Q=patternTypes[i]if i==nil or Q==nil then
-alert('Invalid pattern: '..W[1],Z)return end;j=W[2]
+local M=function(g,f)local Q={'<font face="mono" size="15">'}local t;for h,v in ipairs(keys1(g))do
+t=f-#v;if t>0 then h=v..string.rep(' ',t)else h=v end
+Q[#Q+1]=string.format('%s = %4d\n',h,g[v])end
+Q[#Q+1]='</font>'return table.concat(Q)end;MODULE_HELP['Shaman objects']=M(objcode,15)end
+MODULE_CHAT_COMMAND={['help']=help,['clear']=clear,['color']=function(Y,f,n)n=string.upper(n)
+if n==''or n=='RANDOM'or n==
+'RND'then setColor(Y,randomColor())playerConfig[Y].color=
+nil else local G=tonumber(n)if G~=nil then if G>0xFFFFFF then G=0xFFFFFF end
+setColor(Y,n)playerConfig[Y].color=n else
+alert('Invalid color: '..n,Y)end end end,['reset']=function(D,d,Y)
+Y=string.lower(Y)if Y==''or Y=='map'then setMap(defaultMap)else
+parsePlayerNames(D,Y,resetPlayer)end end,['init']=function(h,G,P)local b=function(h)
+deletePlayer(h)initPlayer(h)end
+parsePlayerNames(h,P,b)end,['respawn']=function(g,Y,m)
+parsePlayerNames(g,m,respawn)end,['shot']=function(a,L,l)local N=tonumber(l)if N==nil then
+alert('Invalid shot type: '..l,a)return end;N=shotTypes[N]
+if N~=nil then
+playerData[a].shot=N else alert('Invalid shot type: '..l,a)end end,['bomb']=function(B,o,K)
+local y=tonumber(K)
+if y==nil then alert('Invalid bomb type: '..K,B)return end;y=bombTypes[y]if y~=nil then playerData[B].bomb=y else
+alert('Invalid bomb type: '..K,B)end end,['bind']=function(U,T,X)
+X=split(X)if#X<3 then alert('Too few arguments',U)return elseif#X>3 then
+alert('Too many arguments',U)return end
+i=tonumber(X[1])local I=patternTypes[i]if i==nil or I==nil then
+alert('Invalid pattern: '..X[1],U)return end;j=X[2]
 if j~='key'and j~='obj'and
-j~='objend'then alert('Invalid event: '..j,Z)return end;local M=tonumber(W[3])
-if M==nil then M=eventCode[j][W[3]]if M==nil then
-alert(string.format('Invalid %s name/code: %s',j,W[3]),Z)return end end;if
-Q.restrict[j]~=nil and Q.restrict[j][M]==nil then
-alert(string.format('Can\'t bind pattern %d to %s %d: restricted',i,j,M),Z)return end;if
-j=='key'and reservedKeys[M]then
-alert(string.format('Can\'t bind pattern %d to %s %d: reserved',i,j,M),Z)return end
-local H=playerData[Z]local k=H.pattern_data[i]if k~=nil and Q.maxBinds<=k.binds then
-alert(string.format('Can\'t bind pattern %d to more than %d events',i,Q.maxBinds),Z)return end
-bind(Z,j,M,i)end,['unbind']=function(s,q,N)
-N=split(N)if#N>2 then alert('Too many arguments',s)return end
-i=N[1]
-if i=='all'or i==nil then unbind(s)elseif
-i~='key'and i~='obj'and i~='objend'then alert('Invalid event: '..i,s)return else
-if N[2]==nil then
-unbind(s,i)else j=tonumber(N[2])
-if j==nil then j=eventCode[i][N[2]]if j==nil then
-alert(string.format('Invalid %s name/code: %s',i,N[2]),s)return end end;unbind(s,i,j)end end end,['map']=function(T,A,M)if
-M==''then M=defaultMap end;setMap(M)end}
-MODULE_CHAT_COMMAND_1=function(v,E,T)alert('Invalid command: '..E,v)end;eventNewPlayer=initPlayer;eventPlayerLeft=deletePlayer
+j~='objend'then alert('Invalid event: '..j,U)return end;local o=tonumber(X[3])
+if o==nil then o=eventCode[j][X[3]]if o==nil then
+alert(string.format('Invalid %s name/code: %s',j,X[3]),U)return end end;if
+I.restrict[j]~=nil and I.restrict[j][o]==nil then
+alert(string.format('Can\'t bind pattern %d to %s %d: restricted',i,j,o),U)return end;if
+j=='key'and reservedKeys[o]then
+alert(string.format('Can\'t bind pattern %d to %s %d: reserved',i,j,o),U)return end
+local x=playerData[U]local t=x.pattern_data[i]if t~=nil and I.maxBinds<=t.binds then
+alert(string.format('Can\'t bind pattern %d to more than %d events',i,I.maxBinds),U)return end
+bind(U,j,o,i)end,['unbind']=function(S,p,e)
+e=split(e)if#e>2 then alert('Too many arguments',S)return end
+i=e[1]
+if i=='all'or i==nil then unbind(S)elseif
+i~='key'and i~='obj'and i~='objend'then alert('Invalid event: '..i,S)return else
+if e[2]==nil then
+unbind(S,i)else j=tonumber(e[2])
+if j==nil then j=eventCode[i][e[2]]if j==nil then
+alert(string.format('Invalid %s name/code: %s',i,e[2]),S)return end end;unbind(S,i,j)end end end,['map']=function(J,b,g)if
+g==''then g=defaultMap end;setMap(g)end}
+MODULE_CHAT_COMMAND_1=function(U,E,w)alert('Invalid command: '..E,U)end;eventNewPlayer=initPlayer;eventPlayerLeft=deletePlayer
 eventTextAreaCallback=helpTextAreaCallback
 function eventNewGame()initTimers()tfm.exec.disableAfkDeath(true)
 tfm.exec.disableAutoNewGame(true)tfm.exec.disableAutoScore(true)
 tfm.exec.disableAutoShaman(true)tfm.exec.setGameTime(0)objectData={}groundData={}
 jointData={}patternData={}bulletData={}bombs={top=0,val={}}groundId={max=0,free={}}
-jointId={max=0,free={}}patternId={max=0,free={}}bulletId={max=0,free={}}for D,k in
-pairs(tfm.get.room.playerList)do resetPlayer(D)end
+jointId={max=0,free={}}patternId={max=0,free={}}bulletId={max=0,free={}}for C,S in
+pairs(tfm.get.room.playerList)do resetPlayer(C)end
 setMapName('<TI>')setShamanName('')
 do_addGround(0,0,0,{type=13,width=10,height=10,color=0xFFFFFF,dynamic=false,miceCollision=false,groundCollision=false})end
-function eventKeyboard(u,T,n,z,O)
-if reservedKeys[T]then
-if T==65 then local M=playerData[u]if n then bomb(u,M)end elseif T==69 then
-local g=playerData[u]g.shooting=n;if n then shoot(u,g)end else local f=0;local Q=0
-if not n then
+function eventKeyboard(B,O,J,V,Q)
+if reservedKeys[O]then
+if O==65 then local o=playerData[B]if J then bomb(B,o)end elseif O==69 then
+local U=playerData[B]U.shooting=J;if J then shoot(B,U)end else local N=0;local T=0
+if not J then
 if
 
-T==32 or T==104 or T==83 or T==40 or T==53 or T==101 then movePlayer(u,0,0,true,0,1,false)
-movePlayer(u,0,0,true,0,-1,true)else movePlayer(u,0,0,true,1,0,false)
-movePlayer(u,0,0,true,-1,0,true)playerData[u].vx=0 end else
-if T==32 or T==104 or T==87 then f=-50 elseif T==83 or T==40 or T==101 then f=50 elseif T==
-100 or T==37 or T==81 then Q=-50 elseif T==102 or T==39 or T==68 then Q=50 end;if Q~=0 then playerData[u].vx=Q elseif T==83 or T==40 then
-Q=playerData[u].vx end;if Q~=0 or f~=0 then
-movePlayer(u,0,0,true,Q,f,false)end end end elseif n then local t=playerData[u]pattern(u,t,'key',T,{x=z,y=O})end end;function eventSummoningStart(h,v,Y,f,n)local G={x=Y,y=f,angle=n,type=v}
-pattern(h,playerData[h],'obj',v,G)end
-function eventSummoningEnd(D,d,Y,h,G,P,b,g,m)
-objectData[g.id]={time=3}local a={x=Y,y=h,angle=G,type=d,vx=P,vy=b,data=g,other=m}
-pattern(D,playerData[D],'objend',d,a)end
-function eventMouse(L,l,N)local B=tfm.get.room.playerList[L]end
-function eventPlayerDied(o)local K=playerData[o]
-if K~=nil then
-if K.bombing then respawn(o)else K.shot_cd=0
-K.bomb_cd=0;K.shooting=false;K.lives=K.lives-1;if K.lives>0 then K.bombs=K.resetBombs
-updateTextAreas(o,K)respawn(o)else
-alert(string.format('playerData["%s"].lives &lt;= 0',o),o)end end end end
-function eventLoop(y,U)local T,X,I,o,x,t,S,p;clearT(1)
-for e,J in pairs(playerData)do
-T=tfm.get.room.playerList[e]
-if not T.isDead then X=T.x;I=T.y;if X<0 then X=0 elseif X>mapWidth then X=mapWidth end;if I<0 then
-I=0 elseif I>mapHeight then I=mapHeight end;J.spawn[0]=X
-J.spawn[1]=I;o=-T.vx;x=-T.vy;t=o/10.0;S=x/10.0
-for p=1,math.random(8,16)do
-addParticle(particles.purple,X+math.random(
--4,4),I+math.random(-4,4),(
-o+math.random()*2-1)/p,
-(x+math.random()*2-1)/p,t,S)end end;if J.shot_cd>0 then J.shot_cd=J.shot_cd-1 end;if J.bomb_cd>0 then J.bomb_cd=
-J.bomb_cd-1 end
-if J.shooting then shoot(e,J)end
-if J.bombing then J.bombTime=J.bombTime-1
-if J.bombTime<=0 then J.bombing=false
-J.bomb_cd=J.bomb.cd;removeBomb(e,J)else if J.bomb.callback then
-local b,g=pcall(J.bomb.callback,e,J)
-if not b then addError('bomb.callback: '..g)end end end end end end
-for U,E in pairs(tfm.get.room.playerList)do initPlayer(U)end;setMap(defaultMap)
+
+O==32 or O==104 or O==83 or O==40 or O==53 or O==101 or O==38 or O==90 then movePlayer(B,0,0,true,0,1,false)
+movePlayer(B,0,0,true,0,-1,true)else movePlayer(B,0,0,true,1,0,false)
+movePlayer(B,0,0,true,-1,0,true)playerData[B].vx=0 end else
+if
+O==32 or O==104 or O==87 or O==38 or O==90 then N=-50 elseif O==83 or O==40 or O==101 then N=50 elseif O==100 or O==37 or O==81 then
+T=-50 elseif O==102 or O==39 or O==68 then T=50 end;if T~=0 then playerData[B].vx=T elseif O==83 or O==40 then
+T=playerData[B].vx end;if T~=0 or N~=0 then
+movePlayer(B,0,0,true,T,N,false)end end end elseif J then local f=playerData[B]pattern(B,f,'key',O,{x=V,y=Q})end end;function eventSummoningStart(f,l,v,z,R)local E={x=v,y=z,angle=R,type=l}
+pattern(f,playerData[f],'obj',l,E)end
+function eventSummoningEnd(w,P,b,Y,X,y,i,k,e)
+objectData[k.id]={time=3}local C={x=b,y=Y,angle=X,type=P,vx=y,vy=i,data=k,other=e}
+pattern(w,playerData[w],'objend',P,C)end;function eventMouse(s,t,v)
+addError(string.format('(%d; %d)',t,v))end
+function eventPlayerDied(S)local f=playerData[S]
+if f~=nil then
+if f.bombing then
+respawn(S)else f.shot_cd=0;f.bomb_cd=0;f.shooting=false;f.lives=f.lives-1;if f.lives>0 then
+f.bombs=f.resetBombs;updateTextAreas(S,f)respawn(S)else
+alert(string.format('playerData["%s"].lives &lt;= 0',S),S)end end end end
+function eventLoop(Z,X)local Y,d,h,b,z,a,k,w;clearT(1)
+for i,q in pairs(playerData)do
+Y=tfm.get.room.playerList[i]
+if not Y.isDead then d=Y.x;h=Y.y;if d<0 then d=0 elseif d>mapWidth then d=mapWidth end;if h<0 then
+h=0 elseif h>mapHeight then h=mapHeight end;q.spawn[0]=d
+q.spawn[1]=h;b=-Y.vx;z=-Y.vy;a=b/10.0;k=z/10.0
+for w=1,math.random(8,16)do
+addParticle(particles.purple,d+math.random(
+-4,4),h+math.random(-4,4),(
+b+math.random()*2-1)/w,
+(z+math.random()*2-1)/w,a,k)end end;if q.shot_cd>0 then q.shot_cd=q.shot_cd-1 end;if q.bomb_cd>0 then q.bomb_cd=
+q.bomb_cd-1 end
+if q.shooting then shoot(i,q)end
+if q.bombing then q.bombTime=q.bombTime-1
+if q.bombTime<=0 then q.bombing=false
+q.bomb_cd=q.bomb.cd;removeBomb(i,q)else if q.bomb.callback then
+local t,p=pcall(q.bomb.callback,i,q)
+if not t then addError('bomb.callback: '..p)end end end end end end
+for W,g in pairs(tfm.get.room.playerList)do initPlayer(W)end;setMap(defaultMap)

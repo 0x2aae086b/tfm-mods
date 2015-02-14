@@ -76,7 +76,7 @@ M[v]=true end end;_errors={'<TI><p align="center">Errors</p>'}ERROR_TA=3
 MAX_ERRORS=7;function alert(n,v)
 ui.addPopup(0,0,string.format('<font face="mono" size="15">%s</font>',n),v,200,150,400,true)end
 function addError(I)
-I=string.format("• %s\n",I)for i=3,#_errors+1 do _errors[i]=_errors[i-1]end
+I=string.format("• %s\n",I)for i=#_errors+1,3,-1 do _errors[i]=_errors[i-1]end
 _errors[2]=I;_errors[MAX_ERRORS+1]=nil;ui.updateTextArea(ERROR_TA,table.concat(_errors),
 nil)end;TIME=os.time()TIMER_RES=250;_timerId={max=0,free={}}_timerData={}
 function initTimers()

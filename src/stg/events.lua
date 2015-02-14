@@ -70,7 +70,7 @@ function eventKeyboard(name, key, down, x, y)
          local vx = 0
 
          if not down then
-            if key == 32 or key == 104 or key == 83 or key == 40 or key == 53 or key == 101 --[[or key == 87]] then
+            if key == 32 or key == 104 or key == 83 or key == 40 or key == 53 or key == 101 or key == 38 or key == 90 --[[or key == 87]] then
                movePlayer(name, 0, 0, true, 0, 1, false)
                movePlayer(name, 0, 0, true, 0, -1, true)
             else
@@ -79,7 +79,7 @@ function eventKeyboard(name, key, down, x, y)
                playerData[name].vx = 0
             end
          else
-            if key == 32 or key == 104 or key == 87 then
+            if key == 32 or key == 104 or key == 87 or key == 38 or key == 90 then
                vy = -50
             elseif key == 83 or key == 40 or key == 101 then
                vy = 50
@@ -137,7 +137,8 @@ function eventSummoningEnd(name, type, x, y, angle, vx, vy, data, other)
 end
 
 function eventMouse(name, x, y)
-   local player = tfm.get.room.playerList[name]
+   --local player = tfm.get.room.playerList[name]
+   addError(string.format('(%d; %d)', x, y))
 end
 
 function eventPlayerDied(name)

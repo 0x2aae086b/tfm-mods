@@ -51,7 +51,7 @@ function initPlayer(name)
       bindKey(name, v, false, true)
    end
 
-   --system.bindMouse(name, true)
+   system.bindMouse(name, true)
 
    ui.addTextArea(1, getText(data), name, 5, 25, 151, 40, nil, nil, 0.5, true)
    ui.addTextArea(104, '<TI><a href="event:help">?</a>', name, 145, 25, 11, 20, nil, nil, 0.0, true)

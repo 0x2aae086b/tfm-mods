@@ -6,6 +6,7 @@ function addGround1(t, x, y, other)
    _tmp_grounds[#_tmp_grounds + 1] = id
    do_addGround(id, x, y, other)
    t[#t + 1] = id
+   return id
 end
 
 function addJoint1(t, id1, id2, other)

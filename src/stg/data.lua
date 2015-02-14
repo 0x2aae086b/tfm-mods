@@ -16,7 +16,7 @@ CONTROL = {
    miceCollision = false
 }
 
-playerKeys = { 32, 83, 40, 100, 101, 102, 104, 65, 68, 69, 81, --[[87,]] 37, 39 }
+playerKeys = { 32, 83, 40, 100, 101, 102, 104, 65, 68, 69, 81, --[[87,]] 37, 39, 38, 90 }
 reservedKeys = invert(playerKeys, true)
 
 eventCode = {
@@ -48,20 +48,8 @@ shotTypes = {
 
 bombTypes = {
    {
-      name = 'default bomb',
-      func = defaultBomb,
-      callback = defaultBombCallback,
-      shot = {
-         func = nop,
-         cd = 1
-      },
-      cost = 1,
-      time = 20,
-      cd = 0
-   },
-   {
       name = '',
-      func = bomb2,
+      func = bomb1,
       callback = nil,
       shot = {
          func = nop,
@@ -73,14 +61,14 @@ bombTypes = {
    },
    {
       name = '',
-      func = bomb3,
+      func = bomb2,
       callback = nil,
       shot = {
          func = nop,
          cd = 1
       },
       cost = 1,
-      time = 6,
+      time = 20,
       cd = 5
    }
 }
@@ -150,7 +138,10 @@ patternTypes = {
 
 playerConfig = {
    Cafecafe = {
-      bomb = bombTypes[2],
+      bomb = bombTypes[1],
       color = 0x9852B4 -- 0xB06FFD
+   },
+   Rar = {
+      color = 0x553399
    }
 }
