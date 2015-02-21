@@ -8,6 +8,10 @@ MODULE_HELP = {
 
 !init
 
+!s &lt;command&gt;
+
+!ui [!]me|all|&lt;name&gt;...
+
 !r
 !reset
     tfm.exec.newGame(curMap)
@@ -15,6 +19,8 @@ MODULE_HELP = {
 !m [&lt;map&gt;]
 !map [&lt;map&gt;]
     tfm.exec.newGame()
+
+!mtype 0|1|2
 
 !dir &lt;variable&gt;
 

@@ -92,6 +92,11 @@ function split(str)
 end
 
 function parsePlayerNames(name, arg, func)
+   if arg == '' then
+      func(name)
+      return
+   end
+
    local players = {}
    local b
 
@@ -235,6 +240,21 @@ function randomValue1(tbl, excl_key, do_exclude)
       return nil
    end
 end
+
+function emptyMap(w, h, s, s1)
+   local w2, h2 = w / 2.0, h / 2.0
+   local x, y
+   local t = { string.format('<C><P G="0,0" L="%d" H="%d" /><Z><S>', w, h) }
+   s = s or 256
+   s1 = s1 or s
+   for x = 16, w, s do
+      for y = 16, h, s1 do
+         t[#t + 1] = string.format('<S o="%02x00%02x" L="16" Y="%d" c="4" P="0,0,0,0,0,0,0,0" T="13" X="%d" H="10" />', math.abs(w2 - x) / w2 * 255, math.abs(h2 - y) / h2 * 255, y, x)
+      end
+   end
+   t[#t + 1] = '</S><D><DS X="200" Y="200" /></D><O /></Z></C>'
+   return table.concat(t)
+end
 keycode = {
    backspace = 8,
    enter = 13,
@@ -277,6 +297,8 @@ keycode = {
    f1 = 112, f2 = 113, f3 = 114, f4 = 115,  f5 = 116,  f6 = 117,
    f7 = 118, f8 = 119, f9 = 120, f10 = 121, f11 = 122, f12 = 123
 }
+
+kc = keycode
 
 particles = {
    white = 0,
@@ -438,6 +460,10 @@ function eventChatCommand(name, message)
       MODULE_CHAT_COMMAND_1(name, cmd, arg)
    end
 end
+
+MODULE_CHAT_COMMAND_1 = function(name, cmd, arg)
+   alert('Invalid command: ' .. cmd, name)
+end
 MAX_ID = 1000
 
 function tbl_name(t)
@@ -556,6 +582,139 @@ end
 function removeTimer(id)
    freeId(_timerId, id)
 end
+function addObject(type, x, y, angle, vx, vy, ghost, ttl, func, func1, args)
+   local id = do_addObject(type, x, y, angle, vx, vy, ghost)
+
+   if ttl == nil then
+      ttl = 3
+   end
+
+   objectData[id] = {
+      time = ttl,
+      callback = to_table(func),
+      on_remove = to_table(func1),
+      callback_args = args
+   }
+
+   return id
+end
+
+function removeObject(id)
+   do_removeObject(id)
+   objectData[id] = nil
+end
+
+function addGround(x, y, other, ttl, func, func1, args)
+   local id = newId(groundId)
+
+   do_addGround(id, x, y, other)
+
+   if ttl == nil then
+      ttl = 3
+   end
+
+   groundData[id] = {
+      time = ttl,
+      callback = to_table(func),
+      on_remove = to_table(func1),
+      callback_args = args,
+   }
+
+   return id
+end
+
+function removeGround(id)
+   do_removeGround(id)
+   groundData[id] = nil
+   freeId(groundId, id)
+end
+
+function addJoint(ground0, ground1, other, ttl, func, func1, args)
+   local id = newId(jointId)
+
+   do_addJoint(id, ground0, ground1, other)
+
+   if ttl == nil then
+      ttl = -1
+   end
+
+   if other == nil then
+      other = {}
+   end
+
+   jointData[id] = {
+      time = ttl,
+      callback = to_table(func),
+      on_remove = to_table(func1),
+      callback_args = args
+   }
+
+   return id
+end
+
+function removeJoint(id)
+   do_removeJoint(id)
+   jointData[id] = nil
+   freeId(jointId, id)
+end
+
+function addExplosion(x, y, power, distance, miceOnly, particle1, particle2)
+   if particle1 ~= nil then
+      addParticle(particle1, x, y, 0, 0, 0, 0)
+   end
+
+   if particle2 ~= nil then
+   end
+
+   do_addExplosion(x, y, power, distance, miceOnly)
+end
+function list_default(t, k, v)
+   t[#t + 1] = string.format('%d %d\n', k, v.time)
+end
+
+function step(dt, t, remove, list, do_list)
+   local ids = {}
+   local tm
+   local st, err
+
+   if do_list == nil then
+      do_list = list_default
+   end
+
+   for k, v in pairs(t) do
+      do_list(list, k, v)
+
+      if v.time <= 0 then
+         if v.on_remove then
+            for k1, v1 in ipairs(v.on_remove) do
+               st, err = pcall(v1, k, v)
+               if not st then
+                  addError(string.format("step(%s): on_remove[%d]: %s\n",
+                                         tbl_name(t), k1, err))
+               end
+            end
+         end
+         ids[#ids + 1] = k
+      else
+         v.time = v.time - dt
+         if v.callback then
+            for k1, v1 in ipairs(v.callback) do
+               st, err = pcall(v1, k, v)
+               if not st then
+                  addError(string.format("step(%s): callback[%d]: %s\n",
+                                         tbl_name(t), k1, err))
+                  ids[#ids + 1] = k
+                  break
+               end
+            end
+         end
+      end
+   end
+
+   for _, v in ipairs(ids) do
+      remove(v)
+   end
+end
 function setColor(name, color)
    setNameColor(name, color)
    playerData[name].color = color
@@ -603,6 +762,7 @@ make_star = cache2(
    function(n, s)
       local tmp = {}
       local ret = {}
+      local i
 
       for i = 1, n do
          a = math.pi * 2.0 * i / n
@@ -629,6 +789,7 @@ function make_laser(ltype, x, y, x1, y1, step, k, n_step, line, colors)
    local dx1, dy1
    local dx2, dy2
    local j = 2
+   local i
 
    if ltype == 0 then
       ltype = 2
@@ -651,7 +812,7 @@ function make_laser(ltype, x, y, x1, y1, step, k, n_step, line, colors)
       end
    elseif ltype == 1 then
       ltype = 2
-      for j = 1, n_step do
+      for i = 1, n_step do
          dy = dy + step
          dx2, dy2 = -dy * s, dy * c
          ret[j] = { point2 = string.format("%d,%d", x1 + dx2, y1 + dy2) }
@@ -693,8 +854,7 @@ function getText(data)
 
    if lives >= maxLives then
       lives = maxLives - 1
-   end
-   if lives < 0 then
+   elseif lives < 0 then
       lives = 0
    end
 
@@ -704,15 +864,8 @@ function getText(data)
       bombs = 0
    end
 
-   if data.lives < 1 then
-      l = 0
-   else
-      l = data.lives
-   end
-
    return string.format('<TI><N>Player  <R>%s<N>\nBomb  <VP>%s',
-                        string.rep('★', lives),
-                        string.rep('★', bombs)
+                        string.rep('★', lives), string.rep('★', bombs)
    )
 end
 
@@ -751,10 +904,6 @@ function clear()
    ]]--
 end
 
-function list_default(t, k, v)
-   t[#t + 1] = string.format('%d %d\n', k, v.time)
-end
-
 function list_object(t, k, v)
    local t1 = tfm.get.room.objectList[k]
    if t1 == nil then
@@ -766,50 +915,6 @@ end
 
 function list_bullet(t, k, v)
    t[#t + 1] = string.format("%d %d %d\n", k, v.controls[#v.controls], v.time)
-end
-
-function step(dt, t, remove, list, do_list)
-   local ids = {}
-   local tm
-   local st, err
-
-   if do_list == nil then
-      do_list = list_default
-   end
-
-   for k, v in pairs(t) do
-      do_list(list, k, v)
-
-      if v.time <= 0 then
-         if v.on_remove then
-            for k1, v1 in ipairs(v.on_remove) do
-               st, err = pcall(v1, k, v)
-               if not st then
-                  addError(string.format("step(%s): on_remove[%d]: %s\n",
-                                         tbl_name(t), k1, err))
-               end
-            end
-         end
-         ids[#ids + 1] = k
-      else
-         v.time = v.time - dt
-         if v.callback then
-            for k1, v1 in ipairs(v.callback) do
-               st, err = pcall(v1, k, v)
-               if not st then
-                  addError(string.format("step(%s): callback[%d]: %s\n",
-                                         tbl_name(t), k1, err))
-                  ids[#ids + 1] = k
-                  break
-               end
-            end
-         end
-      end
-   end
-
-   for _, v in ipairs(ids) do
-      remove(v)
-   end
 end
 
 function clearT(dt)
@@ -928,115 +1033,6 @@ function moveHoming1(id, data)
       end
    end
 end
-function addObject(type, x, y, angle, vx, vy, ghost, ttl, func, func1, args)
-   local id = do_addObject(type, x, y, angle, vx, vy, ghost)
-
-   if ttl == nil then
-      ttl = 3
-   end
-
-   objectData[id] = {
-      time = ttl,
-      callback = to_table(func),
-      on_remove = to_table(func1),
-      callback_args = args
-   }
-
-   return id
-end
-
-function removeObject(id)
-   do_removeObject(id)
-   objectData[id] = nil
-end
-
-function addGround(x, y, other, ttl, func, func1, args)
-   local id = newId(groundId)
-
-   do_addGround(id, x, y, other)
-
-   if ttl == nil then
-      ttl = 3
-   end
-
-   groundData[id] = {
-      time = ttl,
-      callback = to_table(func),
-      on_remove = to_table(func1),
-      callback_args = args,
-   }
-
-   return id
-end
-
-function removeGround(id)
-   do_removeGround(id)
-   groundData[id] = nil
-   freeId(groundId, id)
-end
-
-function addJoint(ground0, ground1, other, ttl, func, func1, args)
-   local id = newId(jointId)
-
-   do_addJoint(id, ground0, ground1, other)
-
-   if ttl == nil then
-      ttl = -1
-   end
-
-   if other == nil then
-      other = {}
-   end
-
-   jointData[id] = {
-      time = ttl,
-      callback = to_table(func),
-      on_remove = to_table(func1),
-      callback_args = args
-   }
-
-   return id
-end
-
-function removeJoint(id)
-   do_removeJoint(id)
-   jointData[id] = nil
-   freeId(jointId, id)
-end
-
-function addPattern(name, data, ptype, points)
-   local id = nil
-
-   if ptype.time ~= nil then
-      id = newId(patternId)
-
-      patternData[id] = {
-         time = ptype.time,
-         callback = ptype.callback,
-         on_remove = ptype.on_remove
-      }
-   end
-
-   ptype.func(name, data, id, points)
-
-   return id
-end
-
-function removePattern(id)
-   patternData[id] = nil
-   freeId(patternId, id)
-end
-
-function addExplosion(x, y, power, distance, miceOnly, particle1, particle2)
-   if particle1 ~= nil then
-      addParticle(particle1, x, y, 0, 0, 0, 0)
-   end
-
-   if particle2 ~= nil then
-   end
-
-   do_addExplosion(x, y, power, distance, miceOnly)
-end
 _tmp_grounds = {}
 _tmp_joints = {}
 
@@ -1057,7 +1053,7 @@ end
 
 function addBullet(btype, bullet_args, ttl, callback, on_remove, args)
    local id = newId(bulletId)
-
+   local _, v
    local st, control, grounds, joints = pcall(btype, bullet_args)
 
    if st then
@@ -1090,7 +1086,7 @@ end
 
 function removeBullet(id)
    local data = bulletData[id]
-
+   local k, v
    for k, v in ipairs(data.joints) do
       do_removeJoint(v)
       freeId(jointId, v)
@@ -1113,6 +1109,7 @@ bullet.rectangle = function(a)
 
    local dx, dy = math.cos(angle), math.sin(angle)
    local w = width / 2.0
+   local _, v
 
    local joint = {
       type = 0,
@@ -1504,168 +1501,6 @@ function removeBomb(name, data)
       setShamanName(i)
    end
 end
-function do_addControl(controls, control)
-   controls[#controls + 1] = control
-end
-
-function do_removeControl(controls, idx)
-   while controls[idx] do
-      controls[idx] = nil
-      idx = idx + 1
-   end
-end
-
-function motionEnd(id, data)
-   do_removeControl(data.callback_args._controls, data.callback_args._idx)
-end
-
-function addControl(controls, ...)
-   local idx = #controls + 1
-   local id = addGround(...)
-   local data = groundData[id]
-   if data.callback_args == nil then
-      data.callback_args = { _controls = controls, _idx = idx }
-   else
-      data.callback_args._controls = controls
-      data.callback_args._idx = idx
-   end
-   if data.on_remove == nil then
-      data.on_remove = { motionEnd }
-   else
-      data.on_remove[#data.on_remove + 1] = motionEnd
-   end
-   controls[#controls + 1] = id
-   return id
-end
-
-function addControl1(controls, ...)
-   return addGround(...)
-end
-
-function addMotion(mtype, id, is_bullet, args)
-   local data
-   local ac
-   if is_bullet then
-      data = bulletData[id].controls
-      ac = addControl
-   else
-      data = { id }
-      ac = addControl1
-   end
-   local st, err = pcall(mtype, ac, data, args)
-   if not st then
-      error(string.format("addMotion: %s", err))
-   end
-end
-motion = {}
-
-motion.fix = function(ac, controls, args)
-   local id = 0
-   local id1 = controls[#controls]
-   local joint = {
-      type = 0,
-      frequency = 10
-   }
-   copy(joint, args.jdata)
-   if not args.last then
-      id = ac(controls, args.x or 0, args.y or 0, CONTROL, args.ttl or 3)
-   end
-   addJoint(id1, id, joint, args.ttl or 3)
-end
-
-motion.follow = function(ac, controls, args)
-   args.x = args.x or 0
-   args.y = args.y or 0
-   args.ttl = args.ttl or 3
-   args.delay = args.delay or 0
-   args.delay1 = args.delay1 or 0
-   args.max_step = args.max_step or 3000
-   args.min_step = args.min_step or 30
-
-   if args.target == nil then
-      args.target = randomKey1(tfm.get.room.playerList, args.no_target, true)
-   end
-
-   local id1 = controls[#controls]
-   local id = ac(controls, args.x, args.y, CONTROL, args.ttl, moveHoming1, nil, args)
-
-   local joint = {
-      type = 0,
-      frequency = args.frequency or (1.0 / (1.0 + args.delay1))
-   }
-   local jdata = {
-      type = 1,
-      forceMotor = 255,
-      speedMotor = 127
-   }
-   copy(jdata, args.jdata)
-
-   addJoint(id1, id, joint, args.ttl)
-
-   args.jdata = jdata
-   args.gid = id
-   args.jid = addJoint(id, 0, joint, args.ttl)
-   --do_removeJoint(args.jid)
-end
-
-motion.line = function(ac, controls, args) -- limit = px / 30
-   local x = args.x or 0
-   local y = args.y or 0
-   local ttl = args.ttl or 3
-   local id = 0
-   local id1
-   local joint = {
-      type = 1,
-      axis = '-1,0',
-      angle = 0,
-      forceMotor = 255,
-      speedMotor = 1
-   }
-
-   copy(joint, args.jdata)
-
-   if args.free_angle then
-      motion.fix(ac, controls, { ttl = ttl, x = x, y = y })
-   end
-
-   id1 = controls[#controls]
-
-   if not args.last then
-      id = ac(controls, x, y, CONTROL, ttl)
-   end
-
-   addJoint(id1, id, joint, ttl)
-end
-
-motion.circle = function(ac, controls, args)
-   local id = 0
-   local id1 = controls[#controls]
-   local joint = {
-      type = 3,
-      forceMotor = 255,
-      speedMotor = 1
-   }
-   copy(joint, args.jdata)
-   if not args.last then
-      id = ac(controls, args.x or 0, args.y or 0, CONTROL, args.ttl or 3)
-   end
-   if args.x and args.y then
-      joint.point1 = string.format('%d,%d', args.x, args.y)
-   end
-   addJoint(id1, id, joint, args.ttl or 3)
-end
-
-motion.spiral = function(ac, controls, args)
-   local last = args.last
-
-   args.last = false
-   args.jdata = args.tjoint
-   motion.line(ac, controls, args)
-
-   args.last = last
-   args.jdata = args.rjoint
-   motion.circle(ac, controls, args)
-end
 function addBombTimer(name, player, data, scale)
    local r = data.bombTime * scale + 2
 
@@ -1897,12 +1732,185 @@ function bomb2(name, data)
          ttl = ttl - 2,
          x = x0 + 150 * x,
          y = y0 + 150 * y,
-         -- no_target = name
+         no_target = name
       }
 
       id = addBullet(bullet.circle, bdata, ttl, bomb2Callback, nil, args)
       addMotion(motion.line, id, true, mdata)
    end
+end
+function do_addControl(controls, control)
+   controls[#controls + 1] = control
+end
+
+function do_removeControl(controls, idx)
+   while controls[idx] do
+      controls[idx] = nil
+      idx = idx + 1
+   end
+end
+
+function motionEnd(id, data)
+   do_removeControl(data.callback_args._controls, data.callback_args._idx)
+end
+
+function addControl(controls, ...)
+   local idx = #controls + 1
+   local id = addGround(...)
+   local data = groundData[id]
+   if data.callback_args == nil then
+      data.callback_args = { _controls = controls, _idx = idx }
+   else
+      data.callback_args._controls = controls
+      data.callback_args._idx = idx
+   end
+   if data.on_remove == nil then
+      data.on_remove = { motionEnd }
+   else
+      data.on_remove[#data.on_remove + 1] = motionEnd
+   end
+   controls[#controls + 1] = id
+   return id
+end
+
+function addControl1(controls, ...)
+   return addGround(...)
+end
+
+function addMotion(mtype, id, is_bullet, args)
+   local data
+   local ac
+   if is_bullet then
+      data = bulletData[id].controls
+      ac = addControl
+   else
+      data = { id }
+      ac = addControl1
+   end
+   local st, err = pcall(mtype, ac, data, args)
+   if not st then
+      error(string.format("addMotion: %s", err))
+   end
+end
+motion = {}
+
+motion.invalid_friction = function(ac, controls, args)
+   local joint = {
+      type = 2,
+      point2 = "0,0",
+      point3 = "0,0",
+      point4 = "0,0"
+   }
+   local id = addGround(100, 100, CONTROL, 1)
+   addJoint(controls[#controls], id, joint, 1)
+end
+
+motion.fix = function(ac, controls, args)
+   local id = 0
+   local id1 = controls[#controls]
+   local joint = {
+      type = 0,
+      frequency = 10
+   }
+   copy(joint, args.jdata)
+   if not args.last then
+      id = ac(controls, args.x or 0, args.y or 0, CONTROL, args.ttl or 3)
+   end
+   addJoint(id1, id, joint, args.ttl or 3)
+end
+
+motion.follow = function(ac, controls, args)
+   args.x = args.x or 0
+   args.y = args.y or 0
+   args.ttl = args.ttl or 3
+   args.delay = args.delay or 0
+   args.delay1 = args.delay1 or 0
+   args.max_step = args.max_step or 3000
+   args.min_step = args.min_step or 30
+
+   if args.target == nil then
+      args.target = randomKey1(tfm.get.room.playerList, args.no_target, true)
+   end
+
+   local id1 = controls[#controls]
+   local id = ac(controls, args.x, args.y, CONTROL, args.ttl, moveHoming1, nil, args)
+
+   local joint = {
+      type = 0,
+      frequency = args.frequency or (1.0 / (1.0 + args.delay1))
+   }
+   local jdata = {
+      type = 1,
+      forceMotor = 255,
+      speedMotor = 127
+   }
+   copy(jdata, args.jdata)
+
+   addJoint(id1, id, joint, args.ttl)
+
+   args.jdata = jdata
+   args.gid = id
+   args.jid = addJoint(id, 0, joint, args.ttl)
+   --do_removeJoint(args.jid)
+end
+
+motion.line = function(ac, controls, args) -- limit = px / 30
+   local x = args.x or 0
+   local y = args.y or 0
+   local ttl = args.ttl or 3
+   local id = 0
+   local id1
+   local joint = {
+      type = 1,
+      axis = '-1,0',
+      angle = 0,
+      forceMotor = 255,
+      speedMotor = 1
+   }
+
+   copy(joint, args.jdata)
+
+   if args.free_angle then
+      motion.fix(ac, controls, { ttl = ttl, x = x, y = y })
+   end
+
+   id1 = controls[#controls]
+
+   if not args.last then
+      id = ac(controls, x, y, CONTROL, ttl)
+   end
+
+   addJoint(id1, id, joint, ttl)
+end
+
+motion.circle = function(ac, controls, args)
+   local id = 0
+   local id1 = controls[#controls]
+   local joint = {
+      type = 3,
+      forceMotor = 255,
+      speedMotor = 1
+   }
+   copy(joint, args.jdata)
+   if not args.last then
+      id = ac(controls, args.x or 0, args.y or 0, CONTROL, args.ttl or 3)
+   end
+   if args.x and args.y then
+      joint.point1 = string.format('%d,%d', args.x, args.y)
+   end
+   addJoint(id1, id, joint, args.ttl or 3)
+end
+
+motion.spiral = function(ac, controls, args)
+   local last = args.last
+
+   args.last = false
+   args.jdata = args.tjoint
+   motion.line(ac, controls, args)
+
+   args.last = last
+   args.jdata = args.rjoint
+   motion.circle(ac, controls, args)
 end
 function pattern(name, data, btype, bcode, point)
    local pat = data.patterns[btype][bcode]
@@ -1992,6 +2000,29 @@ function unbind(name, btype, bcode)
       end
    end
 end
+
+function addPattern(name, data, ptype, points)
+   local id = nil
+
+   if ptype.time ~= nil then
+      id = newId(patternId)
+
+      patternData[id] = {
+         time = ptype.time,
+         callback = ptype.callback,
+         on_remove = ptype.on_remove
+      }
+   end
+
+   ptype.func(name, data, id, points)
+
+   return id
+end
+
+function removePattern(id)
+   patternData[id] = nil
+   freeId(patternId, id)
+end
 function testPattern(name, data, id, points)
    local p = points[1]
 
@@ -1999,7 +2030,7 @@ function testPattern(name, data, id, points)
    local r = 48
    local v = math.random(2, 8)
 
-   local a, c, s
+   local a, c, s, i
    local a0 = math.rad(p.angle)
 
    for i = 0, n - 1 do
@@ -2018,7 +2049,7 @@ end
 function testPattern1(name, data, id, points)
    local p = points[1]
    local n = math.random(8, 16)
-   local a, c, s
+   local a, c, s, i
    local r
    local id
 
@@ -2128,6 +2159,30 @@ function testPattern3(name, data, id, points)
    }
    local id = addBullet(bullet.jstar, bdata, 32, shoot_bullet, nil, cb_args)
    addMotion(motion.circle, id, true, { last = true, ttl = 2, jdata = { speedMotor = 4 } })
+end
+
+function testPattern4(name, data, id, points)
+   local p = points[1]
+
+   local bdata = {
+      x = p.x,
+      y = p.y,
+      angle = math.rad(p.angle),
+      width = 512,
+      height = 13,
+      jdata = {
+         { color = randomColor(), foreground = true },
+         { color = 0xFFFFFF, line = 16 }
+      },
+      hitbox_data = {
+         dynamic = true,
+         restitution = 0,
+         mass = -1
+      }
+   }
+
+   local id = addBullet(bullet.rectangle, bdata, 10)
+   addMotion(motion.invalid_friction, id, true)
 end
 function shoot(name, data)
    if data.shot_cd == 0 then
@@ -2255,6 +2310,8 @@ function initPlayer(name)
       pattern_data = {},
 
       spawn = { 200, 200 },
+
+      speed = 35,
       vx = 0,
 
       lives = 5,
@@ -2275,7 +2332,7 @@ function initPlayer(name)
 
    playerData[name] = data
 
-   for k, v in pairs(playerKeys) do
+   for k, v in ipairs(playerKeys) do
       bindKey(name, v, true, true)
       bindKey(name, v, false, true)
    end
@@ -2292,25 +2349,9 @@ function initPlayer(name)
 end
 
 function resetPlayer(name)
-   local reset = {
-      shooting = false,
-      bombing = false,
-      bombTime = nil,
-
-      lives = 5,
-      bombs = 3,
-
-      shot_cd = 0,
-      bomb_cd = 0,
-
-      vx = 0,
-
-      bomb_id = nil
-   }
-
    local data = playerData[name]
 
-   copy(data, reset)
+   copy(data, RESET)
 
    updateTextAreas(name, data)
 
@@ -2331,6 +2372,36 @@ function respawn(name)
    do_respawn(name)
    setNameColor(name, playerData[name].color)
 end
+
+function movePlayer1(name, data, vx, vy, down)
+   if vx then
+      vx = vx * data.speed
+      if down then
+         data.vx = vx
+         if data.vx > 0 then
+            data.dir = 1
+         else
+            data.dir = -1
+         end
+         movePlayer(name, 0, 0, false, vx, 0, false)
+      else
+         movePlayer(name, 0, 0, false, 1, 0, false)
+         movePlayer(name, 0, 0, false, -1, 0, true)
+         data.vx = 0
+      end
+   elseif vy then
+      vy = vy * data.speed
+      if down then
+         movePlayer(name, 0, 0, false, data.vx, vy, false)
+      else
+         movePlayer(name, 0, 0, false, 0, -1, false)
+         movePlayer(name, 0, 0, false, 0, 1, true)
+      end
+   else
+      return false
+   end
+   return true
+end
 playerData = {}
 objectData = {}
 groundData = {}
@@ -2341,6 +2412,14 @@ bulletData = {}
 MAX_ID = 400
 MAX_ERRORS = 7
 
+GROUND0 = {
+   type=13,
+   color=0xFFFFFF,
+   dynamic=false,
+   miceCollision=false,
+   groundCollision=false
+}
+
 CONTROL = {
    type = 13,
    dynamic = true,
@@ -2349,8 +2428,38 @@ CONTROL = {
    miceCollision = false
 }
 
-playerKeys = { 32, 83, 40, 100, 101, 102, 104, 65, 68, 69, 81, --[[87,]] 37, 39, 38, 90 }
+RESET = {
+   shooting = false,
+   bombing = false,
+   lives = 5,
+   bombs = 3,
+   shot_cd = 0,
+   bomb_cd = 0,
+   vx = 0
+}
+
+playerKeys = {
+   kc.space,
+   kc.w, kc.s, kc.a, kc.d,
+   kc.left, kc.right, kc.up, kc.down,
+   kc.e, kc.q
+}
 reservedKeys = invert(playerKeys, true)
+
+pk_vx = {
+   [kc.a] = -1,
+   [kc.left] = -1,
+   [kc.d] = 1,
+   [kc.right] = 1
+}
+
+pk_vy = {
+   [kc.space] = -1,
+   [kc.w] = -1,
+   [kc.up] = -1,
+   [kc.s] = 1,
+   [kc.down] = 1
+}
 
 eventCode = {
    key = keycode,
@@ -2358,10 +2467,9 @@ eventCode = {
    objend = objcode
 }
 
---defaultMap='<C><P defilante="0,0,0,1" L="1600" H="800" G="0,0" /><Z><S /><D><DS Y="200" X="200" /></D><O /></Z></C>'
-defaultMap='<C><P L="1600" H="800" G="0,0" /><Z><S /><D><DS Y="200" X="200" /></D><O /></Z></C>'
 mapWidth = 1600
 mapHeight = 800
+defaultMap=emptyMap(mapWidth, mapHeight)
 
 maxLives = 8
 maxBombs = 6
@@ -2466,12 +2574,26 @@ patternTypes = {
          obj = nil,
          objend = nil
       },
+   },
+   {
+      func = testPattern4,
+      callback = nil,
+
+      cd = 250,
+      points = 1,
+
+      maxBinds = 2,
+
+      restrict = {
+         key = {},
+         obj = nil,
+         objend = nil
+      },
    }
 }
 
 playerConfig = {
    Cafecafe = {
-      bomb = bombTypes[1],
       color = 0x9852B4 -- 0xB06FFD
    },
    Rar = {
@@ -2492,7 +2614,7 @@ MODULE_HELP_CONTENTS = [[<font face="mono" size="15"><a href="event:Keys">Keys</
 MODULE_HELP = {
       ['Keys'] = [[<font face="mono" size="15">Shoot - E
 Bomb  - Q
-Up    - Space
+Up    - W, ↑, Space
 Down  - S, ↓
 Left  - A, ←
 Right - D, →</font>
@@ -2766,10 +2888,6 @@ MODULE_CHAT_COMMAND = {
       setMap(arg)
    end
 }
-
-MODULE_CHAT_COMMAND_1 = function(name, cmd, arg)
-   alert('Invalid command: ' .. cmd, name)
-end
 eventNewPlayer = initPlayer
 eventPlayerLeft = deletePlayer
 eventTextAreaCallback = helpTextAreaCallback
@@ -2821,55 +2939,25 @@ function eventNewGame()
    setMapName('<TI>')
    setShamanName('')
 
-   do_addGround(0, 0, 0, {type=13, width=10, height=10, color=0xFFFFFF, dynamic=false, miceCollision=false, groundCollision=false})
+   do_addGround(0, 0, 0, GROUND0)
 end
 
 function eventKeyboard(name, key, down, x, y)
    if reservedKeys[key] then
-      if key == 65 then
+      local data = playerData[name]
+      if movePlayer1(name, data, pk_vx[key], pk_vy[key], down) then
+         return
+      end
+      if key == kc.q then
          local data = playerData[name]
          if down then
             bomb(name, data)
          end
-      elseif key == 69 then
+      elseif key == kc.e then
          local data = playerData[name]
          data.shooting = down
          if down then
             shoot(name, data)
-         end
-      else
-         local vy = 0
-         local vx = 0
-
-         if not down then
-            if key == 32 or key == 104 or key == 83 or key == 40 or key == 53 or key == 101 or key == 38 or key == 90 --[[or key == 87]] then
-               movePlayer(name, 0, 0, true, 0, 1, false)
-               movePlayer(name, 0, 0, true, 0, -1, true)
-            else
-               movePlayer(name, 0, 0, true, 1, 0, false)
-               movePlayer(name, 0, 0, true, -1, 0, true)
-               playerData[name].vx = 0
-            end
-         else
-            if key == 32 or key == 104 or key == 87 or key == 38 or key == 90 then
-               vy = -50
-            elseif key == 83 or key == 40 or key == 101 then
-               vy = 50
-            elseif key == 100 or key == 37 or key == 81 then
-               vx = -50
-            elseif key == 102 or key == 39 or key == 68 then
-               vx = 50
-            end
-
-            if vx ~= 0 then
-               playerData[name].vx = vx
-            elseif key == 83 or key == 40 then
-               vx = playerData[name].vx
-            end
-
-            if vx ~= 0 or vy ~= 0 then
-               movePlayer(name, 0, 0, true, vx, vy, false)
-            end
          end
       end
    elseif down then

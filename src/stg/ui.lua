@@ -4,8 +4,7 @@ function getText(data)
 
    if lives >= maxLives then
       lives = maxLives - 1
-   end
-   if lives < 0 then
+   elseif lives < 0 then
       lives = 0
    end
 
@@ -15,15 +14,8 @@ function getText(data)
       bombs = 0
    end
 
-   if data.lives < 1 then
-      l = 0
-   else
-      l = data.lives
-   end
-
    return string.format('<TI><N>Player  <R>%s<N>\nBomb  <VP>%s',
-                        string.rep('★', lives),
-                        string.rep('★', bombs)
+                        string.rep('★', lives), string.rep('★', bombs)
    )
 end
 

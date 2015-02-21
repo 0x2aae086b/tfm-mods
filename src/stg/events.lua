@@ -49,55 +49,25 @@ function eventNewGame()
    setMapName('<TI>')
    setShamanName('')
 
-   do_addGround(0, 0, 0, {type=13, width=10, height=10, color=0xFFFFFF, dynamic=false, miceCollision=false, groundCollision=false})
+   do_addGround(0, 0, 0, GROUND0)
 end
 
 function eventKeyboard(name, key, down, x, y)
    if reservedKeys[key] then
-      if key == 65 then
+      local data = playerData[name]
+      if movePlayer1(name, data, pk_vx[key], pk_vy[key], down) then
+         return
+      end
+      if key == kc.q then
          local data = playerData[name]
          if down then
             bomb(name, data)
          end
-      elseif key == 69 then
+      elseif key == kc.e then
          local data = playerData[name]
          data.shooting = down
          if down then
             shoot(name, data)
-         end
-      else
-         local vy = 0
-         local vx = 0
-
-         if not down then
-            if key == 32 or key == 104 or key == 83 or key == 40 or key == 53 or key == 101 or key == 38 or key == 90 --[[or key == 87]] then
-               movePlayer(name, 0, 0, true, 0, 1, false)
-               movePlayer(name, 0, 0, true, 0, -1, true)
-            else
-               movePlayer(name, 0, 0, true, 1, 0, false)
-               movePlayer(name, 0, 0, true, -1, 0, true)
-               playerData[name].vx = 0
-            end
-         else
-            if key == 32 or key == 104 or key == 87 or key == 38 or key == 90 then
-               vy = -50
-            elseif key == 83 or key == 40 or key == 101 then
-               vy = 50
-            elseif key == 100 or key == 37 or key == 81 then
-               vx = -50
-            elseif key == 102 or key == 39 or key == 68 then
-               vx = 50
-            end
-
-            if vx ~= 0 then
-               playerData[name].vx = vx
-            elseif key == 83 or key == 40 then
-               vx = playerData[name].vx
-            end
-
-            if vx ~= 0 or vy ~= 0 then
-               movePlayer(name, 0, 0, true, vx, vy, false)
-            end
          end
       end
    elseif down then

@@ -177,7 +177,3 @@ MODULE_CHAT_COMMAND = {
       setMap(arg)
    end
 }
-
-MODULE_CHAT_COMMAND_1 = function(name, cmd, arg)
-   alert('Invalid command: ' .. cmd, name)
-end

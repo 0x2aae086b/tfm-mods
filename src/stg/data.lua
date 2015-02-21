@@ -8,6 +8,14 @@ bulletData = {}
 MAX_ID = 400
 MAX_ERRORS = 7
 
+GROUND0 = {
+   type=13,
+   color=0xFFFFFF,
+   dynamic=false,
+   miceCollision=false,
+   groundCollision=false
+}
+
 CONTROL = {
    type = 13,
    dynamic = true,
@@ -16,8 +24,38 @@ CONTROL = {
    miceCollision = false
 }
 
-playerKeys = { 32, 83, 40, 100, 101, 102, 104, 65, 68, 69, 81, --[[87,]] 37, 39, 38, 90 }
+RESET = {
+   shooting = false,
+   bombing = false,
+   lives = 5,
+   bombs = 3,
+   shot_cd = 0,
+   bomb_cd = 0,
+   vx = 0
+}
+
+playerKeys = {
+   kc.space,
+   kc.w, kc.s, kc.a, kc.d,
+   kc.left, kc.right, kc.up, kc.down,
+   kc.e, kc.q
+}
 reservedKeys = invert(playerKeys, true)
+
+pk_vx = {
+   [kc.a] = -1,
+   [kc.left] = -1,
+   [kc.d] = 1,
+   [kc.right] = 1
+}
+
+pk_vy = {
+   [kc.space] = -1,
+   [kc.w] = -1,
+   [kc.up] = -1,
+   [kc.s] = 1,
+   [kc.down] = 1
+}
 
 eventCode = {
    key = keycode,
@@ -25,10 +63,9 @@ eventCode = {
    objend = objcode
 }
 
---defaultMap='<C><P defilante="0,0,0,1" L="1600" H="800" G="0,0" /><Z><S /><D><DS Y="200" X="200" /></D><O /></Z></C>'
-defaultMap='<C><P L="1600" H="800" G="0,0" /><Z><S /><D><DS Y="200" X="200" /></D><O /></Z></C>'
 mapWidth = 1600
 mapHeight = 800
+defaultMap=emptyMap(mapWidth, mapHeight)
 
 maxLives = 8
 maxBombs = 6
@@ -133,12 +170,26 @@ patternTypes = {
          obj = nil,
          objend = nil
       },
+   },
+   {
+      func = testPattern4,
+      callback = nil,
+
+      cd = 250,
+      points = 1,
+
+      maxBinds = 2,
+
+      restrict = {
+         key = {},
+         obj = nil,
+         objend = nil
+      },
    }
 }
 
 playerConfig = {
    Cafecafe = {
-      bomb = bombTypes[1],
       color = 0x9852B4 -- 0xB06FFD
    },
    Rar = {

@@ -18,7 +18,7 @@ end
 
 function addBullet(btype, bullet_args, ttl, callback, on_remove, args)
    local id = newId(bulletId)
-
+   local _, v
    local st, control, grounds, joints = pcall(btype, bullet_args)
 
    if st then
@@ -51,7 +51,7 @@ end
 
 function removeBullet(id)
    local data = bulletData[id]
-
+   local k, v
    for k, v in ipairs(data.joints) do
       do_removeJoint(v)
       freeId(jointId, v)

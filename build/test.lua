@@ -92,6 +92,11 @@ function split(str)
 end
 
 function parsePlayerNames(name, arg, func)
+   if arg == '' then
+      func(name)
+      return
+   end
+
    local players = {}
    local b
 
@@ -235,6 +240,21 @@ function randomValue1(tbl, excl_key, do_exclude)
       return nil
    end
 end
+
+function emptyMap(w, h, s, s1)
+   local w2, h2 = w / 2.0, h / 2.0
+   local x, y
+   local t = { string.format('<C><P G="0,0" L="%d" H="%d" /><Z><S>', w, h) }
+   s = s or 256
+   s1 = s1 or s
+   for x = 16, w, s do
+      for y = 16, h, s1 do
+         t[#t + 1] = string.format('<S o="%02x00%02x" L="16" Y="%d" c="4" P="0,0,0,0,0,0,0,0" T="13" X="%d" H="10" />', math.abs(w2 - x) / w2 * 255, math.abs(h2 - y) / h2 * 255, y, x)
+      end
+   end
+   t[#t + 1] = '</S><D><DS X="200" Y="200" /></D><O /></Z></C>'
+   return table.concat(t)
+end
 keycode = {
    backspace = 8,
    enter = 13,
@@ -277,6 +297,8 @@ keycode = {
    f1 = 112, f2 = 113, f3 = 114, f4 = 115,  f5 = 116,  f6 = 117,
    f7 = 118, f8 = 119, f9 = 120, f10 = 121, f11 = 122, f12 = 123
 }
+
+kc = keycode
 
 particles = {
    white = 0,
@@ -437,6 +459,10 @@ function eventChatCommand(name, message)
    else
       MODULE_CHAT_COMMAND_1(name, cmd, arg)
    end
+end
+
+MODULE_CHAT_COMMAND_1 = function(name, cmd, arg)
+   alert('Invalid command: ' .. cmd, name)
 end
 MAX_ID = 1000
 
@@ -732,9 +758,149 @@ function lsTextAreaCallback(id, name, callback)
    end
    return true
 end
+function addObject(type, x, y, angle, vx, vy, ghost, ttl, func, func1, args)
+   local id = do_addObject(type, x, y, angle, vx, vy, ghost)
+
+   if ttl == nil then
+      ttl = 3
+   end
+
+   objectData[id] = {
+      time = ttl,
+      callback = to_table(func),
+      on_remove = to_table(func1),
+      callback_args = args
+   }
+
+   return id
+end
+
+function removeObject(id)
+   do_removeObject(id)
+   objectData[id] = nil
+end
+
+function addGround(x, y, other, ttl, func, func1, args)
+   local id = newId(groundId)
+
+   do_addGround(id, x, y, other)
+
+   if ttl == nil then
+      ttl = 3
+   end
+
+   groundData[id] = {
+      time = ttl,
+      callback = to_table(func),
+      on_remove = to_table(func1),
+      callback_args = args,
+   }
+
+   return id
+end
+
+function removeGround(id)
+   do_removeGround(id)
+   groundData[id] = nil
+   freeId(groundId, id)
+end
+
+function addJoint(ground0, ground1, other, ttl, func, func1, args)
+   local id = newId(jointId)
+
+   do_addJoint(id, ground0, ground1, other)
+
+   if ttl == nil then
+      ttl = -1
+   end
+
+   if other == nil then
+      other = {}
+   end
+
+   jointData[id] = {
+      time = ttl,
+      callback = to_table(func),
+      on_remove = to_table(func1),
+      callback_args = args
+   }
+
+   return id
+end
+
+function removeJoint(id)
+   do_removeJoint(id)
+   jointData[id] = nil
+   freeId(jointId, id)
+end
+
+function addExplosion(x, y, power, distance, miceOnly, particle1, particle2)
+   if particle1 ~= nil then
+      addParticle(particle1, x, y, 0, 0, 0, 0)
+   end
+
+   if particle2 ~= nil then
+   end
+
+   do_addExplosion(x, y, power, distance, miceOnly)
+end
+function list_default(t, k, v)
+   t[#t + 1] = string.format('%d %d\n', k, v.time)
+end
+
+function step(dt, t, remove, list, do_list)
+   local ids = {}
+   local tm
+   local st, err
+
+   if do_list == nil then
+      do_list = list_default
+   end
+
+   for k, v in pairs(t) do
+      do_list(list, k, v)
+
+      if v.time <= 0 then
+         if v.on_remove then
+            for k1, v1 in ipairs(v.on_remove) do
+               st, err = pcall(v1, k, v)
+               if not st then
+                  addError(string.format("step(%s): on_remove[%d]: %s\n",
+                                         tbl_name(t), k1, err))
+               end
+            end
+         end
+         ids[#ids + 1] = k
+      else
+         v.time = v.time - dt
+         if v.callback then
+            for k1, v1 in ipairs(v.callback) do
+               st, err = pcall(v1, k, v)
+               if not st then
+                  addError(string.format("step(%s): callback[%d]: %s\n",
+                                         tbl_name(t), k1, err))
+                  ids[#ids + 1] = k
+                  break
+               end
+            end
+         end
+      end
+   end
+
+   for _, v in ipairs(ids) do
+      remove(v)
+   end
+end
 defaultMap = '90'
+UI_DEFAULT = false
+MTYPE = 0
+
 curMap = defaultMap
+
 playerData = {}
+objectData = {}
+groundData = {}
+jointData = {}
 function getfield(var, err)
    local t = _G
 
@@ -875,6 +1041,10 @@ MODULE_HELP = {
 
 !init
 
+!s &lt;command&gt;
+
+!ui [!]me|all|&lt;name&gt;...
+
 !r
 !reset
     tfm.exec.newGame(curMap)
@@ -882,6 +1052,8 @@ MODULE_HELP = {
 !m [&lt;map&gt;]
 !map [&lt;map&gt;]
     tfm.exec.newGame()
+
+!mtype 0|1|2
 
 !dir &lt;variable&gt;
 
@@ -901,8 +1073,46 @@ MODULE_HELP = {
 }
 
 MODULE_HELP_CLOSE='<TI><a href="event:help_close"><p align="center">X</p></a>'
+function changeUI(name)
+   local data = playerData[name]
+   data.ui = not data.ui
+   if data.ui then
+      ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 40, 22, nil, nil, nil, true)
+      ui.addTextArea(ERROR_TA, table.concat(_errors), name, 805, 5, 200, 590, nil, nil, 0.5, true)
+   else
+      ui.removeTextArea(104, name)
+      ui.removeTextArea(ERROR_TA, name)
+   end
+end
+
 MODULE_CHAT_COMMAND = {
    ['help'] = help,
+
+   ['s'] = function(name, cmdl, arg)
+      eventChatCommand(name, arg)
+   end,
+
+   ['ui'] = function(name, cmdl, arg)
+      parsePlayerNames(name, arg, changeUI)
+   end,
+
+   ['mtype'] = function(name, cmdl, arg)
+      local a = tonumber(arg)
+      if a == nil or a < 0 or a > 2 then
+         alert('Invalid value for MTYPE: ' .. arg, name)
+      end
+      MTYPE = a
+   end,
+   ['control'] = function(name, cmdl, arg)
+      arg = string.lower(arg)
+      arg = string.gsub(arg, '^%l', string.upper)
+      playerData[name].cntl = {
+         name = arg,
+         obj = objcode.anvil,
+         off = 32,
+         da = 0
+      }
+   end,
 
    ['reset'] = function()
       setMap(curMap)
@@ -1000,14 +1210,95 @@ MODULE_CHAT_COMMAND_1 = function(name, cmd, arg)
       alert('Invalid command: ' .. cmd, name)
    end
 end
+
+system.disableChatCommandDisplay('s', true)
+playerKeys = { kc.w, kc.s, kc.a, kc.d, kc.space, kc.left, kc.right, kc.up, kc.down, kc.kp7, kc.kp8, kc.kp4, kc.kp5, kc.kp6, kc.kp1 }
+
+pk_vx = {
+   [kc.a] = -30,
+   [kc.left] = -30,
+   [kc.d] = 30,
+   [kc.right] = 30
+}
+
+pk_vy = {
+   [kc.space] = -30,
+   [kc.w] = -30,
+   [kc.up] = -30,
+   [kc.s] = 30,
+   [kc.down] = 30
+}
+
+pkc_vx = {
+   [kc.kp4] = -30,
+   [kc.kp6] = 30
+}
+
+pkc_vy = {
+   [kc.kp8] = -30,
+   [kc.kp2] = 30
+}
+
+function movePlayer1(name, data, vx, vy, down)
+   if MTYPE == 0 then
+      return false
+   end
+   if vx then
+      if down then
+         data.vx = vx
+         if data.vx > 0 then
+            data.dir = 1
+         else
+            data.dir = -1
+         end
+         movePlayer(name, 0, 0, false, vx, data.vy, false)
+      else --if MTYPE == 1 then
+         movePlayer(name, 0, 0, false, 1, 0, false)
+         movePlayer(name, 0, 0, false, -1, 0, true)
+         data.vx = 0
+      end
+   elseif vy then
+      if down then
+         data.vy = vy
+         movePlayer(name, 0, 0, false, data.vx, vy, false)
+      elseif MTYPE == 2 then
+         movePlayer(name, 0, 0, false, 0, -1, false)
+         movePlayer(name, 0, 0, false, 0, 1, true)
+         data.vy = 0
+      else
+         data.vy = 0
+      end
+   else
+      return false
+   end
+   return true
+end
 function eventNewPlayer(name)
    playerData[name] = {
       lastFunction = {},
       newFunction = {},
-      append = false
+      append = false,
+      ui = UI_DEFAULT,
+      vx = 0,
+      vy = 0,
+      cntl = {
+         name = nil,
+         obj = nil,
+         off = nil
+      }
    }
-   ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 40, 22, nil, nil, nil, true)
-   ui.addTextArea(ERROR_TA, table.concat(_errors), name, 805, 5, 200, 590, nil, nil, 0.5, true)
+
+   if UI_DEFAULT then
+      ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 40, 22, nil, nil, nil, true)
+      ui.addTextArea(ERROR_TA, table.concat(_errors), name, 805, 5, 200, 590, nil, nil, 0.5, true)
+   end
+
+   for k, v in ipairs(playerKeys) do
+      bindKey(name, v, true, true)
+      bindKey(name, v, false, true)
+   end
+
+   system.bindMouse(name, true)
    --tfm.exec.setShaman(name)
    do_respawn(name)
 end
@@ -1017,11 +1308,18 @@ function eventPlayerLeft(name)
 end
 
 function eventNewGame()
+   initTimers()
+
    tfm.exec.disableAfkDeath(true)
    tfm.exec.disableAutoNewGame(true)
    tfm.exec.disableAutoScore(true)
    tfm.exec.setGameTime(0)
-   tfm.exec.addPhysicObject(0, 0, 0, { type=13, color=0xFFFFFF })
+
+   objectData = {}
+   groundData = {}
+   jointData = {}
+   
+   do_addGround(0, 0, 0, { type=13 })
 end
 
 function eventPlayerDied(name)
@@ -1037,12 +1335,68 @@ function eventTextAreaCallback(id, name, callback)
       helpTextAreaCallback(id, name, callback)
    end
 end
+
+function eventKeyboard(name, key, down)
+   local data = playerData[name]
+   if movePlayer1(name, data, pk_vx[key], pk_vy[key], down) then
+      return
+   end
+   local cntl = data.cntl
+   local name1 = cntl.name
+   if name1 then
+      local data1 = playerData[name1]
+      if movePlayer1(name1, data1, pkc_vx[key], pkc_vy[key], down) then
+         return
+      end
+      if down then
+         if key == kc.kp7 then
+            t = tfm.get.room.playerList[name1]
+            if t then
+               local a
+               local v = math.random(16, 32)
+               local c, s
+               cntl.da = (cntl.da + 10) % 60
+               for a = cntl.da, 359 + cntl.da, 60 do
+                  c = math.rad(a)
+                  s = math.sin(c)
+                  c = math.cos(c)
+                  addObject(cntl.obj, t.x + c * cntl.off, t.y + s * cntl.off, a, v * c, v * s, false, 10)
+               end
+            end
+         elseif key == kc.kp5 then
+            t = tfm.get.room.playerList[name1]
+            if t then
+               local x, vx
+               x = t.x + cntl.off * data1.dir
+               vx = math.random(16, 32) * data1.dir
+               addObject(cntl.obj, x, t.y, 0, vx, 0, false, 10)
+            end
+         end
+      end
+   end
+end
+
+function eventLoop(ctime, rtime)
+   step(1, objectData, removeObject, nil, nop)
+   if MTYPE == 1 then
+      for k, v in pairs(playerData) do
+         if v.vx ~= 0 or v.vy ~= 0 then
+            movePlayer(k, 0, 0, false, v.vx, v.vy, false)
+         end
+      end
+   end
+end
 function clear()
    for k, v in ipairs(keys(tfm.get.room.objectList)) do
       do_removeObject(v)
    end
 end
 
+function map1(w, h, s)
+   local m = emptyMap(w, h, s)
+   setMap(m)
+   curMap = m
+end
 for k, v in pairs(tfm.get.room.playerList) do
    eventNewPlayer(k)
 end

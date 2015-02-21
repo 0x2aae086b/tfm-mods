@@ -5,7 +5,7 @@ function testPattern(name, data, id, points)
    local r = 48
    local v = math.random(2, 8)
 
-   local a, c, s
+   local a, c, s, i
    local a0 = math.rad(p.angle)
 
    for i = 0, n - 1 do
@@ -24,7 +24,7 @@ end
 function testPattern1(name, data, id, points)
    local p = points[1]
    local n = math.random(8, 16)
-   local a, c, s
+   local a, c, s, i
    local r
    local id
 
@@ -134,4 +134,28 @@ function testPattern3(name, data, id, points)
    }
    local id = addBullet(bullet.jstar, bdata, 32, shoot_bullet, nil, cb_args)
    addMotion(motion.circle, id, true, { last = true, ttl = 2, jdata = { speedMotor = 4 } })
+end
+
+function testPattern4(name, data, id, points)
+   local p = points[1]
+
+   local bdata = {
+      x = p.x,
+      y = p.y,
+      angle = math.rad(p.angle),
+      width = 512,
+      height = 13,
+      jdata = {
+         { color = randomColor(), foreground = true },
+         { color = 0xFFFFFF, line = 16 }
+      },
+      hitbox_data = {
+         dynamic = true,
+         restitution = 0,
+         mass = -1
+      }
+   }
+
+   local id = addBullet(bullet.rectangle, bdata, 10)
+   addMotion(motion.invalid_friction, id, true)
 end

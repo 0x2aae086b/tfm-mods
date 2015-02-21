@@ -229,7 +229,7 @@ function bomb2(name, data)
          ttl = ttl - 2,
          x = x0 + 150 * x,
          y = y0 + 150 * y,
-         -- no_target = name
+         no_target = name
       }
 
       id = addBullet(bullet.circle, bdata, ttl, bomb2Callback, nil, args)

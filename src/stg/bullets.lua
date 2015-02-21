@@ -7,6 +7,7 @@ bullet.rectangle = function(a)
 
    local dx, dy = math.cos(angle), math.sin(angle)
    local w = width / 2.0
+   local _, v
 
    local joint = {
       type = 0,

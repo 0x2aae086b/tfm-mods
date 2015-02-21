@@ -26,6 +26,8 @@ function initPlayer(name)
       pattern_data = {},
 
       spawn = { 200, 200 },
+
+      speed = 35,
       vx = 0,
 
       lives = 5,
@@ -46,7 +48,7 @@ function initPlayer(name)
 
    playerData[name] = data
 
-   for k, v in pairs(playerKeys) do
+   for k, v in ipairs(playerKeys) do
       bindKey(name, v, true, true)
       bindKey(name, v, false, true)
    end
@@ -63,25 +65,9 @@ function initPlayer(name)
 end
 
 function resetPlayer(name)
-   local reset = {
-      shooting = false,
-      bombing = false,
-      bombTime = nil,
-
-      lives = 5,
-      bombs = 3,
-
-      shot_cd = 0,
-      bomb_cd = 0,
-
-      vx = 0,
-
-      bomb_id = nil
-   }
-
    local data = playerData[name]
 
-   copy(data, reset)
+   copy(data, RESET)
 
    updateTextAreas(name, data)
 
@@ -101,4 +87,34 @@ end
 function respawn(name)
    do_respawn(name)
    setNameColor(name, playerData[name].color)
+end
+
+function movePlayer1(name, data, vx, vy, down)
+   if vx then
+      vx = vx * data.speed
+      if down then
+         data.vx = vx
+         if data.vx > 0 then
+            data.dir = 1
+         else
+            data.dir = -1
+         end
+         movePlayer(name, 0, 0, false, vx, 0, false)
+      else
+         movePlayer(name, 0, 0, false, 1, 0, false)
+         movePlayer(name, 0, 0, false, -1, 0, true)
+         data.vx = 0
+      end
+   elseif vy then
+      vy = vy * data.speed
+      if down then
+         movePlayer(name, 0, 0, false, data.vx, vy, false)
+      else
+         movePlayer(name, 0, 0, false, 0, -1, false)
+         movePlayer(name, 0, 0, false, 0, 1, true)
+      end
+   else
+      return false
+   end
+   return true
 end

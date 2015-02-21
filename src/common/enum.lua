@@ -41,6 +41,8 @@ keycode = {
    f7 = 118, f8 = 119, f9 = 120, f10 = 121, f11 = 122, f12 = 123
 }
 
+kc = keycode
+
 particles = {
    white = 0,
    purple = 1,

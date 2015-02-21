@@ -74,29 +74,6 @@ function removeJoint(id)
    freeId(jointId, id)
 end
 
-function addPattern(name, data, ptype, points)
-   local id = nil
-
-   if ptype.time ~= nil then
-      id = newId(patternId)
-
-      patternData[id] = {
-         time = ptype.time,
-         callback = ptype.callback,
-         on_remove = ptype.on_remove
-      }
-   end
-
-   ptype.func(name, data, id, points)
-
-   return id
-end
-
-function removePattern(id)
-   patternData[id] = nil
-   freeId(patternId, id)
-end
-
 function addExplosion(x, y, power, distance, miceOnly, particle1, particle2)
    if particle1 ~= nil then
       addParticle(particle1, x, y, 0, 0, 0, 0)

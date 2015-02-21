@@ -36,3 +36,7 @@ function eventChatCommand(name, message)
       MODULE_CHAT_COMMAND_1(name, cmd, arg)
    end
 end
+
+MODULE_CHAT_COMMAND_1 = function(name, cmd, arg)
+   alert('Invalid command: ' .. cmd, name)
+end

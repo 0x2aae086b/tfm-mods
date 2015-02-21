@@ -45,6 +45,7 @@ make_star = cache2(
    function(n, s)
       local tmp = {}
       local ret = {}
+      local i
 
       for i = 1, n do
          a = math.pi * 2.0 * i / n
@@ -71,6 +72,7 @@ function make_laser(ltype, x, y, x1, y1, step, k, n_step, line, colors)
    local dx1, dy1
    local dx2, dy2
    local j = 2
+   local i
 
    if ltype == 0 then
       ltype = 2
@@ -93,7 +95,7 @@ function make_laser(ltype, x, y, x1, y1, step, k, n_step, line, colors)
       end
    elseif ltype == 1 then
       ltype = 2
-      for j = 1, n_step do
+      for i = 1, n_step do
          dy = dy + step
          dx2, dy2 = -dy * s, dy * c
          ret[j] = { point2 = string.format("%d,%d", x1 + dx2, y1 + dy2) }

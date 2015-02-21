@@ -1,5 +1,16 @@
 motion = {}
 
+motion.invalid_friction = function(ac, controls, args)
+   local joint = {
+      type = 2,
+      point2 = "0,0",
+      point3 = "0,0",
+      point4 = "0,0"
+   }
+   local id = addGround(100, 100, CONTROL, 1)
+   addJoint(controls[#controls], id, joint, 1)
+end
+
 motion.fix = function(ac, controls, args)
    local id = 0
    local id1 = controls[#controls]

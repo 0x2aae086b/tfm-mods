@@ -1,5 +1,43 @@
+function changeUI(name)
+   local data = playerData[name]
+   data.ui = not data.ui
+   if data.ui then
+      ui.addTextArea(104, '<TI><a href="event:help"><p align="center">Help</p></a>', name, 5, 25, 40, 22, nil, nil, nil, true)
+      ui.addTextArea(ERROR_TA, table.concat(_errors), name, 805, 5, 200, 590, nil, nil, 0.5, true)
+   else
+      ui.removeTextArea(104, name)
+      ui.removeTextArea(ERROR_TA, name)
+   end
+end
+
 MODULE_CHAT_COMMAND = {
    ['help'] = help,
+
+   ['s'] = function(name, cmdl, arg)
+      eventChatCommand(name, arg)
+   end,
+
+   ['ui'] = function(name, cmdl, arg)
+      parsePlayerNames(name, arg, changeUI)
+   end,
+
+   ['mtype'] = function(name, cmdl, arg)
+      local a = tonumber(arg)
+      if a == nil or a < 0 or a > 2 then
+         alert('Invalid value for MTYPE: ' .. arg, name)
+      end
+      MTYPE = a
+   end,
+   ['control'] = function(name, cmdl, arg)
+      arg = string.lower(arg)
+      arg = string.gsub(arg, '^%l', string.upper)
+      playerData[name].cntl = {
+         name = arg,
+         obj = objcode.anvil,
+         off = 32,
+         da = 0
+      }
+   end,
 
    ['reset'] = function()
       setMap(curMap)
@@ -97,3 +135,5 @@ MODULE_CHAT_COMMAND_1 = function(name, cmd, arg)
       alert('Invalid command: ' .. cmd, name)
    end
 end
+
+system.disableChatCommandDisplay('s', true)
