@@ -12,6 +12,7 @@ MODULE_HELP_CONTENTS = [[<font face="mono" size="15"><a href="event:Keys">Keys</
 MODULE_HELP = {
       ['Keys'] = [[<font face="mono" size="15">Shoot - E
 Bomb  - Q
+Focus - Shift
 Up    - W, ↑, Space
 Down  - S, ↓
 Left  - A, ←

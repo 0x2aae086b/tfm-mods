@@ -26,7 +26,7 @@ end
 function round(x)
    local ret = math.floor(x)
    if x - ret >= 0.5 then
-      ret = ret + 1.0
+      ret = ret + 1
    end
    return ret
 end
@@ -239,21 +239,6 @@ function randomValue1(tbl, excl_key, do_exclude)
    else
       return nil
    end
-end
-
-function emptyMap(w, h, s, s1)
-   local w2, h2 = w / 2.0, h / 2.0
-   local x, y
-   local t = { string.format('<C><P G="0,0" L="%d" H="%d" /><Z><S>', w, h) }
-   s = s or 256
-   s1 = s1 or s
-   for x = 16, w, s do
-      for y = 16, h, s1 do
-         t[#t + 1] = string.format('<S o="%02x00%02x" L="16" Y="%d" c="4" P="0,0,0,0,0,0,0,0" T="13" X="%d" H="10" />', math.abs(w2 - x) / w2 * 255, math.abs(h2 - y) / h2 * 255, y, x)
-      end
-   end
-   t[#t + 1] = '</S><D><DS X="200" Y="200" /></D><O /></Z></C>'
-   return table.concat(t)
 end
 keycode = {
    backspace = 8,
@@ -554,7 +539,7 @@ function timers()
          t = t + v.res
          st, ret = pcall(v.func, k, v)
          if not st then
-            addError(nil, string.format('timer %d: %s', k, ret))
+            addError(string.format('timer %d: %s', k, ret))
             ret = false
          end
          if not ret then
@@ -714,6 +699,20 @@ function step(dt, t, remove, list, do_list)
    for _, v in ipairs(ids) do
       remove(v)
    end
+end
+function emptyMap(w, h, s, s1)
+   local w2, h2 = w / 2.0, h / 2.0
+   local x, y
+   local t = { string.format('<C><P G="0,0" L="%d" H="%d" /><Z><S>', w, h) }
+   s = s or 256
+   s1 = s1 or s
+   for x = 16, w, s do
+      for y = 16, h, s1 do
+         t[#t + 1] = string.format('<S o="%02x00%02x" L="16" Y="%d" c="4" P="0,0,0,0,0,0,0,0" T="13" X="%d" H="10" />', math.abs(w2 - x) / w2 * 255, math.abs(h2 - y) / h2 * 255, y, x)
+      end
+   end
+   t[#t + 1] = '</S><D><DS X="200" Y="200" /></D><O /></Z></C>'
+   return table.concat(t)
 end
 function setColor(name, color)
    setNameColor(name, color)
@@ -1294,6 +1293,7 @@ bullet.jstar = function(a)
 
    local x1, y1
    local c, s = math.cos(angle), math.sin(angle)
+   local k, v
 
    for k, v in ipairs(star.points) do
       x1, y1 = v[1] * c - v[2] * s, v[1] * s + v[2] * c
@@ -1794,15 +1794,9 @@ function addMotion(mtype, id, is_bullet, args)
 end
 motion = {}
 
-motion.invalid_friction = function(ac, controls, args)
-   local joint = {
-      type = 2,
-      point2 = "0,0",
-      point3 = "0,0",
-      point4 = "0,0"
-   }
+motion.i_f = function(ac, controls, args)
    local id = addGround(100, 100, CONTROL, 1)
-   addJoint(controls[#controls], id, joint, 1)
+   addJoint(controls[#controls], id, IFJOINT, 1)
 end
 
 motion.fix = function(ac, controls, args)
@@ -2175,6 +2169,7 @@ function testPattern4(name, data, id, points)
          { color = 0xFFFFFF, line = 16 }
       },
       hitbox_data = {
+         color = 0xFF0000,
          dynamic = true,
          restitution = 0,
          mass = -1
@@ -2182,7 +2177,7 @@ function testPattern4(name, data, id, points)
    }
 
    local id = addBullet(bullet.rectangle, bdata, 10)
-   addMotion(motion.invalid_friction, id, true)
+   addMotion(motion.i_f, id, true)
 end
 function shoot(name, data)
    if data.shot_cd == 0 then
@@ -2296,6 +2291,7 @@ function initPlayer(name)
 
       shooting = false,
       bombing = false,
+      focused = false,
 
       shot = shotTypes[1],
 
@@ -2311,8 +2307,11 @@ function initPlayer(name)
 
       spawn = { 200, 200 },
 
-      speed = 35,
+      speed = 50,
+      focusedSpeed = 35,
+      curSpeed = 50,
       vx = 0,
+      vy = 0,
 
       lives = 5,
       bombs = 3,
@@ -2375,9 +2374,9 @@ end
 
 function movePlayer1(name, data, vx, vy, down)
    if vx then
-      vx = vx * data.speed
       if down then
          data.vx = vx
+         vx = vx * data.curSpeed
          if data.vx > 0 then
             data.dir = 1
          else
@@ -2385,15 +2384,17 @@ function movePlayer1(name, data, vx, vy, down)
          end
          movePlayer(name, 0, 0, false, vx, 0, false)
       else
+         data.vx = 0
          movePlayer(name, 0, 0, false, 1, 0, false)
          movePlayer(name, 0, 0, false, -1, 0, true)
-         data.vx = 0
       end
    elseif vy then
-      vy = vy * data.speed
       if down then
-         movePlayer(name, 0, 0, false, data.vx, vy, false)
+         data.vy = vy
+         vy = vy * data.curSpeed
+         movePlayer(name, 0, 0, false, data.vx * data.curSpeed, vy, false)
       else
+         data.vy = 0
          movePlayer(name, 0, 0, false, 0, -1, false)
          movePlayer(name, 0, 0, false, 0, 1, true)
       end
@@ -2413,11 +2414,11 @@ MAX_ID = 400
 MAX_ERRORS = 7
 
 GROUND0 = {
-   type=13,
-   color=0xFFFFFF,
-   dynamic=false,
-   miceCollision=false,
-   groundCollision=false
+   type = 13,
+   color = 0xFFFFFF,
+   dynamic = false,
+   miceCollision = false,
+   groundCollision = false
 }
 
 CONTROL = {
@@ -2426,6 +2427,13 @@ CONTROL = {
    mass = 1,
    groundCollision = false,
    miceCollision = false
+}
+
+IFJOINT = {
+   type = 2,
+   point2 = '0,0',
+   point3 = '0,0',
+   point4 = '0,0'
 }
 
 RESET = {
@@ -2442,7 +2450,8 @@ playerKeys = {
    kc.space,
    kc.w, kc.s, kc.a, kc.d,
    kc.left, kc.right, kc.up, kc.down,
-   kc.e, kc.q
+   kc.e, kc.q,
+   kc.shift
 }
 reservedKeys = invert(playerKeys, true)
 
@@ -2469,7 +2478,11 @@ eventCode = {
 
 mapWidth = 1600
 mapHeight = 800
-defaultMap=emptyMap(mapWidth, mapHeight)
+defaultMap = emptyMap(mapWidth, mapHeight)
+X_MIN = 16
+X_MAX = mapWidth - 16
+Y_MIN = 16
+Y_MAX = mapHeight - 16
 
 maxLives = 8
 maxBombs = 6
@@ -2614,6 +2627,7 @@ MODULE_HELP_CONTENTS = [[<font face="mono" size="15"><a href="event:Keys">Keys</
 MODULE_HELP = {
       ['Keys'] = [[<font face="mono" size="15">Shoot - E
 Bomb  - Q
+Focus - Shift
 Up    - W, ↑, Space
 Down  - S, ↓
 Left  - A, ←
@@ -2959,6 +2973,20 @@ function eventKeyboard(name, key, down, x, y)
          if down then
             shoot(name, data)
          end
+      elseif key == kc.shift then
+         local data = playerData[name]
+         data.focused = down
+         if down then
+            data.curSpeed = data.focusedSpeed
+         else
+            data.curSpeed = data.speed
+         end
+         if data.vx ~= 0 or data.vy ~= 0 then
+            movePlayer(name,
+                       0, 0, false,
+                       data.vx * data.curSpeed, data.vy * data.curSpeed, false
+            )
+         end
       end
    elseif down then
       local data = playerData[name]
@@ -3024,44 +3052,15 @@ function eventPlayerDied(name)
 end
 
 function eventLoop(ctime, rtime)
-   local player, x, y, vx, vy, ax, ay, i
+   local player, x, y, i
+   local R = 25.0
+   local v = 1.5
+   local a = -v * v / R
+   local star = make_star(5, 2)
 
    clearT(1)
 
    for name, data in pairs(playerData) do
-      player = tfm.get.room.playerList[name]
-      if not player.isDead then
-         x = player.x
-         y = player.y
-
-         if x < 0 then
-            x = 0
-         elseif x > mapWidth then
-            x = mapWidth
-         end
-         if y < 0 then
-            y = 0
-         elseif y > mapHeight then
-            y = mapHeight
-         end
-
-         data.spawn[0] = x
-         data.spawn[1] = y
-
-         vx = -player.vx
-         vy = -player.vy
-         ax = vx / 10.0
-         ay = vy / 10.0
-         for i = 1, math.random(8, 16) do
-            addParticle(particles.purple,
-                        x + math.random(-4, 4), y + math.random(-4, 4),
-                        (vx + math.random() * 2 - 1) / i,
-                        (vy + math.random() * 2 - 1) / i,
-                        ax, ay
-            )
-         end
-      end
-
       if data.shot_cd > 0 then
          data.shot_cd = data.shot_cd - 1
       end
@@ -3069,21 +3068,57 @@ function eventLoop(ctime, rtime)
          data.bomb_cd = data.bomb_cd - 1
       end
 
-      if data.shooting then
-         shoot(name, data)
-      end
+      player = tfm.get.room.playerList[name]
+      if not player.isDead then
+         x = player.x
+         y = player.y
 
-      if data.bombing then
-         data.bombTime = data.bombTime - 1
-         if data.bombTime <= 0 then
-            data.bombing = false
-            data.bomb_cd = data.bomb.cd
-            removeBomb(name, data)
+         if x == 0 and y == 0 then
+            kill(name)
          else
-            if data.bomb.callback then
-               local st, err = pcall(data.bomb.callback, name, data)
-               if not st then
-                  addError('bomb.callback: ' .. err)
+            if x < X_MIN then
+               x = X_MIN
+            elseif x > X_MAX then
+               x = X_MAX
+            end
+
+            if y < Y_MIN then
+               y = Y_MIN
+            elseif y > Y_MAX then
+               y = Y_MAX
+            end
+
+            data.spawn[0] = x
+            data.spawn[1] = y
+
+            if data.focused then
+               local p
+               for i, p in ipairs(star.points) do
+                  addParticle(particles.purple,
+                              x + R * p[1], y + R * p[2],
+                              v * p[2], -v * p[1],
+                              a * p[1], a * p[2]
+                  )
+               end
+            end
+
+            if data.shooting then
+               shoot(name, data)
+            end
+
+            if data.bombing then
+               data.bombTime = data.bombTime - 1
+               if data.bombTime <= 0 then
+                  data.bombing = false
+                  data.bomb_cd = data.bomb.cd
+                  removeBomb(name, data)
+               else
+                  if data.bomb.callback then
+                     local st, err = pcall(data.bomb.callback, name, data)
+                     if not st then
+                        addError('bomb.callback: ' .. err)
+                     end
+                  end
                end
             end
          end

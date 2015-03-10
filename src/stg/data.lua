@@ -9,11 +9,11 @@ MAX_ID = 400
 MAX_ERRORS = 7
 
 GROUND0 = {
-   type=13,
-   color=0xFFFFFF,
-   dynamic=false,
-   miceCollision=false,
-   groundCollision=false
+   type = 13,
+   color = 0xFFFFFF,
+   dynamic = false,
+   miceCollision = false,
+   groundCollision = false
 }
 
 CONTROL = {
@@ -22,6 +22,13 @@ CONTROL = {
    mass = 1,
    groundCollision = false,
    miceCollision = false
+}
+
+IFJOINT = {
+   type = 2,
+   point2 = '0,0',
+   point3 = '0,0',
+   point4 = '0,0'
 }
 
 RESET = {
@@ -38,7 +45,8 @@ playerKeys = {
    kc.space,
    kc.w, kc.s, kc.a, kc.d,
    kc.left, kc.right, kc.up, kc.down,
-   kc.e, kc.q
+   kc.e, kc.q,
+   kc.shift
 }
 reservedKeys = invert(playerKeys, true)
 
@@ -65,7 +73,11 @@ eventCode = {
 
 mapWidth = 1600
 mapHeight = 800
-defaultMap=emptyMap(mapWidth, mapHeight)
+defaultMap = emptyMap(mapWidth, mapHeight)
+X_MIN = 16
+X_MAX = mapWidth - 16
+Y_MIN = 16
+Y_MAX = mapHeight - 16
 
 maxLives = 8
 maxBombs = 6

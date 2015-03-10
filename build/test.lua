@@ -26,7 +26,7 @@ end
 function round(x)
    local ret = math.floor(x)
    if x - ret >= 0.5 then
-      ret = ret + 1.0
+      ret = ret + 1
    end
    return ret
 end
@@ -239,21 +239,6 @@ function randomValue1(tbl, excl_key, do_exclude)
    else
       return nil
    end
-end
-
-function emptyMap(w, h, s, s1)
-   local w2, h2 = w / 2.0, h / 2.0
-   local x, y
-   local t = { string.format('<C><P G="0,0" L="%d" H="%d" /><Z><S>', w, h) }
-   s = s or 256
-   s1 = s1 or s
-   for x = 16, w, s do
-      for y = 16, h, s1 do
-         t[#t + 1] = string.format('<S o="%02x00%02x" L="16" Y="%d" c="4" P="0,0,0,0,0,0,0,0" T="13" X="%d" H="10" />', math.abs(w2 - x) / w2 * 255, math.abs(h2 - y) / h2 * 255, y, x)
-      end
-   end
-   t[#t + 1] = '</S><D><DS X="200" Y="200" /></D><O /></Z></C>'
-   return table.concat(t)
 end
 keycode = {
    backspace = 8,
@@ -554,7 +539,7 @@ function timers()
          t = t + v.res
          st, ret = pcall(v.func, k, v)
          if not st then
-            addError(nil, string.format('timer %d: %s', k, ret))
+            addError(string.format('timer %d: %s', k, ret))
             ret = false
          end
          if not ret then
@@ -890,6 +875,20 @@ function step(dt, t, remove, list, do_list)
    for _, v in ipairs(ids) do
       remove(v)
    end
+end
+function emptyMap(w, h, s, s1)
+   local w2, h2 = w / 2.0, h / 2.0
+   local x, y
+   local t = { string.format('<C><P G="0,0" L="%d" H="%d" /><Z><S>', w, h) }
+   s = s or 256
+   s1 = s1 or s
+   for x = 16, w, s do
+      for y = 16, h, s1 do
+         t[#t + 1] = string.format('<S o="%02x00%02x" L="16" Y="%d" c="4" P="0,0,0,0,0,0,0,0" T="13" X="%d" H="10" />', math.abs(w2 - x) / w2 * 255, math.abs(h2 - y) / h2 * 255, y, x)
+      end
+   end
+   t[#t + 1] = '</S><D><DS X="200" Y="200" /></D><O /></Z></C>'
+   return table.concat(t)
 end
 defaultMap = '90'
 UI_DEFAULT = false

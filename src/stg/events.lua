@@ -69,6 +69,20 @@ function eventKeyboard(name, key, down, x, y)
          if down then
             shoot(name, data)
          end
+      elseif key == kc.shift then
+         local data = playerData[name]
+         data.focused = down
+         if down then
+            data.curSpeed = data.focusedSpeed
+         else
+            data.curSpeed = data.speed
+         end
+         if data.vx ~= 0 or data.vy ~= 0 then
+            movePlayer(name,
+                       0, 0, false,
+                       data.vx * data.curSpeed, data.vy * data.curSpeed, false
+            )
+         end
       end
    elseif down then
       local data = playerData[name]
@@ -134,44 +148,15 @@ function eventPlayerDied(name)
 end
 
 function eventLoop(ctime, rtime)
-   local player, x, y, vx, vy, ax, ay, i
+   local player, x, y, i
+   local R = 25.0
+   local v = 1.5
+   local a = -v * v / R
+   local star = make_star(5, 2)
 
    clearT(1)
 
    for name, data in pairs(playerData) do
-      player = tfm.get.room.playerList[name]
-      if not player.isDead then
-         x = player.x
-         y = player.y
-
-         if x < 0 then
-            x = 0
-         elseif x > mapWidth then
-            x = mapWidth
-         end
-         if y < 0 then
-            y = 0
-         elseif y > mapHeight then
-            y = mapHeight
-         end
-
-         data.spawn[0] = x
-         data.spawn[1] = y
-
-         vx = -player.vx
-         vy = -player.vy
-         ax = vx / 10.0
-         ay = vy / 10.0
-         for i = 1, math.random(8, 16) do
-            addParticle(particles.purple,
-                        x + math.random(-4, 4), y + math.random(-4, 4),
-                        (vx + math.random() * 2 - 1) / i,
-                        (vy + math.random() * 2 - 1) / i,
-                        ax, ay
-            )
-         end
-      end
-
       if data.shot_cd > 0 then
          data.shot_cd = data.shot_cd - 1
       end
@@ -179,21 +164,57 @@ function eventLoop(ctime, rtime)
          data.bomb_cd = data.bomb_cd - 1
       end
 
-      if data.shooting then
-         shoot(name, data)
-      end
+      player = tfm.get.room.playerList[name]
+      if not player.isDead then
+         x = player.x
+         y = player.y
 
-      if data.bombing then
-         data.bombTime = data.bombTime - 1
-         if data.bombTime <= 0 then
-            data.bombing = false
-            data.bomb_cd = data.bomb.cd
-            removeBomb(name, data)
+         if x == 0 and y == 0 then
+            kill(name)
          else
-            if data.bomb.callback then
-               local st, err = pcall(data.bomb.callback, name, data)
-               if not st then
-                  addError('bomb.callback: ' .. err)
+            if x < X_MIN then
+               x = X_MIN
+            elseif x > X_MAX then
+               x = X_MAX
+            end
+
+            if y < Y_MIN then
+               y = Y_MIN
+            elseif y > Y_MAX then
+               y = Y_MAX
+            end
+
+            data.spawn[0] = x
+            data.spawn[1] = y
+
+            if data.focused then
+               local p
+               for i, p in ipairs(star.points) do
+                  addParticle(particles.purple,
+                              x + R * p[1], y + R * p[2],
+                              v * p[2], -v * p[1],
+                              a * p[1], a * p[2]
+                  )
+               end
+            end
+
+            if data.shooting then
+               shoot(name, data)
+            end
+
+            if data.bombing then
+               data.bombTime = data.bombTime - 1
+               if data.bombTime <= 0 then
+                  data.bombing = false
+                  data.bomb_cd = data.bomb.cd
+                  removeBomb(name, data)
+               else
+                  if data.bomb.callback then
+                     local st, err = pcall(data.bomb.callback, name, data)
+                     if not st then
+                        addError('bomb.callback: ' .. err)
+                     end
+                  end
                end
             end
          end

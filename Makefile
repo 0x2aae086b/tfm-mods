@@ -6,7 +6,7 @@ TEST_SRC := src/common/rename.lua src/common/util.lua src/common/enum.lua \
             src/common/help.lua src/common/chatcommand.lua src/common/id.lua \
             src/common/ui.lua src/common/timer.lua src/common/dump.lua \
             src/common/longstring.lua src/common/addremove.lua \
-            src/common/step.lua \
+            src/common/step.lua src/common/map.lua\
             src/test/data.lua src/test/interpreter.lua \
             src/test/help.lua src/test/commands.lua \
             src/test/player.lua src/test/events.lua \
@@ -18,7 +18,7 @@ TEST_MIN := build/test.min.lua
 STG_SRC := src/common/rename.lua src/common/util.lua src/common/enum.lua \
            src/common/help.lua src/common/chatcommand.lua src/common/id.lua \
            src/common/ui.lua src/common/timer.lua src/common/addremove.lua \
-           src/common/step.lua \
+           src/common/step.lua src/common/map.lua\
            src/stg/util.lua src/stg/ui.lua src/stg/step.lua \
            src/stg/callbacks.lua src/stg/bullet.lua src/stg/bullets.lua \
            src/stg/bomb.lua src/stg/bombs.lua \

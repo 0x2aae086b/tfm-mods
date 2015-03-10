@@ -150,6 +150,7 @@ function testPattern4(name, data, id, points)
          { color = 0xFFFFFF, line = 16 }
       },
       hitbox_data = {
+         color = 0xFF0000,
          dynamic = true,
          restitution = 0,
          mass = -1
@@ -157,5 +158,5 @@ function testPattern4(name, data, id, points)
    }
 
    local id = addBullet(bullet.rectangle, bdata, 10)
-   addMotion(motion.invalid_friction, id, true)
+   addMotion(motion.i_f, id, true)
 end

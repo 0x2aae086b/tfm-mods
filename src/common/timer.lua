@@ -36,7 +36,7 @@ function timers()
          t = t + v.res
          st, ret = pcall(v.func, k, v)
          if not st then
-            addError(nil, string.format('timer %d: %s', k, ret))
+            addError(string.format('timer %d: %s', k, ret))
             ret = false
          end
          if not ret then

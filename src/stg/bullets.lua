@@ -192,6 +192,7 @@ bullet.jstar = function(a)
 
    local x1, y1
    local c, s = math.cos(angle), math.sin(angle)
+   local k, v
 
    for k, v in ipairs(star.points) do
       x1, y1 = v[1] * c - v[2] * s, v[1] * s + v[2] * c

@@ -12,6 +12,7 @@ function initPlayer(name)
 
       shooting = false,
       bombing = false,
+      focused = false,
 
       shot = shotTypes[1],
 
@@ -27,8 +28,11 @@ function initPlayer(name)
 
       spawn = { 200, 200 },
 
-      speed = 35,
+      speed = 50,
+      focusedSpeed = 35,
+      curSpeed = 50,
       vx = 0,
+      vy = 0,
 
       lives = 5,
       bombs = 3,
@@ -91,9 +95,9 @@ end
 
 function movePlayer1(name, data, vx, vy, down)
    if vx then
-      vx = vx * data.speed
       if down then
          data.vx = vx
+         vx = vx * data.curSpeed
          if data.vx > 0 then
             data.dir = 1
          else
@@ -101,15 +105,17 @@ function movePlayer1(name, data, vx, vy, down)
          end
          movePlayer(name, 0, 0, false, vx, 0, false)
       else
+         data.vx = 0
          movePlayer(name, 0, 0, false, 1, 0, false)
          movePlayer(name, 0, 0, false, -1, 0, true)
-         data.vx = 0
       end
    elseif vy then
-      vy = vy * data.speed
       if down then
-         movePlayer(name, 0, 0, false, data.vx, vy, false)
+         data.vy = vy
+         vy = vy * data.curSpeed
+         movePlayer(name, 0, 0, false, data.vx * data.curSpeed, vy, false)
       else
+         data.vy = 0
          movePlayer(name, 0, 0, false, 0, -1, false)
          movePlayer(name, 0, 0, false, 0, 1, true)
       end
