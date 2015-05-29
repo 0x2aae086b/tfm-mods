@@ -31,6 +31,13 @@ IFJOINT = {
    point4 = '0,0'
 }
 
+IF1JOINT = {
+   type = 1,
+   axis = '3,2',
+   angle = 0,
+   forceMotor = 255
+}
+
 RESET = {
    shooting = false,
    bombing = false,
@@ -45,6 +52,7 @@ playerKeys = {
    kc.space,
    kc.w, kc.s, kc.a, kc.d,
    kc.left, kc.right, kc.up, kc.down,
+   kc.kp4, kc.kp6, kc.kp8, kc.kp5,
    kc.e, kc.q,
    kc.shift
 }
@@ -53,16 +61,20 @@ reservedKeys = invert(playerKeys, true)
 pk_vx = {
    [kc.a] = -1,
    [kc.left] = -1,
+   [kc.kp4] = -1,
    [kc.d] = 1,
-   [kc.right] = 1
+   [kc.right] = 1,
+   [kc.kp6] = 1
 }
 
 pk_vy = {
    [kc.space] = -1,
    [kc.w] = -1,
    [kc.up] = -1,
+   [kc.kp8] = -1,
    [kc.s] = 1,
-   [kc.down] = 1
+   [kc.down] = 1,
+   [kc.kp5] = 1
 }
 
 eventCode = {
@@ -172,7 +184,7 @@ patternTypes = {
       func = testPattern3,
       callback = nil,
 
-      cd = 16000,
+      cd = 1000,
       points = 1,
 
       maxBinds = 2,
@@ -202,7 +214,7 @@ patternTypes = {
 
 playerConfig = {
    Cafecafe = {
-      color = 0x9852B4 -- 0xB06FFD
+      color = 0xB06FFD --0x9852B4
    },
    Rar = {
       color = 0x553399

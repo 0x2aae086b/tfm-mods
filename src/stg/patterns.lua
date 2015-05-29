@@ -145,12 +145,12 @@ function testPattern4(name, data, id, points)
       angle = math.rad(p.angle),
       width = 512,
       height = 13,
+      static = 1,
       jdata = {
          { color = randomColor(), foreground = true },
          { color = 0xFFFFFF, line = 16 }
       },
       hitbox_data = {
-         color = 0xFF0000,
          dynamic = true,
          restitution = 0,
          mass = -1

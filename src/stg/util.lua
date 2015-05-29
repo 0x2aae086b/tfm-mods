@@ -45,7 +45,7 @@ make_star = cache2(
    function(n, s)
       local tmp = {}
       local ret = {}
-      local i
+      local i, a
 
       for i = 1, n do
          a = math.pi * 2.0 * i / n
@@ -62,6 +62,7 @@ make_star = cache2(
    end
 )
 
+-- 0 50 200 900 200 6.5 0.1 4 100 nil 0.5
 function make_laser(ltype, x, y, x1, y1, step, k, n_step, line, colors)
    local ret = {{}}
 

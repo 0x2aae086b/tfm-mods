@@ -28,8 +28,8 @@ function initPlayer(name)
 
       spawn = { 200, 200 },
 
-      speed = 50,
-      focusedSpeed = 35,
+      speed = 60,
+      focusedSpeed = 30,
       curSpeed = 50,
       vx = 0,
       vy = 0,

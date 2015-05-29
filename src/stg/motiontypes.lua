@@ -5,6 +5,20 @@ motion.i_f = function(ac, controls, args)
    addJoint(controls[#controls], id, IFJOINT, 1)
 end
 
+motion.i_f_1 = function(ac, controls, args)
+   local cbargs = {
+      gid = controls[#controls],
+      gx = args.x,
+      gy = args.y,
+      jg1 = controls[#controls],
+      jg2 = 0,
+      gdata = args.gdata,
+      jdata = IF1JOINT
+   }
+   local id = addJoint(controls[#controls], 0, IF1JOINT, args.ttl, replace, nil, cbargs)
+   cbargs.jid = id
+end
+
 motion.fix = function(ac, controls, args)
    local id = 0
    local id1 = controls[#controls]

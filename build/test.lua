@@ -837,6 +837,7 @@ function step(dt, t, remove, list, do_list)
    local ids = {}
    local tm
    local st, err
+   local k, v
 
    if do_list == nil then
       do_list = list_default
@@ -872,7 +873,7 @@ function step(dt, t, remove, list, do_list)
       end
    end
 
-   for _, v in ipairs(ids) do
+   for k, v in ipairs(ids) do
       remove(v)
    end
 end
@@ -1124,6 +1125,12 @@ MODULE_CHAT_COMMAND = {
       curMap = arg
    end,
 
+   ['play'] = function(name, cmdl, arg)
+      MAPS = split(arg)
+      CUR_MAP = 1
+      setMap(MAPS[CUR_MAP])
+   end,
+
    ['init'] = function()
       defaultMap = '0'
       curMap = defaultMap
@@ -1299,11 +1306,16 @@ function eventNewPlayer(name)
 
    system.bindMouse(name, true)
    --tfm.exec.setShaman(name)
-   do_respawn(name)
+   if MAPS == nil then
+      do_respawn(name)
+   end
 end
 
 function eventPlayerLeft(name)
    playerData[name] = nil
+   if MAPS then
+      playerDied()
+   end
 end
 
 function eventNewGame()
@@ -1311,22 +1323,51 @@ function eventNewGame()
 
    tfm.exec.disableAfkDeath(true)
    tfm.exec.disableAutoNewGame(true)
-   tfm.exec.disableAutoScore(true)
-   tfm.exec.setGameTime(0)
 
    objectData = {}
    groundData = {}
    jointData = {}
-   
-   do_addGround(0, 0, 0, { type=13 })
+
+   if MAPS == nil then
+      tfm.exec.disableAutoScore(true)
+      tfm.exec.setGameTime(0)
+      do_addGround(0, 0, 0, { type=13 })
+   else
+      PLAYERS = length(tfm.get.room.playerList)
+   end
+end
+
+function newMap()
+
+end
+
+function playerDied()
+   PLAYERS = PLAYERS - 1
+   if PLAYERS <= 0 then
+      tfm.exec.setGameTime(0)
+   end
 end
 
 function eventPlayerDied(name)
-   do_respawn(name)
+   if MAPS == nil then
+      do_respawn(name)
+   else
+      playerDied()
+   end
 end
 
 function eventPlayerWon(name)
-   do_respawn(name)
+   if MAPS == nil then
+      do_respawn(name)
+   else
+      playerDied()
+   end
+end
+
+function eventPlayerRespawn(name)
+   if PLAYERS then
+      PLAYERS = PLAYERS + 1
+   end
 end
 
 function eventTextAreaCallback(id, name, callback)
@@ -1377,11 +1418,23 @@ end
 
 function eventLoop(ctime, rtime)
    step(1, objectData, removeObject, nil, nop)
+
    if MTYPE == 1 then
       for k, v in pairs(playerData) do
          if v.vx ~= 0 or v.vy ~= 0 then
             movePlayer(k, 0, 0, false, v.vx, v.vy, false)
          end
+      end
+   end
+
+   if CUR_MAP and rtime <= 0 then
+      CUR_MAP = CUR_MAP + 1
+      if MAPS[CUR_MAP] then
+         setMap(MAPS[CUR_MAP])
+      else
+         MAPS = nil
+         CUR_MAP = nil
+         setMap(curMap)
       end
    end
 end

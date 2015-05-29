@@ -50,6 +50,12 @@ MODULE_CHAT_COMMAND = {
       curMap = arg
    end,
 
+   ['play'] = function(name, cmdl, arg)
+      MAPS = split(arg)
+      CUR_MAP = 1
+      setMap(MAPS[CUR_MAP])
+   end,
+
    ['init'] = function()
       defaultMap = '0'
       curMap = defaultMap

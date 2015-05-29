@@ -9,17 +9,26 @@ function addGround1(t, x, y, other)
    return id
 end
 
-function addJoint1(t, id1, id2, other)
-   local id = newId(jointId)
-   _tmp_joints[#_tmp_joints + 1] = id
-   do_addJoint(id, id1, id2, other)
-   t[#t + 1] = id
-end
+addJoint2 = {
+   function(t, id1, id2, other)
+      local id = newId(jointId)
+      _tmp_joints[#_tmp_joints + 1] = id
+      do_addJoint(id, 0, 0, other)
+      t[#t + 1] = id
+   end,
+
+   function(t, id1, id2, other)
+      local id = newId(jointId)
+      _tmp_joints[#_tmp_joints + 1] = id
+      do_addJoint(id, id1, id2, other)
+      t[#t + 1] = id
+   end
+}
 
 function addBullet(btype, bullet_args, ttl, callback, on_remove, args)
    local id = newId(bulletId)
    local _, v
-   local st, control, grounds, joints = pcall(btype, bullet_args)
+   local st, control, grounds, joints = pcall(btype, addJoint2[bullet_args.static or 2], bullet_args)
 
    if st then
       _tmp_grounds = {}

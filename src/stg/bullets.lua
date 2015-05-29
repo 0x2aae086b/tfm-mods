@@ -1,6 +1,6 @@
 bullet = {}
 
-bullet.rectangle = function(a)
+bullet.rectangle = function(addJoint1, a)
    local x, y, angle = a.x, a.y, a.angle
    local width, height = a.width, a.height
    local jdata, hitbox_data = a.jdata, a.hitbox_data
@@ -14,7 +14,7 @@ bullet.rectangle = function(a)
       point1 = string.format("%d,%d", x, y),
       point2 = string.format("%d,%d", x + dx * width, y + dy * width),
       color = 0xFF0000,
-      line = 2.0 * height + 4,
+      line = 2 * height + 4,
       foreground = false
    }
 
@@ -46,7 +46,7 @@ bullet.rectangle = function(a)
    return id0, grounds, joints
 end
 
-bullet.circle = function(a)
+bullet.circle = function(addJoint1, a)
    local x, y, R = a.x, a.y, a.R
    local jdata, hitbox_data = a.jdata, a.hitbox_data
 
@@ -84,7 +84,7 @@ bullet.circle = function(a)
    return id0, grounds, joints
 end
 
-bullet.butterfly = function(a)
+bullet.butterfly = function(addJoint1, a)
    local x, y, angle, R = a.x, a.y, a.angle, a.R
    local center_jdata, wing_jdata = a.center_jdata, a.wing_jdata
    local hitbox_data = a.hitbox_data
@@ -146,7 +146,7 @@ bullet.butterfly = function(a)
    return id0, grounds, joints
 end
 
-bullet.jstar = function(a)
+bullet.jstar = function(addJoint1, a)
    local x, y, angle, R = a.x, a.y, a.angle, a.R
    local points, step = a.points, a.step
    local line_jdata, center_jdata = a.line_jdata, a.center_jdata
@@ -217,7 +217,7 @@ bullet.jstar = function(a)
    return id0, grounds, joints
 end
 
-bullet.star = function(a)
+bullet.star = function(addJoint1, a)
    local x, y, angle, R = a.x, a.y, a.angle, a.R
    local points, step, do_cap = a.points, a.step, a.do_cap
    local line_data, center_data = a.line_data, a.center_data

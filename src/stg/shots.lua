@@ -47,35 +47,49 @@ function defaultShot(name, data)
 end
 
 function homingShot(name, data)
-   local target = randomKey1(tfm.get.room.playerList, name, false)
    local player = tfm.get.room.playerList[name]
    local x = player.x
    local y = player.y
-   local vx = 2
-   local vy = 2
-   local g = false
 
-   if not player.isFacingRight then
-      vx = -vx
+   if data.focused then
+      local target = randomValue1(tfm.get.room.playerList, name, false)
+      local x1, y1 = target.x, target.y
+      x1, y1 = x1 - x, y1 - y
+      local a = math.atan2(y1, x1)
+      local c, s, a1, i
+      local v = 16
+      for i = 1, 2 do
+         a1 = a + math.random() * 0.2
+         c, s = math.cos(a1), math.sin(a1)
+         addObject(objcode.anvil, x + 20 * c, y + 20 * s, math.deg(a1), v * c, v * s, false, 10)
+      end
+   else
+      local target = randomKey1(tfm.get.room.playerList, name, false)
+      local vx = 2
+      local vy = 2
+      local g = false
+      if not player.isFacingRight then
+         vx = -vx
+      end
+
+      x = x + 16 * vx
+
+      local args = {
+         target = target,
+         x = x,
+         y = y + 32,
+         v = 128
+      }
+
+      addObject(objcode.anvil, x + vx, y + vy, 0, vx, vy, g, 10, moveHoming, nil, args)
+
+      local args = {
+         target = target,
+         x = x,
+         y = y - 32,
+         v = 128
+      }
+
+      addObject(objcode.anvil, x + vx, y - vy, 0, vx, -vy, g, 10, moveHoming, nil, args)
    end
-
-   x = x + 16 * vx
-
-   local args = {
-      target = target,
-      x = x,
-      y = y + 32,
-      v = 128
-   }
-
-   addObject(objcode.anvil, x + vx, y + vy, 0, vx, vy, g, 10, moveHoming, nil, args)
-
-   local args = {
-      target = target,
-      x = x,
-      y = y - 32,
-      v = 128
-   }
-
-   addObject(objcode.anvil, x + vx, y - vy, 0, vx, -vy, g, 10, moveHoming, nil, args)
 end

@@ -1,3 +1,11 @@
+--[[function replace(id, data)
+   local a = data.callback_args
+   local id = do_addGround(a.gid, a.gx, a.gy, a.gdata)
+   if a.jid then
+      do_addJoint(a.jid, a.jg1, a.jg2, a.jdata)
+   end
+end]]
+
 function shoot_bullet(id, data)
    local a = data.callback_args
    if a._cd == nil then

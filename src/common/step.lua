@@ -6,6 +6,7 @@ function step(dt, t, remove, list, do_list)
    local ids = {}
    local tm
    local st, err
+   local k, v
 
    if do_list == nil then
       do_list = list_default
@@ -41,7 +42,7 @@ function step(dt, t, remove, list, do_list)
       end
    end
 
-   for _, v in ipairs(ids) do
+   for k, v in ipairs(ids) do
       remove(v)
    end
 end

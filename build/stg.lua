@@ -661,6 +661,7 @@ function step(dt, t, remove, list, do_list)
    local ids = {}
    local tm
    local st, err
+   local k, v
 
    if do_list == nil then
       do_list = list_default
@@ -696,7 +697,7 @@ function step(dt, t, remove, list, do_list)
       end
    end
 
-   for _, v in ipairs(ids) do
+   for k, v in ipairs(ids) do
       remove(v)
    end
 end
@@ -761,7 +762,7 @@ make_star = cache2(
    function(n, s)
       local tmp = {}
       local ret = {}
-      local i
+      local i, a
 
       for i = 1, n do
          a = math.pi * 2.0 * i / n
@@ -778,6 +779,7 @@ make_star = cache2(
    end
 )
 
+-- 0 50 200 900 200 6.5 0.1 4 100 nil 0.5
 function make_laser(ltype, x, y, x1, y1, step, k, n_step, line, colors)
    local ret = {{}}
 
@@ -936,6 +938,14 @@ function clearT(dt)
 
    ui.addTextArea(2, table.concat(str), nil, -155, 5, 150, 590, nil, nil, 0.5, true)
 end
+--[[function replace(id, data)
+   local a = data.callback_args
+   local id = do_addGround(a.gid, a.gx, a.gy, a.gdata)
+   if a.jid then
+      do_addJoint(a.jid, a.jg1, a.jg2, a.jdata)
+   end
+end]]
+
 function shoot_bullet(id, data)
    local a = data.callback_args
    if a._cd == nil then
@@ -1043,17 +1053,26 @@ function addGround1(t, x, y, other)
    return id
 end
 
-function addJoint1(t, id1, id2, other)
-   local id = newId(jointId)
-   _tmp_joints[#_tmp_joints + 1] = id
-   do_addJoint(id, id1, id2, other)
-   t[#t + 1] = id
-end
+addJoint2 = {
+   function(t, id1, id2, other)
+      local id = newId(jointId)
+      _tmp_joints[#_tmp_joints + 1] = id
+      do_addJoint(id, 0, 0, other)
+      t[#t + 1] = id
+   end,
+
+   function(t, id1, id2, other)
+      local id = newId(jointId)
+      _tmp_joints[#_tmp_joints + 1] = id
+      do_addJoint(id, id1, id2, other)
+      t[#t + 1] = id
+   end
+}
 
 function addBullet(btype, bullet_args, ttl, callback, on_remove, args)
    local id = newId(bulletId)
    local _, v
-   local st, control, grounds, joints = pcall(btype, bullet_args)
+   local st, control, grounds, joints = pcall(btype, addJoint2[bullet_args.static or 2], bullet_args)
 
    if st then
       _tmp_grounds = {}
@@ -1101,7 +1120,7 @@ function removeBullet(id)
 end
 bullet = {}
 
-bullet.rectangle = function(a)
+bullet.rectangle = function(addJoint1, a)
    local x, y, angle = a.x, a.y, a.angle
    local width, height = a.width, a.height
    local jdata, hitbox_data = a.jdata, a.hitbox_data
@@ -1115,7 +1134,7 @@ bullet.rectangle = function(a)
       point1 = string.format("%d,%d", x, y),
       point2 = string.format("%d,%d", x + dx * width, y + dy * width),
       color = 0xFF0000,
-      line = 2.0 * height + 4,
+      line = 2 * height + 4,
       foreground = false
    }
 
@@ -1147,7 +1166,7 @@ bullet.rectangle = function(a)
    return id0, grounds, joints
 end
 
-bullet.circle = function(a)
+bullet.circle = function(addJoint1, a)
    local x, y, R = a.x, a.y, a.R
    local jdata, hitbox_data = a.jdata, a.hitbox_data
 
@@ -1185,7 +1204,7 @@ bullet.circle = function(a)
    return id0, grounds, joints
 end
 
-bullet.butterfly = function(a)
+bullet.butterfly = function(addJoint1, a)
    local x, y, angle, R = a.x, a.y, a.angle, a.R
    local center_jdata, wing_jdata = a.center_jdata, a.wing_jdata
    local hitbox_data = a.hitbox_data
@@ -1247,7 +1266,7 @@ bullet.butterfly = function(a)
    return id0, grounds, joints
 end
 
-bullet.jstar = function(a)
+bullet.jstar = function(addJoint1, a)
    local x, y, angle, R = a.x, a.y, a.angle, a.R
    local points, step = a.points, a.step
    local line_jdata, center_jdata = a.line_jdata, a.center_jdata
@@ -1318,7 +1337,7 @@ bullet.jstar = function(a)
    return id0, grounds, joints
 end
 
-bullet.star = function(a)
+bullet.star = function(addJoint1, a)
    local x, y, angle, R = a.x, a.y, a.angle, a.R
    local points, step, do_cap = a.points, a.step, a.do_cap
    local line_data, center_data = a.line_data, a.center_data
@@ -1799,6 +1818,20 @@ motion.i_f = function(ac, controls, args)
    addJoint(controls[#controls], id, IFJOINT, 1)
 end
 
+motion.i_f_1 = function(ac, controls, args)
+   local cbargs = {
+      gid = controls[#controls],
+      gx = args.x,
+      gy = args.y,
+      jg1 = controls[#controls],
+      jg2 = 0,
+      gdata = args.gdata,
+      jdata = IF1JOINT
+   }
+   local id = addJoint(controls[#controls], 0, IF1JOINT, args.ttl, replace, nil, cbargs)
+   cbargs.jid = id
+end
+
 motion.fix = function(ac, controls, args)
    local id = 0
    local id1 = controls[#controls]
@@ -2164,12 +2197,12 @@ function testPattern4(name, data, id, points)
       angle = math.rad(p.angle),
       width = 512,
       height = 13,
+      static = 1,
       jdata = {
          { color = randomColor(), foreground = true },
          { color = 0xFFFFFF, line = 16 }
       },
       hitbox_data = {
-         color = 0xFF0000,
          dynamic = true,
          restitution = 0,
          mass = -1
@@ -2245,37 +2278,51 @@ function defaultShot(name, data)
 end
 
 function homingShot(name, data)
-   local target = randomKey1(tfm.get.room.playerList, name, false)
    local player = tfm.get.room.playerList[name]
    local x = player.x
    local y = player.y
-   local vx = 2
-   local vy = 2
-   local g = false
 
-   if not player.isFacingRight then
-      vx = -vx
+   if data.focused then
+      local target = randomValue1(tfm.get.room.playerList, name, false)
+      local x1, y1 = target.x, target.y
+      x1, y1 = x1 - x, y1 - y
+      local a = math.atan2(y1, x1)
+      local c, s, a1, i
+      local v = 16
+      for i = 1, 2 do
+         a1 = a + math.random() * 0.2
+         c, s = math.cos(a1), math.sin(a1)
+         addObject(objcode.anvil, x + 20 * c, y + 20 * s, math.deg(a1), v * c, v * s, false, 10)
+      end
+   else
+      local target = randomKey1(tfm.get.room.playerList, name, false)
+      local vx = 2
+      local vy = 2
+      local g = false
+      if not player.isFacingRight then
+         vx = -vx
+      end
+
+      x = x + 16 * vx
+
+      local args = {
+         target = target,
+         x = x,
+         y = y + 32,
+         v = 128
+      }
+
+      addObject(objcode.anvil, x + vx, y + vy, 0, vx, vy, g, 10, moveHoming, nil, args)
+
+      local args = {
+         target = target,
+         x = x,
+         y = y - 32,
+         v = 128
+      }
+
+      addObject(objcode.anvil, x + vx, y - vy, 0, vx, -vy, g, 10, moveHoming, nil, args)
    end
-
-   x = x + 16 * vx
-
-   local args = {
-      target = target,
-      x = x,
-      y = y + 32,
-      v = 128
-   }
-
-   addObject(objcode.anvil, x + vx, y + vy, 0, vx, vy, g, 10, moveHoming, nil, args)
-
-   local args = {
-      target = target,
-      x = x,
-      y = y - 32,
-      v = 128
-   }
-
-   addObject(objcode.anvil, x + vx, y - vy, 0, vx, -vy, g, 10, moveHoming, nil, args)
 end
 do_respawn_1 = do_respawn
 
@@ -2307,8 +2354,8 @@ function initPlayer(name)
 
       spawn = { 200, 200 },
 
-      speed = 50,
-      focusedSpeed = 35,
+      speed = 60,
+      focusedSpeed = 30,
       curSpeed = 50,
       vx = 0,
       vy = 0,
@@ -2436,6 +2483,13 @@ IFJOINT = {
    point4 = '0,0'
 }
 
+IF1JOINT = {
+   type = 1,
+   axis = '3,2',
+   angle = 0,
+   forceMotor = 255
+}
+
 RESET = {
    shooting = false,
    bombing = false,
@@ -2450,6 +2504,7 @@ playerKeys = {
    kc.space,
    kc.w, kc.s, kc.a, kc.d,
    kc.left, kc.right, kc.up, kc.down,
+   kc.kp4, kc.kp6, kc.kp8, kc.kp5,
    kc.e, kc.q,
    kc.shift
 }
@@ -2458,16 +2513,20 @@ reservedKeys = invert(playerKeys, true)
 pk_vx = {
    [kc.a] = -1,
    [kc.left] = -1,
+   [kc.kp4] = -1,
    [kc.d] = 1,
-   [kc.right] = 1
+   [kc.right] = 1,
+   [kc.kp6] = 1
 }
 
 pk_vy = {
    [kc.space] = -1,
    [kc.w] = -1,
    [kc.up] = -1,
+   [kc.kp8] = -1,
    [kc.s] = 1,
-   [kc.down] = 1
+   [kc.down] = 1,
+   [kc.kp5] = 1
 }
 
 eventCode = {
@@ -2577,7 +2636,7 @@ patternTypes = {
       func = testPattern3,
       callback = nil,
 
-      cd = 16000,
+      cd = 1000,
       points = 1,
 
       maxBinds = 2,
@@ -2607,7 +2666,7 @@ patternTypes = {
 
 playerConfig = {
    Cafecafe = {
-      color = 0x9852B4 -- 0xB06FFD
+      color = 0xB06FFD --0x9852B4
    },
    Rar = {
       color = 0x553399
