@@ -317,26 +317,26 @@ if MAPS==nil then do_respawn(Z)else playerDied()end end;function eventPlayerResp
 if PLAYERS then PLAYERS=PLAYERS+1 end end
 function eventTextAreaCallback(K,T,V)if
 not lsTextAreaCallback(K,T,V)then helpTextAreaCallback(K,T,V)end end
-function eventKeyboard(b,t,G)local o=playerData[b]
-if movePlayer1(b,o,pk_vx[t],pk_vy[t],G)then return end
-if G then local O;if t==kc.e then O=1 elseif t==kc.q then O=2 end
-if O then
-local x=tfm.get.room.playerList[b]if x then
-shoot[O](x,o,math.random(SHOT_SPEED[1],SHOT_SPEED[2]),o.self_cntl)return end end end;local g=o.cntl;local M=g.name
-if M then local i=playerData[M]if
-movePlayer1(M,i,pkc_vx[t],pkc_vy[t],G)then return end
+function eventKeyboard(b,t,G)local o=playerData[b]local g,M,O,x,i;if
+movePlayer1(b,o,pk_vx[t],pk_vy[t],G)then return end
+if G then if t==kc.e then g=1 elseif t==kc.q then g=2 end
+if g then
+M=tfm.get.room.playerList[b]if M then
+shoot[g](M,o,math.random(SHOT_SPEED[1],SHOT_SPEED[2]),o.self_cntl)return end end end;O=o.cntl;x=O.name
+if x then i=playerData[x]if
+movePlayer1(x,i,pkc_vx[t],pkc_vy[t],G)then return end
 if G then
-if t==kc.kp7 then i=2 elseif t==kc.kp5 then i=1 end
-if i then local w=tfm.get.room.playerList[M]if w then
-shoot[i](w,i,math.random(SHOT_SPEED[1],SHOT_SPEED[2]),g)end end end end end
-function eventLoop(S,r)step(1,objectData,removeObject,nil,nop)if MTYPE==1 then
-for V,s in
-pairs(playerData)do if s.vx~=0 or s.vy~=0 then
-movePlayer(V,0,0,false,s.vx,s.vy,false)end end end
+if t==kc.kp7 then g=2 elseif t==kc.kp5 then g=1 end
+if g then M=tfm.get.room.playerList[x]if M then
+shoot[g](M,i,math.random(SHOT_SPEED[1],SHOT_SPEED[2]),O)end end end end end
+function eventLoop(w,S)step(1,objectData,removeObject,nil,nop)if MTYPE==1 then
+for r,V in
+pairs(playerData)do if V.vx~=0 or V.vy~=0 then
+movePlayer(r,0,0,false,V.vx,V.vy,false)end end end
 if
-CUR_MAP and r<=0 then CUR_MAP=CUR_MAP+1;if MAPS[CUR_MAP]then setMap(MAPS[CUR_MAP])else
+CUR_MAP and S<=0 then CUR_MAP=CUR_MAP+1;if MAPS[CUR_MAP]then setMap(MAPS[CUR_MAP])else
 MAPS=nil;CUR_MAP=nil;setMap(curMap)end end end
-function clear()for X,D in ipairs(keys(tfm.get.room.objectList))do
-do_removeObject(D)end end
-function map1(K,j,i)local _=emptyMap(K,j,i)setMap(_)curMap=_;curMapXML=_ end
-for K,c in pairs(tfm.get.room.playerList)do eventNewPlayer(K)end;setMap(defaultMap)
+function clear()for s,X in ipairs(keys(tfm.get.room.objectList))do
+do_removeObject(X)end end
+function map1(D,K,j)local i=emptyMap(D,K,j)setMap(i)curMap=i;curMapXML=i end
+for _,K in pairs(tfm.get.room.playerList)do eventNewPlayer(_)end;setMap(defaultMap)

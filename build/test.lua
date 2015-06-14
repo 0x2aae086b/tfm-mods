@@ -1437,28 +1437,28 @@ end
 
 function eventKeyboard(name, key, down)
    local data = playerData[name]
+   local i, t, cntl, name1, data1
    if movePlayer1(name, data, pk_vx[key], pk_vy[key], down) then
       return
    end
    if down then
-      local i
       if key == kc.e then
          i = 1
       elseif key == kc.q then
          i = 2
       end
       if i then
-         local t = tfm.get.room.playerList[name]
+         t = tfm.get.room.playerList[name]
          if t then
             shoot[i](t, data, math.random(SHOT_SPEED[1], SHOT_SPEED[2]), data.self_cntl)
             return
          end
       end
    end
-   local cntl = data.cntl
-   local name1 = cntl.name
+   cntl = data.cntl
+   name1 = cntl.name
    if name1 then
-      local data1 = playerData[name1]
+      data1 = playerData[name1]
       if movePlayer1(name1, data1, pkc_vx[key], pkc_vy[key], down) then
          return
       end
@@ -1469,7 +1469,7 @@ function eventKeyboard(name, key, down)
             i = 1
          end
          if i then
-            local t = tfm.get.room.playerList[name1]
+            t = tfm.get.room.playerList[name1]
             if t then
                shoot[i](t, data1, math.random(SHOT_SPEED[1], SHOT_SPEED[2]), cntl)
             end
