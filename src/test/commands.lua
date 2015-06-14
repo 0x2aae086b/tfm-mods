@@ -21,12 +21,14 @@ MODULE_CHAT_COMMAND = {
       parsePlayerNames(name, arg, changeUI)
    end,
 
-   ['mtype'] = function(name, cmdl, arg)
-      local a = tonumber(arg)
-      if a == nil or a < 0 or a > 2 then
-         alert('Invalid value for MTYPE: ' .. arg, name)
+   ['set'] = function(name, cmdl, arg)
+      local iter = string.gmatch(arg, '[^%s]+')
+      local vals, exit = parse_arg(iter)
+      if type(vals) ~= 'table' then
+         alert('Invalid value table: ' .. arg, name)
+      else
+         copy(_G, vals)
       end
-      MTYPE = a
    end,
    ['control'] = function(name, cmdl, arg)
       arg = string.lower(arg)
@@ -34,7 +36,7 @@ MODULE_CHAT_COMMAND = {
       playerData[name].cntl = {
          name = arg,
          obj = objcode.anvil,
-         off = 32,
+         off = 48,
          da = 0
       }
    end,
@@ -46,8 +48,17 @@ MODULE_CHAT_COMMAND = {
       if arg == '' then
          arg = defaultMap
       end
+      setMapXML = true
       setMap(arg)
       curMap = arg
+   end,
+   ['map2'] = function(name, cmdl, arg)
+      if curMapXML == nil then
+         alert('curMapXML == nil', name)
+         return
+      end
+      curMap = string.gsub(curMapXML, "/>", arg .. " />", 1)
+      setMap(curMap)
    end,
 
    ['play'] = function(name, cmdl, arg)
@@ -59,6 +70,7 @@ MODULE_CHAT_COMMAND = {
    ['init'] = function()
       defaultMap = '0'
       curMap = defaultMap
+      curMapXML = defaultMapXML
       playerData = {}
       for k, v in pairs(tfm.get.room.playerList) do
          eventNewPlayer(k)

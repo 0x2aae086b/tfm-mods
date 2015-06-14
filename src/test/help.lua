@@ -20,7 +20,7 @@ MODULE_HELP = {
 !map [&lt;map&gt;]
     tfm.exec.newGame()
 
-!mtype 0|1|2
+!set { &lt;name&gt;=&lt;value&gt;... }
 
 !dir &lt;variable&gt;
 

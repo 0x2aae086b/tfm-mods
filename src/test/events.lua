@@ -6,10 +6,17 @@ function eventNewPlayer(name)
       ui = UI_DEFAULT,
       vx = 0,
       vy = 0,
+      dir = 1,
       cntl = {
          name = nil,
          obj = nil,
-         off = nil
+         off = nil,
+         da = nil
+      },
+      self_cntl = {
+         obj = objcode.anvil1,
+         off = 48,
+         da = 0
       }
    }
 
@@ -46,6 +53,15 @@ function eventNewGame()
    objectData = {}
    groundData = {}
    jointData = {}
+
+   if setMapXML then
+      setMapXML = false
+      if tfm.get.room.xmlMapInfo then
+         curMapXML = tfm.get.room.xmlMapInfo.xml
+      else
+         curMapXML = nil
+      end
+   end
 
    if MAPS == nil then
       tfm.exec.disableAutoScore(true)
@@ -100,6 +116,21 @@ function eventKeyboard(name, key, down)
    if movePlayer1(name, data, pk_vx[key], pk_vy[key], down) then
       return
    end
+   if down then
+      local i
+      if key == kc.e then
+         i = 1
+      elseif key == kc.q then
+         i = 2
+      end
+      if i then
+         local t = tfm.get.room.playerList[name]
+         if t then
+            shoot[i](t, data, math.random(SHOT_SPEED[1], SHOT_SPEED[2]), data.self_cntl)
+            return
+         end
+      end
+   end
    local cntl = data.cntl
    local name1 = cntl.name
    if name1 then
@@ -109,26 +140,14 @@ function eventKeyboard(name, key, down)
       end
       if down then
          if key == kc.kp7 then
-            t = tfm.get.room.playerList[name1]
-            if t then
-               local a
-               local v = math.random(16, 32)
-               local c, s
-               cntl.da = (cntl.da + 10) % 60
-               for a = cntl.da, 359 + cntl.da, 60 do
-                  c = math.rad(a)
-                  s = math.sin(c)
-                  c = math.cos(c)
-                  addObject(cntl.obj, t.x + c * cntl.off, t.y + s * cntl.off, a, v * c, v * s, false, 10)
-               end
-            end
+            i = 2
          elseif key == kc.kp5 then
-            t = tfm.get.room.playerList[name1]
+            i = 1
+         end
+         if i then
+            local t = tfm.get.room.playerList[name1]
             if t then
-               local x, vx
-               x = t.x + cntl.off * data1.dir
-               vx = math.random(16, 32) * data1.dir
-               addObject(cntl.obj, x, t.y, 0, vx, 0, false, 10)
+               shoot[i](t, data1, math.random(SHOT_SPEED[1], SHOT_SPEED[2]), cntl)
             end
          end
       end

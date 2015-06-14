@@ -168,7 +168,8 @@ for K=16,j,N do
 for a=16,U,y do
 Q[#Q+1]=string.format('<S o="%02x00%02x" L="16" Y="%d" c="4" P="0,0,0,0,0,0,0,0" T="13" X="%d" H="10" />',math.abs(
 n-K)/n*255,math.abs(B-a)/B*255,a,K)end end;Q[#Q+1]='</S><D><DS X="200" Y="200" /></D><O /></Z></C>'return
-table.concat(Q)end;defaultMap='90'UI_DEFAULT=false;MTYPE=0;curMap=defaultMap;playerData={}
+table.concat(Q)end;UI_DEFAULT=false;MTYPE=0;MOUSE_SPEED=60;SHOT_SPEED={16,32}defaultMap='90'defaultMapXML=
+nil;curMap=defaultMap;curMapXML=nil;setMapXML=true;playerData={}
 objectData={}groundData={}jointData={}
 function getfield(L,y)local a=_G
 for D,p in string.gmatch(L,'([[.]?)([^][.]+)')do if
@@ -217,7 +218,7 @@ MODULE_HELP={['Commands']=[[<font face="mono" size="15">!help
 !map [&lt;map&gt;]
     tfm.exec.newGame()
 
-!mtype 0|1|2
+!set { &lt;name&gt;=&lt;value&gt;... }
 
 !dir &lt;variable&gt;
 
@@ -242,87 +243,100 @@ nil,nil,nil,true)
 ui.addTextArea(ERROR_TA,table.concat(_errors),v,805,5,200,590,nil,nil,0.5,true)else ui.removeTextArea(104,v)
 ui.removeTextArea(ERROR_TA,v)end end
 MODULE_CHAT_COMMAND={['help']=help,['s']=function(o,F,e)eventChatCommand(o,e)end,['ui']=function(T,F,x)
-parsePlayerNames(T,x,changeUI)end,['mtype']=function(l,T,Y)local Z=tonumber(Y)
-if Z==nil or Z<0 or Z>2 then alert(
-'Invalid value for MTYPE: '..Y,l)end;MTYPE=Z end,['control']=function(t,y,p)
-p=string.lower(p)p=string.gsub(p,'^%l',string.upper)
-playerData[t].cntl={name=p,obj=objcode.anvil,off=32,da=0}end,['reset']=function()
-setMap(curMap)end,['map']=function(H,f,K)if K==''then K=defaultMap end;setMap(K)curMap=K end,['play']=function(A,_,Q)
-MAPS=split(Q)CUR_MAP=1;setMap(MAPS[CUR_MAP])end,['init']=function()
-defaultMap='0'curMap=defaultMap;playerData={}for s,K in pairs(tfm.get.room.playerList)do
-eventNewPlayer(s)end;setMap(curMap)end,['dir']=function(P,B,n)
-local v=''local g,k=pcall(getfield,n)
-if g then if type(k)=='table'then
-for U,l in pairs(k)do v=v..U..'\n'end;showLongString(n,v,P,0.8)else
-alert(n..' is not a table',P)end else
-alert(k,P)end end,['dump']=function(X,f,b)
-local v,z=pcall(call,dump,b)
-if v then showLongString(b,z,X,0.8)else alert(z,X)end end,['do']=function(A)
-local d=playerData[A]d.append=true;d.newFunction={}end,['end']=function(r,H)
-local c=playerData[r]
-if H=='end'then c.append=false;c.lastFunction=c.newFunction end;local v,x;for q,t in pairs(c.lastFunction)do v,x=pcall(call,t[1],t[2])if not v then
-alert(x,r)break end end end,['undo']=function(O)
-local G=playerData[O]G.append=false;G.newFunction={}end}
+parsePlayerNames(T,x,changeUI)end,['set']=function(l,T,Y)local Z=string.gmatch(Y,'[^%s]+')
+local t,y=parse_arg(Z)if type(t)~='table'then
+alert('Invalid value table: '..Y,l)else copy(_G,t)end end,['control']=function(p,H,f)
+f=string.lower(f)f=string.gsub(f,'^%l',string.upper)
+playerData[p].cntl={name=f,obj=objcode.anvil,off=48,da=0}end,['reset']=function()
+setMap(curMap)end,['map']=function(H,K,A)if A==''then A=defaultMap end;setMapXML=true;setMap(A)
+curMap=A end,['map2']=function(_,Q,s)if curMapXML==nil then
+alert('curMapXML == nil',_)return end
+curMap=string.gsub(curMapXML,"/>",s.." />",1)setMap(curMap)end,['play']=function(K,P,B)
+MAPS=split(B)CUR_MAP=1;setMap(MAPS[CUR_MAP])end,['init']=function()
+defaultMap='0'curMap=defaultMap;curMapXML=defaultMapXML;playerData={}for n,g in
+pairs(tfm.get.room.playerList)do eventNewPlayer(n)end
+setMap(curMap)end,['dir']=function(k,U,l)
+local X=''local f,b=pcall(getfield,l)
+if f then if type(b)=='table'then
+for z,A in pairs(b)do X=X..z..'\n'end;showLongString(l,X,k,0.8)else
+alert(l..' is not a table',k)end else
+alert(b,k)end end,['dump']=function(d,r,H)
+local c,v=pcall(call,dump,H)
+if c then showLongString(H,v,d,0.8)else alert(v,d)end end,['do']=function(x)
+local q=playerData[x]q.append=true;q.newFunction={}end,['end']=function(t,O)
+local G=playerData[t]
+if O=='end'then G.append=false;G.lastFunction=G.newFunction end;local z,q;for N,a in pairs(G.lastFunction)do z,q=pcall(call,a[1],a[2])if not z then
+alert(q,t)break end end end,['undo']=function(q)
+local H=playerData[q]H.append=false;H.newFunction={}end}
 MODULE_CHAT_COMMAND['redo']=MODULE_CHAT_COMMAND['end']
 MODULE_CHAT_COMMAND['r']=MODULE_CHAT_COMMAND['reset']MODULE_CHAT_COMMAND['m']=MODULE_CHAT_COMMAND['map']
-MODULE_CHAT_COMMAND_1=function(z,q,N)
-local a=getfield(q)local H=playerData[z]
-if type(a)=='function'then if H.append then
-H.newFunction[#H.newFunction+1]={a,N}else H.lastFunction={{a,N}}local P,l=pcall(call,a,N)
-if not P then alert(l,z)end end else alert(
-'Invalid command: '..q,z)end end;system.disableChatCommandDisplay('s',true)
-playerKeys={kc.w,kc.s,kc.a,kc.d,kc.space,kc.left,kc.right,kc.up,kc.down,kc.kp7,kc.kp8,kc.kp4,kc.kp5,kc.kp6,kc.kp1}
-pk_vx={[kc.a]=-30,[kc.left]=-30,[kc.d]=30,[kc.right]=30}
-pk_vy={[kc.space]=-30,[kc.w]=-30,[kc.up]=-30,[kc.s]=30,[kc.down]=30}pkc_vx={[kc.kp4]=-30,[kc.kp6]=30}
-pkc_vy={[kc.kp8]=-30,[kc.kp2]=30}
-function movePlayer1(j,I,y,q,a)if MTYPE==0 then return false end
-if y then
-if a then I.vx=y
-if I.vx>0 then I.dir=1 else I.dir=-1 end;movePlayer(j,0,0,false,y,I.vy,false)else
-movePlayer(j,0,0,false,1,0,false)movePlayer(j,0,0,false,-1,0,true)I.vx=0 end elseif q then
-if a then I.vy=q;movePlayer(j,0,0,false,I.vx,q,false)elseif MTYPE==2 then
-movePlayer(j,0,0,false,0,-1,false)movePlayer(j,0,0,false,0,1,true)I.vy=0 else I.vy=0 end else return false end;return true end
-function eventNewPlayer(j)
-playerData[j]={lastFunction={},newFunction={},append=false,ui=UI_DEFAULT,vx=0,vy=0,cntl={name=nil,obj=nil,off=nil}}
+MODULE_CHAT_COMMAND_1=function(P,l,j)
+local I=getfield(l)local y=playerData[P]
+if type(I)=='function'then if y.append then
+y.newFunction[#y.newFunction+1]={I,j}else y.lastFunction={{I,j}}local q,a=pcall(call,I,j)
+if not q then alert(a,P)end end else alert(
+'Invalid command: '..l,P)end end;system.disableChatCommandDisplay('s',true)
+playerKeys={kc.w,kc.s,kc.a,kc.d,kc.space,kc.left,kc.right,kc.up,kc.down,kc.kp7,kc.kp8,kc.kp4,kc.kp5,kc.kp6,kc.kp1,kc.kp2,kc.e,kc.q}pk_vx={[kc.a]=-1,[kc.left]=-1,[kc.d]=1,[kc.right]=1}
+pk_vy={[kc.space]=
+-1,[kc.w]=-1,[kc.up]=-1,[kc.s]=1,[kc.down]=1}pkc_vx={[kc.kp4]=-1,[kc.kp6]=1}
+pkc_vy={[kc.kp8]=-1,[kc.kp2]=1}
+function movePlayer1(j,P,S,q,U)if MTYPE==0 then return false end
+if S then
+if U then P.vx=S*MOUSE_SPEED;if P.vx>0 then
+P.dir=1 else P.dir=-1 end
+movePlayer(j,0,0,false,P.vx,P.vy,false)else movePlayer(j,0,0,false,1,0,false)
+movePlayer(j,0,0,false,-1,0,true)P.vx=0 end elseif q then
+if U then P.vy=q*MOUSE_SPEED
+movePlayer(j,0,0,false,P.vx,P.vy,false)elseif MTYPE==2 then movePlayer(j,0,0,false,0,-1,false)
+movePlayer(j,0,0,false,0,1,true)P.vy=0 else P.vy=0 end else return false end;return true end
+shoot={function(I,Z,K,b)local v=math.random(-10,10)local u;for u=v-15,v+15,15 do c=math.rad(u)
+s=math.sin(c)c=math.cos(c)*Z.dir
+addObject(b.obj,I.x+c*b.off,I.y+s*b.off,u,K*c,K*s,false,10)end end,function(a,s,q,K)
+local X;local o,u;K.da=(K.da+10)%60;for X=K.da,359+K.da,60 do o=math.rad(X)
+u=math.sin(o)o=math.cos(o)
+addObject(K.obj,a.x+o*K.off,a.y+u*K.off,X,q*o,q*u,false,10)end end}
+function eventNewPlayer(F)
+playerData[F]={lastFunction={},newFunction={},append=false,ui=UI_DEFAULT,vx=0,vy=0,dir=1,cntl={name=nil,obj=nil,off=nil,da=nil},self_cntl={obj=objcode.anvil1,off=48,da=0}}
 if UI_DEFAULT then
-ui.addTextArea(104,'<TI><a href="event:help"><p align="center">Help</p></a>',j,5,25,40,22,nil,nil,nil,true)
-ui.addTextArea(ERROR_TA,table.concat(_errors),j,805,5,200,590,nil,nil,0.5,true)end;for P,S in ipairs(playerKeys)do bindKey(j,S,true,true)
-bindKey(j,S,false,true)end
-system.bindMouse(j,true)if MAPS==nil then do_respawn(j)end end
-function eventPlayerLeft(q)playerData[q]=nil;if MAPS then playerDied()end end
+ui.addTextArea(104,'<TI><a href="event:help"><p align="center">Help</p></a>',F,5,25,40,22,nil,nil,nil,true)
+ui.addTextArea(ERROR_TA,table.concat(_errors),F,805,5,200,590,nil,nil,0.5,true)end;for O,R in ipairs(playerKeys)do bindKey(F,R,true,true)
+bindKey(F,R,false,true)end
+system.bindMouse(F,true)if MAPS==nil then do_respawn(F)end end
+function eventPlayerLeft(Y)playerData[Y]=nil;if MAPS then playerDied()end end
 function eventNewGame()initTimers()tfm.exec.disableAfkDeath(true)
-tfm.exec.disableAutoNewGame(true)objectData={}groundData={}jointData={}
+tfm.exec.disableAutoNewGame(true)objectData={}groundData={}jointData={}if setMapXML then setMapXML=false
+if
+tfm.get.room.xmlMapInfo then curMapXML=tfm.get.room.xmlMapInfo.xml else curMapXML=nil end end
 if MAPS==nil then
 tfm.exec.disableAutoScore(true)tfm.exec.setGameTime(0)
 do_addGround(0,0,0,{type=13})else PLAYERS=length(tfm.get.room.playerList)end end;function newMap()end;function playerDied()PLAYERS=PLAYERS-1;if PLAYERS<=0 then
 tfm.exec.setGameTime(0)end end
-function eventPlayerDied(U)if
-MAPS==nil then do_respawn(U)else playerDied()end end;function eventPlayerWon(I)
-if MAPS==nil then do_respawn(I)else playerDied()end end;function eventPlayerRespawn(Z)
+function eventPlayerDied(o)if
+MAPS==nil then do_respawn(o)else playerDied()end end;function eventPlayerWon(Z)
+if MAPS==nil then do_respawn(Z)else playerDied()end end;function eventPlayerRespawn(H)
 if PLAYERS then PLAYERS=PLAYERS+1 end end
-function eventTextAreaCallback(K,b,v)if
-not lsTextAreaCallback(K,b,v)then helpTextAreaCallback(K,b,v)end end
-function eventKeyboard(u,a,s)local q=playerData[u]
-if movePlayer1(u,q,pk_vx[a],pk_vy[a],s)then return end;local K=q.cntl;local X=K.name
-if X then local o=playerData[X]if
-movePlayer1(X,o,pkc_vx[a],pkc_vy[a],s)then return end
-if s then
-if a==kc.kp7 then
-t=tfm.get.room.playerList[X]
-if t then local F;local O=math.random(16,32)local R,Y;K.da=(K.da+10)%60;for F=K.da,359+
-K.da,60 do R=math.rad(F)Y=math.sin(R)R=math.cos(R)
-addObject(K.obj,t.x+R*
-K.off,t.y+Y*K.off,F,O*R,O*Y,false,10)end end elseif a==kc.kp5 then t=tfm.get.room.playerList[X]if t then local Z,H;Z=t.x+
-K.off*o.dir;H=math.random(16,32)*o.dir
-addObject(K.obj,Z,t.y,0,H,0,false,10)end end end end end
-function eventLoop(K,T)step(1,objectData,removeObject,nil,nop)if MTYPE==1 then
-for V,b in
-pairs(playerData)do if b.vx~=0 or b.vy~=0 then
-movePlayer(V,0,0,false,b.vx,b.vy,false)end end end
+function eventTextAreaCallback(K,T,V)if
+not lsTextAreaCallback(K,T,V)then helpTextAreaCallback(K,T,V)end end
+function eventKeyboard(b,t,G)local o=playerData[b]
+if movePlayer1(b,o,pk_vx[t],pk_vy[t],G)then return end
+if G then local O;if t==kc.e then O=1 elseif t==kc.q then O=2 end
+if O then
+local x=tfm.get.room.playerList[b]if x then
+shoot[O](x,o,math.random(SHOT_SPEED[1],SHOT_SPEED[2]),o.self_cntl)return end end end;local g=o.cntl;local M=g.name
+if M then local i=playerData[M]if
+movePlayer1(M,i,pkc_vx[t],pkc_vy[t],G)then return end
+if G then
+if t==kc.kp7 then i=2 elseif t==kc.kp5 then i=1 end
+if i then local w=tfm.get.room.playerList[M]if w then
+shoot[i](w,i,math.random(SHOT_SPEED[1],SHOT_SPEED[2]),g)end end end end end
+function eventLoop(S,r)step(1,objectData,removeObject,nil,nop)if MTYPE==1 then
+for V,s in
+pairs(playerData)do if s.vx~=0 or s.vy~=0 then
+movePlayer(V,0,0,false,s.vx,s.vy,false)end end end
 if
-CUR_MAP and T<=0 then CUR_MAP=CUR_MAP+1;if MAPS[CUR_MAP]then setMap(MAPS[CUR_MAP])else
+CUR_MAP and r<=0 then CUR_MAP=CUR_MAP+1;if MAPS[CUR_MAP]then setMap(MAPS[CUR_MAP])else
 MAPS=nil;CUR_MAP=nil;setMap(curMap)end end end
-function clear()for t,G in ipairs(keys(tfm.get.room.objectList))do
-do_removeObject(G)end end
-function map1(o,g,M)local O=emptyMap(o,g,M)setMap(O)curMap=O end
-for x,i in pairs(tfm.get.room.playerList)do eventNewPlayer(x)end;setMap(defaultMap)
+function clear()for X,D in ipairs(keys(tfm.get.room.objectList))do
+do_removeObject(D)end end
+function map1(K,j,i)local _=emptyMap(K,j,i)setMap(_)curMap=_;curMapXML=_ end
+for K,c in pairs(tfm.get.room.playerList)do eventNewPlayer(K)end;setMap(defaultMap)

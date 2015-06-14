@@ -891,11 +891,18 @@ function emptyMap(w, h, s, s1)
    t[#t + 1] = '</S><D><DS X="200" Y="200" /></D><O /></Z></C>'
    return table.concat(t)
 end
-defaultMap = '90'
 UI_DEFAULT = false
 MTYPE = 0
+MOUSE_SPEED = 60
+SHOT_SPEED = { 16, 32 }
+
+defaultMap = '90'
+defaultMapXML = nil
 
 curMap = defaultMap
+curMapXML = nil
+
+setMapXML = true
 
 playerData = {}
 objectData = {}
@@ -1053,7 +1060,7 @@ MODULE_HELP = {
 !map [&lt;map&gt;]
     tfm.exec.newGame()
 
-!mtype 0|1|2
+!set { &lt;name&gt;=&lt;value&gt;... }
 
 !dir &lt;variable&gt;
 
@@ -1096,12 +1103,14 @@ MODULE_CHAT_COMMAND = {
       parsePlayerNames(name, arg, changeUI)
    end,
 
-   ['mtype'] = function(name, cmdl, arg)
-      local a = tonumber(arg)
-      if a == nil or a < 0 or a > 2 then
-         alert('Invalid value for MTYPE: ' .. arg, name)
+   ['set'] = function(name, cmdl, arg)
+      local iter = string.gmatch(arg, '[^%s]+')
+      local vals, exit = parse_arg(iter)
+      if type(vals) ~= 'table' then
+         alert('Invalid value table: ' .. arg, name)
+      else
+         copy(_G, vals)
       end
-      MTYPE = a
    end,
    ['control'] = function(name, cmdl, arg)
       arg = string.lower(arg)
@@ -1109,7 +1118,7 @@ MODULE_CHAT_COMMAND = {
       playerData[name].cntl = {
          name = arg,
          obj = objcode.anvil,
-         off = 32,
+         off = 48,
          da = 0
       }
    end,
@@ -1121,8 +1130,17 @@ MODULE_CHAT_COMMAND = {
       if arg == '' then
          arg = defaultMap
       end
+      setMapXML = true
       setMap(arg)
       curMap = arg
+   end,
+   ['map2'] = function(name, cmdl, arg)
+      if curMapXML == nil then
+         alert('curMapXML == nil', name)
+         return
+      end
+      curMap = string.gsub(curMapXML, "/>", arg .. " />", 1)
+      setMap(curMap)
    end,
 
    ['play'] = function(name, cmdl, arg)
@@ -1134,6 +1152,7 @@ MODULE_CHAT_COMMAND = {
    ['init'] = function()
       defaultMap = '0'
       curMap = defaultMap
+      curMapXML = defaultMapXML
       playerData = {}
       for k, v in pairs(tfm.get.room.playerList) do
          eventNewPlayer(k)
@@ -1218,31 +1237,31 @@ MODULE_CHAT_COMMAND_1 = function(name, cmd, arg)
 end
 
 system.disableChatCommandDisplay('s', true)
-playerKeys = { kc.w, kc.s, kc.a, kc.d, kc.space, kc.left, kc.right, kc.up, kc.down, kc.kp7, kc.kp8, kc.kp4, kc.kp5, kc.kp6, kc.kp1 }
+playerKeys = { kc.w, kc.s, kc.a, kc.d, kc.space, kc.left, kc.right, kc.up, kc.down, kc.kp7, kc.kp8, kc.kp4, kc.kp5, kc.kp6, kc.kp1, kc.kp2, kc.e, kc.q }
 
 pk_vx = {
-   [kc.a] = -30,
-   [kc.left] = -30,
-   [kc.d] = 30,
-   [kc.right] = 30
+   [kc.a] = -1,
+   [kc.left] = -1,
+   [kc.d] = 1,
+   [kc.right] = 1
 }
 
 pk_vy = {
-   [kc.space] = -30,
-   [kc.w] = -30,
-   [kc.up] = -30,
-   [kc.s] = 30,
-   [kc.down] = 30
+   [kc.space] = -1,
+   [kc.w] = -1,
+   [kc.up] = -1,
+   [kc.s] = 1,
+   [kc.down] = 1
 }
 
 pkc_vx = {
-   [kc.kp4] = -30,
-   [kc.kp6] = 30
+   [kc.kp4] = -1,
+   [kc.kp6] = 1
 }
 
 pkc_vy = {
-   [kc.kp8] = -30,
-   [kc.kp2] = 30
+   [kc.kp8] = -1,
+   [kc.kp2] = 1
 }
 
 function movePlayer1(name, data, vx, vy, down)
@@ -1251,13 +1270,13 @@ function movePlayer1(name, data, vx, vy, down)
    end
    if vx then
       if down then
-         data.vx = vx
+         data.vx = vx * MOUSE_SPEED
          if data.vx > 0 then
             data.dir = 1
          else
             data.dir = -1
          end
-         movePlayer(name, 0, 0, false, vx, data.vy, false)
+         movePlayer(name, 0, 0, false, data.vx, data.vy, false)
       else --if MTYPE == 1 then
          movePlayer(name, 0, 0, false, 1, 0, false)
          movePlayer(name, 0, 0, false, -1, 0, true)
@@ -1265,8 +1284,8 @@ function movePlayer1(name, data, vx, vy, down)
       end
    elseif vy then
       if down then
-         data.vy = vy
-         movePlayer(name, 0, 0, false, data.vx, vy, false)
+         data.vy = vy * MOUSE_SPEED
+         movePlayer(name, 0, 0, false, data.vx, data.vy, false)
       elseif MTYPE == 2 then
          movePlayer(name, 0, 0, false, 0, -1, false)
          movePlayer(name, 0, 0, false, 0, 1, true)
@@ -1279,6 +1298,30 @@ function movePlayer1(name, data, vx, vy, down)
    end
    return true
 end
+shoot = {
+   function(player, data, spd, cntl)
+      local da = math.random(-10, 10)
+      local a
+      for a = da - 15, da + 15, 15 do
+         c = math.rad(a)
+         s = math.sin(c)
+         c = math.cos(c) * data.dir
+         addObject(cntl.obj, player.x + c * cntl.off, player.y + s * cntl.off, a, spd * c, spd * s, false, 10)
+      end
+   end,
+
+   function(player, data, spd, cntl)
+      local a
+      local c, s
+      cntl.da = (cntl.da + 10) % 60
+      for a = cntl.da, 359 + cntl.da, 60 do
+         c = math.rad(a)
+         s = math.sin(c)
+         c = math.cos(c)
+         addObject(cntl.obj, player.x + c * cntl.off, player.y + s * cntl.off, a, spd * c, spd * s, false, 10)
+      end
+   end
+}
 function eventNewPlayer(name)
    playerData[name] = {
       lastFunction = {},
@@ -1287,10 +1330,17 @@ function eventNewPlayer(name)
       ui = UI_DEFAULT,
       vx = 0,
       vy = 0,
+      dir = 1,
       cntl = {
          name = nil,
          obj = nil,
-         off = nil
+         off = nil,
+         da = nil
+      },
+      self_cntl = {
+         obj = objcode.anvil1,
+         off = 48,
+         da = 0
       }
    }
 
@@ -1327,6 +1377,15 @@ function eventNewGame()
    objectData = {}
    groundData = {}
    jointData = {}
+
+   if setMapXML then
+      setMapXML = false
+      if tfm.get.room.xmlMapInfo then
+         curMapXML = tfm.get.room.xmlMapInfo.xml
+      else
+         curMapXML = nil
+      end
+   end
 
    if MAPS == nil then
       tfm.exec.disableAutoScore(true)
@@ -1381,6 +1440,21 @@ function eventKeyboard(name, key, down)
    if movePlayer1(name, data, pk_vx[key], pk_vy[key], down) then
       return
    end
+   if down then
+      local i
+      if key == kc.e then
+         i = 1
+      elseif key == kc.q then
+         i = 2
+      end
+      if i then
+         local t = tfm.get.room.playerList[name]
+         if t then
+            shoot[i](t, data, math.random(SHOT_SPEED[1], SHOT_SPEED[2]), data.self_cntl)
+            return
+         end
+      end
+   end
    local cntl = data.cntl
    local name1 = cntl.name
    if name1 then
@@ -1390,26 +1464,14 @@ function eventKeyboard(name, key, down)
       end
       if down then
          if key == kc.kp7 then
-            t = tfm.get.room.playerList[name1]
-            if t then
-               local a
-               local v = math.random(16, 32)
-               local c, s
-               cntl.da = (cntl.da + 10) % 60
-               for a = cntl.da, 359 + cntl.da, 60 do
-                  c = math.rad(a)
-                  s = math.sin(c)
-                  c = math.cos(c)
-                  addObject(cntl.obj, t.x + c * cntl.off, t.y + s * cntl.off, a, v * c, v * s, false, 10)
-               end
-            end
+            i = 2
          elseif key == kc.kp5 then
-            t = tfm.get.room.playerList[name1]
+            i = 1
+         end
+         if i then
+            local t = tfm.get.room.playerList[name1]
             if t then
-               local x, vx
-               x = t.x + cntl.off * data1.dir
-               vx = math.random(16, 32) * data1.dir
-               addObject(cntl.obj, x, t.y, 0, vx, 0, false, 10)
+               shoot[i](t, data1, math.random(SHOT_SPEED[1], SHOT_SPEED[2]), cntl)
             end
          end
       end
@@ -1448,6 +1510,7 @@ function map1(w, h, s)
    local m = emptyMap(w, h, s)
    setMap(m)
    curMap = m
+   curMapXML = m
 end
 for k, v in pairs(tfm.get.room.playerList) do
    eventNewPlayer(k)

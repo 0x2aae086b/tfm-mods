@@ -9,7 +9,8 @@ TEST_SRC := src/common/rename.lua src/common/util.lua src/common/enum.lua \
             src/common/step.lua src/common/map.lua\
             src/test/data.lua src/test/interpreter.lua \
             src/test/help.lua src/test/commands.lua \
-            src/test/player.lua src/test/events.lua \
+            src/test/player.lua src/test/shot.lua \
+            src/test/events.lua \
             src/test/util.lua src/test/main.lua
 
 TEST := build/test.lua
