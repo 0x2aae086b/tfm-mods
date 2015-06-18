@@ -244,12 +244,12 @@ ui.addTextArea(ERROR_TA,table.concat(_errors),v,805,5,200,590,nil,nil,0.5,true)e
 ui.removeTextArea(ERROR_TA,v)end end
 MODULE_CHAT_COMMAND={['help']=help,['s']=function(o,F,e)eventChatCommand(o,e)end,['ui']=function(T,F,x)
 parsePlayerNames(T,x,changeUI)end,['set']=function(l,T,Y)local Z=string.gmatch(Y,'[^%s]+')
-local t,y=parse_arg(Z)if type(t)~='table'then
-alert('Invalid value table: '..Y,l)else copy(_G,t)end end,['control']=function(p,H,f)
+local t,y=parse_arg(Z)if type(t)~='table'then alert(Y..' is not a table',l)else
+copy(_G,t)end end,['control']=function(p,H,f)
 f=string.lower(f)f=string.gsub(f,'^%l',string.upper)
 playerData[p].cntl={name=f,obj=objcode.anvil,off=48,da=0}end,['reset']=function()
 setMap(curMap)end,['map']=function(H,K,A)if A==''then A=defaultMap end;setMapXML=true;setMap(A)
-curMap=A end,['map2']=function(_,Q,s)if curMapXML==nil then
+curMap=A end,['attr']=function(_,Q,s)if curMapXML==nil then
 alert('curMapXML == nil',_)return end
 curMap=string.gsub(curMapXML,"/>",s.." />",1)setMap(curMap)end,['play']=function(K,P,B)
 MAPS=split(B)CUR_MAP=1;setMap(MAPS[CUR_MAP])end,['init']=function()

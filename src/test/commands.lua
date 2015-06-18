@@ -25,7 +25,7 @@ MODULE_CHAT_COMMAND = {
       local iter = string.gmatch(arg, '[^%s]+')
       local vals, exit = parse_arg(iter)
       if type(vals) ~= 'table' then
-         alert('Invalid value table: ' .. arg, name)
+         alert(arg .. ' is not a table', name)
       else
          copy(_G, vals)
       end
@@ -52,7 +52,7 @@ MODULE_CHAT_COMMAND = {
       setMap(arg)
       curMap = arg
    end,
-   ['map2'] = function(name, cmdl, arg)
+   ['attr'] = function(name, cmdl, arg)
       if curMapXML == nil then
          alert('curMapXML == nil', name)
          return
